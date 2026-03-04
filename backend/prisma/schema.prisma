@@ -1,0 +1,254 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id                 Int         @id @default(autoincrement())
+  name               String
+  legalName          String?     @map("legal_name")
+  taxId              String?     @map("tax_id")
+  plan               CompanyPlan @default(FREE)
+  isActive           Boolean     @default(true) @map("is_active")
+  trialEndsAt        DateTime?   @map("trial_ends_at")
+  subscriptionStatus String?     @map("subscription_status")
+  stripeCustomerId   String?     @map("stripe_customer_id")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+
+  branches       Branch[]
+  users          User[]
+  products       Product[]
+  sales          Sale[]
+  ProductVariant ProductVariant[]
+  Inventory      Inventory[]
+  SaleItem       SaleItem[]
+  StockTransfer  StockTransfer[]
+
+  @@map("companies")
+}
+
+enum CompanyPlan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+model Branch {
+  id        Int      @id @default(autoincrement())
+  companyId Int      @map("company_id")
+  name      String
+  code      String
+  address   String?
+  city      String?
+  state     String?
+  country   String?
+  zipCode   String?  @map("zip_code")
+  phone     String?
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company   Company         @relation(fields: [companyId], references: [id])
+  inventory Inventory[]
+  sales     Sale[]
+  stockFrom StockTransfer[] @relation("StockTransferFrom")
+  stockTo   StockTransfer[] @relation("StockTransferTo")
+  User      User[]
+
+  @@unique([companyId, code])
+  @@map("branches")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  companyId Int       @map("company_id")
+  branchId  Int?      @map("branch_id")
+  username  String    @unique
+  email     String?
+  password  String    @map("password_hash")
+  fullName  String    @map("full_name")
+  role      UserRole
+  isActive  Boolean   @default(true) @map("is_active")
+  lastLogin DateTime? @map("last_login_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+  branch  Branch? @relation(fields: [branchId], references: [id])
+  sales   Sale[]
+
+  createdStockTransfers  StockTransfer[] @relation("StockTransferCreatedBy")
+  approvedStockTransfers StockTransfer[] @relation("StockTransferApprovedBy")
+
+  @@map("users")
+}
+
+enum UserRole {
+  OWNER
+  MANAGER
+  SELLER
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  companyId   Int      @map("company_id")
+  name        String
+  description String?
+  category    String?
+  brand       String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  company  Company          @relation(fields: [companyId], references: [id])
+  variants ProductVariant[]
+
+  @@map("products")
+}
+
+model ProductVariant {
+  id        Int      @id @default(autoincrement())
+  companyId Int      @map("company_id")
+  productId Int      @map("product_id")
+  size      String
+  color     String
+  sku       String
+  barcode   String?
+  price     Decimal  @db.Decimal(10, 2)
+  costPrice Decimal? @map("cost_price") @db.Decimal(10, 2)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company           Company             @relation(fields: [companyId], references: [id])
+  product           Product             @relation(fields: [productId], references: [id])
+  stocks            Inventory[]
+  items             SaleItem[]
+  StockTransferItem StockTransferItem[]
+
+  @@unique([companyId, sku])
+  @@unique([companyId, barcode])
+  @@map("product_variants")
+}
+
+model Inventory {
+  id               Int      @id @default(autoincrement())
+  companyId        Int      @map("company_id")
+  branchId         Int      @map("branch_id")
+  productVariantId Int      @map("product_variant_id")
+  quantity         Int
+  minStock         Int?     @map("min_stock")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  company Company        @relation(fields: [companyId], references: [id])
+  branch  Branch         @relation(fields: [branchId], references: [id])
+  variant ProductVariant @relation(fields: [productVariantId], references: [id])
+
+  @@unique([companyId, branchId, productVariantId])
+  @@map("inventory")
+}
+
+model Sale {
+  id                 Int           @id @default(autoincrement())
+  companyId          Int           @map("company_id")
+  branchId           Int           @map("branch_id")
+  userId             Int           @map("user_id")
+  totalAmount        Decimal       @map("total_amount") @db.Decimal(10, 2)
+  totalItems         Int           @map("total_items")
+  paymentMethod      PaymentMethod @map("payment_method")
+  paymentCashAmount  Decimal?      @map("payment_cash_amount") @db.Decimal(10, 2)
+  paymentCardAmount  Decimal?      @map("payment_card_amount") @db.Decimal(10, 2)
+  status             SaleStatus    @default(COMPLETED)
+  notes              String?
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  company Company    @relation(fields: [companyId], references: [id])
+  branch  Branch     @relation(fields: [branchId], references: [id])
+  user    User       @relation(fields: [userId], references: [id])
+  items   SaleItem[]
+
+  @@map("sales")
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  MIXED
+  OTHER
+}
+
+enum SaleStatus {
+  COMPLETED
+  CANCELLED
+  REFUNDED
+  PENDING
+}
+
+model SaleItem {
+  id               Int     @id @default(autoincrement())
+  saleId           Int     @map("sale_id")
+  companyId        Int     @map("company_id")
+  productVariantId Int     @map("product_variant_id")
+  quantity         Int
+  unitPrice        Decimal @map("unit_price") @db.Decimal(10, 2)
+  totalPrice       Decimal @map("total_price") @db.Decimal(10, 2)
+
+  sale    Sale           @relation(fields: [saleId], references: [id])
+  company Company        @relation(fields: [companyId], references: [id])
+  variant ProductVariant @relation(fields: [productVariantId], references: [id])
+
+  @@map("sale_items")
+}
+
+model StockTransfer {
+  id               Int                 @id @default(autoincrement())
+  companyId        Int                 @map("company_id")
+  fromBranchId     Int                 @map("from_branch_id")
+  toBranchId       Int                 @map("to_branch_id")
+  status           StockTransferStatus @default(PENDING)
+  createdByUserId  Int                 @map("created_by_user_id")
+  approvedByUserId Int?                @map("approved_by_user_id")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+
+  company    Company             @relation(fields: [companyId], references: [id])
+  fromBranch Branch              @relation("StockTransferFrom", fields: [fromBranchId], references: [id])
+  toBranch   Branch              @relation("StockTransferTo", fields: [toBranchId], references: [id])
+  createdBy  User                @relation("StockTransferCreatedBy", fields: [createdByUserId], references: [id])
+  approvedBy User?               @relation("StockTransferApprovedBy", fields: [approvedByUserId], references: [id])
+  items      StockTransferItem[]
+
+  @@map("stock_transfers")
+}
+
+enum StockTransferStatus {
+  PENDING
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+model StockTransferItem {
+  id               Int @id @default(autoincrement())
+  stockTransferId  Int @map("stock_transfer_id")
+  productVariantId Int @map("product_variant_id")
+  quantity         Int
+
+  transfer StockTransfer  @relation(fields: [stockTransferId], references: [id])
+  variant  ProductVariant @relation(fields: [productVariantId], references: [id])
+
+  @@map("stock_transfer_items")
+}

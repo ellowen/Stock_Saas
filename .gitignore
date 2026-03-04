@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Environment (nunca subir claves ni connection strings)
+.env
+.env.local
+.env.*.local
+
+# Builds
+dist/
+build/
+*.tsbuildinfo
+
+# Logs y cache
+logs/
+*.log
+.cache/
+
+# OS y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

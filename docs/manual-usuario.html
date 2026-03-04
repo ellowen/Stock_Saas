@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual de usuario — GIRO</title>
+  <style>
+    :root { --color-text: #1e293b; --color-muted: #64748b; --color-border: #e2e8f0; --color-bg: #f8fafc; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      color: var(--color-text);
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      background: #fff;
+    }
+    h1 { font-size: 1.75rem; margin-top: 0; border-bottom: 2px solid var(--color-border); padding-bottom: 0.5rem; }
+    h2 { font-size: 1.35rem; margin-top: 2rem; color: #334155; }
+    h3 { font-size: 1.1rem; margin-top: 1.5rem; }
+    p { margin: 0.75rem 0; }
+    ul { margin: 0.75rem 0; padding-left: 1.5rem; }
+    li { margin: 0.35rem 0; }
+    .subtitle { color: var(--color-muted); font-size: 1rem; margin-top: -0.5rem; }
+    .version { color: var(--color-muted); font-size: 0.9rem; margin-bottom: 2rem; }
+    .toc { background: var(--color-bg); padding: 1rem 1.5rem; border-radius: 8px; margin: 1.5rem 0; }
+    .toc ul { list-style: none; padding-left: 0; }
+    .toc li { margin: 0.5rem 0; }
+    .toc a { color: #4338ca; text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .figure-box {
+      margin: 1.25rem 0;
+      border: 1px dashed var(--color-border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f8fafc;
+      text-align: center;
+    }
+    .figure-caption { font-size: 0.9rem; color: var(--color-muted); margin: 0 0 0.5rem 0; font-weight: 600; }
+    .figure-box img { max-width: 100%; height: auto; display: block; }
+    .figure-placeholder {
+      padding: 2rem;
+      color: var(--color-muted);
+      font-size: 0.9rem;
+      display: block;
+    }
+    .figure-box .figure-img { display: none; }
+    .figure-box .figure-img.loaded { display: block !important; }
+    .figure-box .figure-placeholder.hidden { display: none !important; }
+    .no-print { margin-top: 3rem; padding: 1rem; background: #fef3c7; border-radius: 8px; font-size: 0.9rem; }
+    @media print {
+      body { padding: 0; max-width: none; }
+      .no-print { display: none !important; }
+      h2 { page-break-after: avoid; }
+      .section { page-break-inside: avoid; }
+      .figure-box { page-break-inside: avoid; }
+      @page { margin: 2cm; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Manual de usuario — GIRO</h1>
+  <p class="subtitle">Gestión de stock y ventas para tu negocio</p>
+  <p class="version">Versión 1.0</p>
+
+  <nav class="toc" aria-label="Índice">
+    <h2 id="indice">Índice</h2>
+    <ul>
+      <li><a href="#intro">1. Introducción</a></li>
+      <li><a href="#acceso">2. Acceso al sistema</a></li>
+      <li><a href="#crear-cuenta">3. Crear cuenta</a></li>
+      <li><a href="#login">4. Iniciar sesión</a></li>
+      <li><a href="#panel">5. El panel principal</a></li>
+      <li><a href="#inicio">6. Inicio (Dashboard)</a></li>
+      <li><a href="#inventario">7. Inventario</a></li>
+      <li><a href="#ventas">8. Ventas</a></li>
+      <li><a href="#traspasos">9. Traspasos</a></li>
+      <li><a href="#reportes">10. Reportes</a></li>
+      <li><a href="#sucursales">11. Sucursales</a></li>
+      <li><a href="#usuarios">12. Usuarios</a></li>
+      <li><a href="#plan">13. Plan</a></li>
+      <li><a href="#cerrar">14. Cerrar sesión y otros consejos</a></li>
+    </ul>
+  </nav>
+
+  <section class="section" id="intro">
+    <h2>1. Introducción</h2>
+    <p><strong>GIRO</strong> es una aplicación web para gestionar el inventario y las ventas de tu negocio. Permite:</p>
+    <ul>
+      <li><strong>Varios locales (sucursales)</strong> con stock independiente.</li>
+      <li><strong>Productos con variantes</strong> (talle, color, SKU, precio).</li>
+      <li><strong>Punto de venta</strong> rápido: buscar producto, agregar al carrito y cobrar (efectivo, tarjeta, mixto).</li>
+      <li><strong>Traspasos</strong> de stock entre sucursales.</li>
+      <li><strong>Reportes</strong> por período: ingresos, ventas por día, por categoría, método de pago y productos más vendidos.</li>
+      <li><strong>Usuarios y roles</strong>: Dueño, Encargado y Vendedor, con permisos distintos.</li>
+      <li><strong>Exportar</strong> inventario y reportes a CSV, Excel o PDF.</li>
+    </ul>
+    <p>Podés usar GIRO desde cualquier navegador actualizado (Chrome, Firefox, Edge, Safari) en computadora o tablet.</p>
+  </section>
+
+  <section class="section" id="acceso">
+    <h2>2. Acceso al sistema</h2>
+    <ul>
+      <li>Abrí la dirección web que te haya proporcionado tu proveedor (por ejemplo: <code>https://tu-app.ejemplo.com</code>).</li>
+      <li>En la <strong>página de inicio</strong> verás la presentación de GIRO y los botones <strong>Entrar</strong> e <strong>Iniciar cuenta gratis</strong>.</li>
+    </ul>
+    <p class="figure-caption">Figura 1: Página de inicio (landing) con logo GIRO y botones.</p>
+    <div class="figure-box">
+      <span class="figure-placeholder">Agregar captura en <code>manual-images/01-landing.png</code> para que aparezca aquí.</span>
+      <img src="manual-images/01-landing.png" alt="Página de inicio GIRO" class="figure-img" onload="this.classList.add('loaded');this.previousElementSibling.classList.add('hidden');">
+    </div>
+  </section>
+
+  <section class="section" id="crear-cuenta">
+    <h2>3. Crear cuenta</h2>
+    <p>Si aún no tenés cuenta:</p>
+    <ol>
+      <li>En la página de inicio, hacé clic en <strong>Crear cuenta gratis</strong>.</li>
+      <li>Completá el formulario: nombre de la empresa, tu nombre completo, usuario, contraseña (mín. 6 caracteres) y opcionalmente email.</li>
+      <li>Hacé clic en <strong>Crear cuenta</strong>.</li>
+      <li>Serás redirigido al inicio de sesión. Podés iniciar sesión con el usuario y contraseña que acabás de crear.</li>
+    </ol>
+    <p>La cuenta suele incluir un período de prueba (por ejemplo, 14 días). Los detalles aparecen en la sección <strong>Plan</strong> una vez dentro del panel.</p>
+    <p class="figure-caption">Figura 2: Formulario Crear cuenta.</p>
+    <div class="figure-box">
+      <span class="figure-placeholder">Agregar captura en <code>manual-images/02-registro.png</code> para que aparezca aquí.</span>
+      <img src="manual-images/02-registro.png" alt="Formulario de registro" class="figure-img" onload="this.classList.add('loaded');this.previousElementSibling.classList.add('hidden');">
+    </div>
+  </section>
+
+  <section class="section" id="login">
+    <h2>4. Iniciar sesión</h2>
+    <ol>
+      <li>En la página de inicio, hacé clic en <strong>Entrar</strong>.</li>
+      <li>Ingresá tu <strong>usuario</strong> y <strong>contraseña</strong>.</li>
+      <li>Opcional: marcá <strong>Recordarme en este equipo</strong>.</li>
+      <li>Hacé clic en <strong>Entrar</strong>. Entrarás al panel principal.</li>
+    </ol>
+    <p>Si olvidaste tu contraseña, contactá al administrador de tu empresa o al soporte.</p>
+    <p class="figure-caption">Figura 3: Pantalla de inicio de sesión.</p>
+    <div class="figure-box">
+      <span class="figure-placeholder">Agregar captura en <code>manual-images/03-login.png</code> para que aparezca aquí.</span>
+      <img src="manual-images/03-login.png" alt="Pantalla de inicio de sesión" class="figure-img" onload="this.classList.add('loaded');this.previousElementSibling.classList.add('hidden');">
+    </div>
+  </section>
+
+  <section class="section" id="panel">
+    <h2>5. El panel principal</h2>
+    <p>Después de iniciar sesión verás:</p>
+    <ul>
+      <li><strong>Barra lateral (sidebar)</strong> con logo GIRO y menú: Inicio, Inventario, Ventas, Traspasos, Reportes, Sucursales (si tenés permiso), Usuarios (si tenés permiso), Plan.</li>
+      <li><strong>Cabecera superior</strong> con el título de la página y botón para cambiar entre tema claro y oscuro (sol/luna).</li>
+      <li><strong>Área central</strong> con el contenido de cada sección.</li>
+    </ul>
+    <p>En pantallas chicas el menú se abre con el ícono de menú (☰) en la cabecera.</p>
+    <p class="figure-caption">Figura 4: Panel principal (Inicio/Dashboard) con menú lateral.</p>
+    <div class="figure-box">
+      <span class="figure-placeholder">Agregar captura en <code>manual-images/04-panel.png</code> para que aparezca aquí.</span>
+      <img src="manual-images/04-panel.png" alt="Panel principal con menú lateral" class="figure-img" onload="this.classList.add('loaded');this.previousElementSibling.classList.add('hidden');">
+    </div>
+  </section>
+
+  <section class="section" id="inicio">
+    <h2>6. Inicio (Dashboard)</h2>
+    <p>En <strong>Inicio</strong> se muestra un resumen:</p>
+    <ul>
+      <li><strong>Tarjetas de resumen</strong>: ingresos del período, cantidad de ventas, etc.</li>
+      <li><strong>Gráficos</strong> (últimos 7 días): ingresos por día y cantidad de operaciones por día.</li>
+    </ul>
+    <p>Podés usar el botón <strong>Actualizar</strong> para recargar los datos. Si hay error, aparece la opción <strong>Reintentar</strong>.</p>
+    <p class="figure-caption">Figura 5: Dashboard con tarjetas y gráficos.</p>
+    <div class="figure-box">
+      <span class="figure-placeholder">Agregar captura en <code>manual-images/05-dashboard.png</code> para que aparezca aquí.</span>
+      <img src="manual-images/05-dashboard.png" alt="Dashboard con gráficos" class="figure-img" onload="this.classList.add('loaded');this.previousElementSibling.classList.add('hidden');">
+    </div>
+  </section>
+
+  <section class="section" id="inventario">
+    <h2>7. Inventario</h2>
+    <p>El inventario tiene <strong>dos pestañas</strong>: <strong>Productos</strong> y <strong>Stock por sucursal</strong>.</p>
+    <h3>7.1 Productos</h3>
+    <ul>
+      <li>Listado de productos con nombre, categoría, marca y variantes.</li>
+      <li>Filtros por nombre o SKU y por categoría. Botón <strong>Filtrar</strong> o Enter.</li>
+      <li><strong>Nuevo producto</strong>: completá nombre, categoría, marca y variantes (talle, color, SKU, código de barras, precio, costo).</li>
+      <li>Exportar: <strong>CSV</strong>, <strong>Excel (.xlsx)</strong> o <strong>PDF</strong>.</li>
+    </ul>
+    <h3>7.2 Stock por sucursal</h3>
+    <ul>
+      <li>Listado de stock por sucursal: producto/variante, SKU, cantidad.</li>
+      <li>Filtros por sucursal y por nombre o SKU.</li>
+      <li>Botón <strong>Editar</strong> en cada fila para cambiar la cantidad.</li>
+      <li>Exportar: CSV, Excel o PDF.</li>
+    </ul>
+    <p class="figure-caption">Figura 6: Pestaña Productos o Stock por sucursal.</p>
+    <div class="figure-box">
+      <span class="figure-placeholder">Agregar captura en <code>manual-images/06-inventario.png</code> para que aparezca aquí.</span>
+      <img src="manual-images/06-inventario.png" alt="Inventario - Productos o Stock" class="figure-img" onload="this.classList.add('loaded');this.previousElementSibling.classList.add('hidden');">
+    </div>
+  </section>
+
+  <section class="section" id="ventas">
+    <h2>8. Ventas</h2>
+    <p>Hay <strong>dos pestañas</strong>: <strong>Punto de venta</strong> e <strong>Historial</strong>.</p>
+    <h3>8.1 Punto de venta</h3>
+    <ol>
+      <li>Elegí la <strong>sucursal</strong> donde se realiza la venta.</li>
+      <li>En el campo de búsqueda escribí nombre, SKU o escaneá código de barras y Enter. Clic en el producto para agregarlo al carrito.</li>
+      <li>En el <strong>carrito</strong> podés cambiar cantidades o quitar ítems. Se muestra el total.</li>
+      <li><strong>Cobrar</strong>: elegí método de pago (Efectivo, Tarjeta, Mixto, Otro), confirmá y la venta queda registrada.</li>
+    </ol>
+    <h3>8.2 Historial de ventas</h3>
+    <p>Filtros por sucursal y rango de fechas (Desde / Hasta). Tabla con fecha, sucursal, total, ítems, método de pago y vendedor.</p>
+    <p class="figure-caption">Figura 7: Punto de venta con carrito o Historial de ventas.</p>
+    <div class="figure-box">
+      <span class="figure-placeholder">Agregar captura en <code>manual-images/07-ventas.png</code> para que aparezca aquí.</span>
+      <img src="manual-images/07-ventas.png" alt="Punto de venta o Historial" class="figure-img" onload="this.classList.add('loaded');this.previousElementSibling.classList.add('hidden');">
+    </div>
+  </section>
+
+  <section class="section" id="traspasos">
+    <h2>9. Traspasos</h2>
+    <p>Los traspasos permiten <strong>mover stock de una sucursal a otra</strong>.</p>
+    <ul>
+      <li><strong>Listado</strong>: ID, origen, destino, estado, fecha.</li>
+      <li><strong>Nuevo traspaso</strong>: elegí origen, destino e ítems (producto/variante y cantidad). El traspaso queda en estado “pendiente”.</li>
+      <li><strong>Completar traspaso</strong>: cuando la mercadería llega, ingresá el ID del traspaso y hacé clic en <strong>Completar</strong>. El stock se actualiza en ambas sucursales.</li>
+    </ul>
+    <p class="figure-caption">Figura 8: Lista de traspasos o formulario nuevo traspaso.</p>
+    <div class="figure-box">
+      <span class="figure-placeholder">Agregar captura en <code>manual-images/08-traspasos.png</code> para que aparezca aquí.</span>
+      <img src="manual-images/08-traspasos.png" alt="Lista de traspasos" class="figure-img" onload="this.classList.add('loaded');this.previousElementSibling.classList.add('hidden');">
+    </div>
+  </section>
+
+  <section class="section" id="reportes">
+    <h2>10. Reportes</h2>
+    <p>En <strong>Reportes</strong> elegí <strong>Desde</strong> y <strong>Hasta</strong> (Desde debe ser anterior o igual a Hasta) y hacé clic en <strong>Ver reporte</strong>.</p>
+    <p>Se muestran gráficos y tablas: ingresos por categoría, ventas por método de pago, top productos, ventas por día. Podés descargar en <strong>CSV</strong> o <strong>PDF</strong>.</p>
+    <p class="figure-caption">Figura 9: Reporte con gráficos y tablas.</p>
+    <div class="figure-box">
+      <span class="figure-placeholder">Agregar captura en <code>manual-images/09-reportes.png</code> para que aparezca aquí.</span>
+      <img src="manual-images/09-reportes.png" alt="Reporte por período" class="figure-img" onload="this.classList.add('loaded');this.previousElementSibling.classList.add('hidden');">
+    </div>
+  </section>
+
+  <section class="section" id="sucursales">
+    <h2>11. Sucursales</h2>
+    <p>(Visible si tenés permiso de administrar sucursales.)</p>
+    <ul>
+      <li>Listado con código, nombre, ciudad, teléfono.</li>
+      <li><strong>Nueva sucursal</strong>: nombre, código, dirección, ciudad, teléfono.</li>
+      <li>Eliminar con <strong>confirmación</strong>.</li>
+    </ul>
+    <p class="figure-caption">Figura 10: Tabla de sucursales.</p>
+    <div class="figure-box">
+      <span class="figure-placeholder">Agregar captura en <code>manual-images/10-sucursales.png</code> para que aparezca aquí.</span>
+      <img src="manual-images/10-sucursales.png" alt="Tabla de sucursales" class="figure-img" onload="this.classList.add('loaded');this.previousElementSibling.classList.add('hidden');">
+    </div>
+  </section>
+
+  <section class="section" id="usuarios">
+    <h2>12. Usuarios</h2>
+    <p>(Visible si tenés permiso de administrar usuarios.)</p>
+    <p><strong>Roles</strong>: Dueño y Encargado (gestionan sucursales y usuarios), Vendedor (ventas e inventario).</p>
+    <ul>
+      <li>Listado con nombre, usuario, email, rol, sucursal, estado.</li>
+      <li><strong>Nuevo usuario</strong> y <strong>Editar</strong>. Eliminar con confirmación (no se puede eliminar el único Dueño).</li>
+    </ul>
+    <p class="figure-caption">Figura 11: Tabla de usuarios.</p>
+    <div class="figure-box">
+      <span class="figure-placeholder">Agregar captura en <code>manual-images/11-usuarios.png</code> para que aparezca aquí.</span>
+      <img src="manual-images/11-usuarios.png" alt="Tabla de usuarios" class="figure-img" onload="this.classList.add('loaded');this.previousElementSibling.classList.add('hidden');">
+    </div>
+  </section>
+
+  <section class="section" id="plan">
+    <h2>13. Plan</h2>
+    <p>En <strong>Plan</strong> se muestra tu plan actual (Gratis, Pro, Enterprise) y, si corresponde, el período de prueba. En el menú lateral también podés ver el plan actual y un enlace <strong>Ver plan</strong>.</p>
+    <p class="figure-caption">Figura 12: Página Plan.</p>
+    <div class="figure-box">
+      <span class="figure-placeholder">Agregar captura en <code>manual-images/12-plan.png</code> para que aparezca aquí.</span>
+      <img src="manual-images/12-plan.png" alt="Página Plan" class="figure-img" onload="this.classList.add('loaded');this.previousElementSibling.classList.add('hidden');">
+    </div>
+  </section>
+
+  <section class="section" id="cerrar">
+    <h2>14. Cerrar sesión y otros consejos</h2>
+    <ul>
+      <li><strong>Cerrar sesión</strong>: en el menú lateral, al pie, <strong>Cerrar sesión</strong>.</li>
+      <li><strong>Modo oscuro</strong>: botón sol/luna en la cabecera; la preferencia se guarda.</li>
+      <li><strong>Sesión expirada</strong>: serás redirigido al login; volvé a iniciar sesión.</li>
+      <li>Ante errores de red, muchas pantallas muestran <strong>Reintentar</strong>.</li>
+      <li>Las exportaciones (CSV, Excel, PDF) pueden tardar unos segundos con muchos datos.</li>
+    </ul>
+    <p><strong>Contacto y soporte:</strong> para dudas sobre uso, planes o facturación, contactá al proveedor que te dio acceso al sistema.</p>
+  </section>
+
+  <p style="margin-top:2rem; color: var(--color-muted); font-size: 0.9rem;"><em>Manual de usuario GIRO — Versión 1.0</em></p>
+
+  <div class="no-print">
+    <h3>Cómo obtener el PDF de este manual</h3>
+    <ol>
+      <li>Abrí este archivo (<code>manual-usuario.html</code>) en Chrome, Edge o Firefox.</li>
+      <li>Menú <strong>Archivo → Imprimir</strong> (o Ctrl+P).</li>
+      <li>Destino: <strong>Guardar como PDF</strong> (o “Microsoft Print to PDF”).</li>
+      <li>Guardar con el nombre que quieras (ej. <code>Manual-GIRO.pdf</code>).</li>
+    </ol>
+    <p><strong>Para incluir imágenes:</strong> creá la carpeta <code>manual-images</code> dentro de <code>docs</code> y guardá las capturas con los nombres indicados en cada figura (01-landing.png, 02-registro.png, etc.). Al abrir de nuevo el HTML y guardar como PDF, las imágenes se incluirán.</p>
+  </div>
+
+</body>
+</html>

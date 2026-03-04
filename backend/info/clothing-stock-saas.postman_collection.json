@@ -1,0 +1,462 @@
+{
+  "info": {
+    "name": "Clothing Stock SaaS - Backend",
+    "_postman_id": "11111111-1111-1111-1111-111111111111",
+    "description": "Colección completa para backend Express + Prisma (Auth, Productos, Inventario, Ventas, Traspasos, Analytics). Captura automática de access_token y refresh_token en un Environment.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Auth - Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login success\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "let jsonData = {};",
+                  "try {",
+                  "  jsonData = pm.response.json();",
+                  "} catch (e) {",
+                  "  console.log(\"Error parsing login response\", e);",
+                  "}",
+                  "",
+                  "if (jsonData.accessToken) {",
+                  "  pm.collectionVariables.set(\"access_token\", jsonData.accessToken);",
+                  "  console.log(\"access_token actualizado en el environment\");",
+                  "} else {",
+                  "  console.log(\"No se encontró accessToken en la respuesta\");",
+                  "}",
+                  "",
+                  "if (jsonData.refreshToken) {",
+                  "  pm.collectionVariables.set(\"refresh_token\", jsonData.refreshToken);",
+                  "  console.log(\"refresh_token actualizado en el environment\");",
+                  "} else {",
+                  "  console.log(\"No se encontró refreshToken en la respuesta\");",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"owner@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Protected",
+      "item": [
+        {
+          "name": "Protected - Example",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/protected/example",
+              "host": ["{{base_url}}"],
+              "path": ["protected", "example"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Protected - Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/protected/me",
+              "host": ["{{base_url}}"],
+              "path": ["protected", "me"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Products - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products",
+              "host": ["{{base_url}}"],
+              "path": ["products"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Products - Create (with variants)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Remera básica\",\n  \"description\": \"Remera de algodón\",\n  \"category\": \"Remeras\",\n  \"brand\": \"Zodiac\",\n  \"variants\": [\n    {\n      \"size\": \"S\",\n      \"color\": \"Negro\",\n      \"sku\": \"REM-BAS-S-BLK\",\n      \"barcode\": \"1234567890123\",\n      \"price\": 999.99,\n      \"costPrice\": 500\n    },\n    {\n      \"size\": \"M\",\n      \"color\": \"Negro\",\n      \"sku\": \"REM-BAS-M-BLK\",\n      \"barcode\": \"1234567890124\",\n      \"price\": 999.99,\n      \"costPrice\": 500\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/products",
+              "host": ["{{base_url}}"],
+              "path": ["products"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "Inventory - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/inventory",
+              "host": ["{{base_url}}"],
+              "path": ["inventory"],
+              "query": [
+                {
+                  "key": "branchId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "productId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "productVariantId",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Inventory - Adjust",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branchId\": 1,\n  \"productVariantId\": 1,\n  \"quantityDelta\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/inventory/adjust",
+              "host": ["{{base_url}}"],
+              "path": ["inventory", "adjust"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Sales (POS)",
+      "item": [
+        {
+          "name": "Sales - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sales",
+              "host": ["{{base_url}}"],
+              "path": ["sales"],
+              "query": [
+                {
+                  "key": "branchId",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sales - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branchId\": 1,\n  \"paymentMethod\": \"CASH\",\n  \"notes\": \"Venta de mostrador\",\n  \"items\": [\n    { \"productVariantId\": 1, \"quantity\": 2 },\n    { \"productVariantId\": 2, \"quantity\": 1 }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sales",
+              "host": ["{{base_url}}"],
+              "path": ["sales"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Stock Transfers",
+      "item": [
+        {
+          "name": "Stock Transfers - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/stock-transfers",
+              "host": ["{{base_url}}"],
+              "path": ["stock-transfers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Stock Transfers - Create (PENDING)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromBranchId\": 1,\n  \"toBranchId\": 2,\n  \"items\": [\n    { \"productVariantId\": 1, \"quantity\": 5 },\n    { \"productVariantId\": 2, \"quantity\": 3 }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/stock-transfers",
+              "host": ["{{base_url}}"],
+              "path": ["stock-transfers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Stock Transfers - Complete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transferId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/stock-transfers/complete",
+              "host": ["{{base_url}}"],
+              "path": ["stock-transfers", "complete"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Analytics - Overview",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/analytics/overview",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "overview"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Analytics - Top Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/analytics/top-products?limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "top-products"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Analytics - Sales by Day",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/analytics/sales-by-day?days=30",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "sales-by-day"],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:4000"
+    }
+  ]
+}
