@@ -2,6 +2,8 @@
 
 Este documento reúne **mejoras futuras** del producto y opciones para **subir la aplicación a la nube** con costos bajos o gratuitos.
 
+> **Recomendación resumida (económico, bueno, seguro):** ver **[HOSTING-RECOMENDACIONES.md](./HOSTING-RECOMENDACIONES.md)** — Railway para mejor relación precio/calidad, o Render + Vercel para arrancar gratis.
+
 ---
 
 ## Mejoras futuras (producto)
