@@ -359,5 +359,82 @@ export class AnalyticsService {
       salesByCategory,
     };
   }
+
+  /**
+   * Productos (variantes en inventario) sin movimiento en los últimos X días.
+   * Por cada ítem en inventario se considera el último movimiento en esa sucursal;
+   * si no hubo movimiento en los últimos `days` días, se incluye en el reporte.
+   */
+  async productsWithoutMovement(
+    companyId: number,
+    days: number,
+    options?: { branchId?: number }
+  ) {
+    const since = new Date();
+    since.setUTCDate(since.getUTCDate() - days);
+    since.setUTCHours(0, 0, 0, 0);
+
+    const inventoryWhere: Prisma.InventoryWhereInput = { companyId };
+    if (options?.branchId != null) {
+      inventoryWhere.branchId = options.branchId;
+    }
+
+    const [inventoryRows, lastMovements] = await Promise.all([
+      prisma.inventory.findMany({
+        where: inventoryWhere,
+        include: {
+          variant: { include: { product: true } },
+          branch: true,
+        },
+      }),
+      prisma.inventoryMovement.groupBy({
+        by: ["branchId", "productVariantId"],
+        where: { companyId },
+        _max: { createdAt: true },
+      }),
+    ]);
+
+    const lastByKey = new Map<string, Date>();
+    for (const g of lastMovements) {
+      const key = `${g.branchId}:${g.productVariantId}`;
+      const lastAt = g._max.createdAt;
+      if (lastAt) lastByKey.set(key, lastAt);
+    }
+
+    const result: {
+      productVariantId: number;
+      productName: string;
+      variantLabel: string;
+      sku: string;
+      branchId: number;
+      branchName: string;
+      quantity: number;
+      lastMovementAt: string | null;
+    }[] = [];
+
+    for (const row of inventoryRows) {
+      const key = `${row.branchId}:${row.productVariantId}`;
+      const lastAt = lastByKey.get(key);
+      if (lastAt != null && lastAt >= since) continue; // tuvo movimiento en los últimos X días
+      result.push({
+        productVariantId: row.productVariantId,
+        productName: row.variant.product.name,
+        variantLabel: `${row.variant.size} / ${row.variant.color}`,
+        sku: row.variant.sku,
+        branchId: row.branchId,
+        branchName: row.branch.name,
+        quantity: row.quantity,
+        lastMovementAt: lastAt ? lastAt.toISOString() : null,
+      });
+    }
+
+    // Ordenar por sucursal y luego producto
+    result.sort((a, b) => {
+      if (a.branchName !== b.branchName) return a.branchName.localeCompare(b.branchName);
+      return a.productName.localeCompare(b.productName) || a.sku.localeCompare(b.sku);
+    });
+
+    return result;
+  }
 }
 

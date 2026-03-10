@@ -52,3 +52,24 @@
     @apply text-slate-500 dark:text-slate-400;
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-labels-zone,
+  .print-labels-zone * {
+    visibility: visible;
+  }
+  .print-labels-zone {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0;
+    background: white;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

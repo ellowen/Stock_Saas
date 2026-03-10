@@ -1,4 +1,4 @@
-import { StockTransferStatus } from "@prisma/client";
+import { InventoryMovementType, StockTransferStatus } from "@prisma/client";
 import { prisma } from "../../config/database/prisma";
 
 export interface StockTransferItemInput {
@@ -101,17 +101,30 @@ export class StockTransferService {
 
       const variantIds = transfer.items.map((i) => i.productVariantId);
 
-      const inventoryFrom = await tx.inventory.findMany({
-        where: {
-          companyId,
-          branchId: transfer.fromBranchId,
-          productVariantId: { in: variantIds },
-        },
-      });
+      const [inventoryFrom, inventoryTo] = await Promise.all([
+        tx.inventory.findMany({
+          where: {
+            companyId,
+            branchId: transfer.fromBranchId,
+            productVariantId: { in: variantIds },
+          },
+        }),
+        tx.inventory.findMany({
+          where: {
+            companyId,
+            branchId: transfer.toBranchId,
+            productVariantId: { in: variantIds },
+          },
+        }),
+      ]);
 
       const inventoryByVariant = new Map<number, number>();
       for (const inv of inventoryFrom) {
         inventoryByVariant.set(inv.productVariantId, inv.quantity);
+      }
+      const inventoryToByVariant = new Map<number, number>();
+      for (const inv of inventoryTo) {
+        inventoryToByVariant.set(inv.productVariantId, inv.quantity);
       }
 
       for (const item of transfer.items) {
@@ -164,6 +177,42 @@ export class StockTransferService {
             },
           });
         }
+      }
+
+      const qtyByVariant = new Map<number, number>();
+      for (const item of transfer.items) {
+        const cur = qtyByVariant.get(item.productVariantId) ?? 0;
+        qtyByVariant.set(item.productVariantId, cur + item.quantity);
+      }
+      for (const [productVariantId, totalQty] of qtyByVariant) {
+        const fromBefore = inventoryByVariant.get(productVariantId) ?? 0;
+        const toBefore = inventoryToByVariant.get(productVariantId) ?? 0;
+        await tx.inventoryMovement.createMany({
+          data: [
+            {
+              companyId,
+              branchId: transfer.fromBranchId,
+              productVariantId,
+              type: InventoryMovementType.TRANSFER_OUT,
+              quantityBefore: fromBefore,
+              quantityAfter: fromBefore - totalQty,
+              userId: approvedByUserId,
+              referenceType: "stock_transfer",
+              referenceId: transfer.id,
+            },
+            {
+              companyId,
+              branchId: transfer.toBranchId,
+              productVariantId,
+              type: InventoryMovementType.TRANSFER_IN,
+              quantityBefore: toBefore,
+              quantityAfter: toBefore + totalQty,
+              userId: approvedByUserId,
+              referenceType: "stock_transfer",
+              referenceId: transfer.id,
+            },
+          ],
+        });
       }
 
       const updated = await tx.stockTransfer.update({

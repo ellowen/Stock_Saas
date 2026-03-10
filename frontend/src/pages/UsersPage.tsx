@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Navigate } from "react-router-dom";
 import { API_BASE_URL, authFetch, authHeaders } from "../lib/api";
+import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { Tooltip } from "../components/Tooltip";
 import { IconPlus } from "../components/Icons";
 import { TableSortHeader, sortByColumn } from "../components/TableSortHeader";
 import { ConfirmModal } from "../components/ConfirmModal";
 
-const ROLES: { value: string; label: string }[] = [
-  { value: "OWNER", label: "Dueño" },
-  { value: "MANAGER", label: "Encargado" },
-  { value: "SELLER", label: "Vendedor" },
+const ROLES: { value: string; labelKey: string }[] = [
+  { value: "OWNER", labelKey: "users.owner" },
+  { value: "MANAGER", labelKey: "users.manager" },
+  { value: "SELLER", labelKey: "users.seller" },
 ];
 
 type User = {
@@ -26,6 +29,8 @@ type User = {
 type Branch = { id: number; name: string; code: string };
 
 export function UsersPage() {
+  const { t } = useTranslation();
+  const { canManageUsers } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,7 +70,7 @@ export function UsersPage() {
     if (k === "email") return u.email ?? "";
     if (k === "role") return u.role;
     if (k === "branch") return u.branch ? `${u.branch.name} ${u.branch.code}` : "";
-    if (k === "isActive") return u.isActive ? "Activo" : "Inactivo";
+    if (k === "isActive") return u.isActive ? t("users.active") : t("users.inactive");
     return "";
   });
 
@@ -77,8 +82,8 @@ export function UsersPage() {
         authFetch(`${API_BASE_URL}/users`, { headers: authHeaders() }),
         authFetch(`${API_BASE_URL}/branches`, { headers: authHeaders() }),
       ]);
-      if (!uRes.ok) throw new Error("Error al cargar usuarios");
-      if (!bRes.ok) throw new Error("Error al cargar sucursales");
+      if (!uRes.ok) throw new Error(t("users.errorLoad"));
+      if (!bRes.ok) throw new Error(t("branches.errorLoad"));
       const uData = await uRes.json();
       const bData = await bRes.json();
       setUsers(uData);
@@ -94,14 +99,18 @@ export function UsersPage() {
     load();
   }, [load]);
 
+  if (!canManageUsers) {
+    return <Navigate to="/app/dashboard" replace />;
+  }
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim() || !fullName.trim()) {
-      setCreateError("Usuario, contraseña y nombre son obligatorios.");
+      setCreateError(t("users.requiredFields"));
       return;
     }
     if (password.length < 6) {
-      setCreateError("La contraseña debe tener al menos 6 caracteres.");
+      setCreateError(t("users.passwordMin"));
       return;
     }
     setSubmitting(true);
@@ -120,7 +129,7 @@ export function UsersPage() {
         }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || "Error al crear usuario");
+      if (!res.ok) throw new Error(data.message || t("users.createError"));
       setShowCreate(false);
       setUsername("");
       setEmail("");
@@ -167,7 +176,7 @@ export function UsersPage() {
         body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || "Error al actualizar usuario");
+      if (!res.ok) throw new Error(data.message || t("users.updateError"));
       setEditUser(null);
       load();
     } catch (e) {
@@ -177,7 +186,7 @@ export function UsersPage() {
     }
   };
 
-  const roleLabel = (r: string) => ROLES.find((x) => x.value === r)?.label ?? r;
+  const roleLabel = (r: string) => t(ROLES.find((x) => x.value === r)?.labelKey ?? "users.role");
 
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
@@ -189,11 +198,11 @@ export function UsersPage() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Error al eliminar usuario");
+        throw new Error(data.message || t("users.deleteUserTitle"));
       }
       setUserToDelete(null);
       load();
-      showToast("Usuario eliminado (desactivado) correctamente.");
+      showToast(t("users.deletedDisabled"));
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Error", "error");
     } finally {
@@ -201,17 +210,17 @@ export function UsersPage() {
     }
   };
 
-  if (loading) return <p className="text-sm text-slate-500">Cargando…</p>;
+  if (loading) return <p className="text-sm text-slate-500">{t("users.loading")}</p>;
   if (error) return <p className="text-sm text-red-400/90">{error}</p>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-slate-500 text-sm">Quién puede usar el sistema y con qué permisos.</p>
-        <Tooltip content="Dueño y Encargado pueden gestionar sucursales y usuarios; Vendedor solo ventas e inventario">
+        <p className="text-slate-500 text-sm">{t("users.subtitleLong")}</p>
+        <Tooltip content={t("users.tooltipCreate")}>
           <button type="button" onClick={() => setShowCreate(true)} className="btn-primary inline-flex items-center gap-2">
             <IconPlus />
-            Nuevo usuario
+            {t("users.newUser")}
           </button>
         </Tooltip>
       </div>
@@ -219,13 +228,13 @@ export function UsersPage() {
         <table className="min-w-[320px]">
           <thead>
             <tr>
-              <TableSortHeader label="Nombre" sortKey="fullName" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
-              <TableSortHeader label="Usuario" sortKey="username" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
-              <TableSortHeader label="Email" sortKey="email" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
-              <TableSortHeader label="Rol" sortKey="role" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
-              <TableSortHeader label="Sucursal" sortKey="branch" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
-              <TableSortHeader label="Estado" sortKey="isActive" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
-              <th className="w-20">Acciones</th>
+              <TableSortHeader label={t("users.fullName")} sortKey="fullName" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
+              <TableSortHeader label={t("users.username")} sortKey="username" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
+              <TableSortHeader label={t("users.email")} sortKey="email" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
+              <TableSortHeader label={t("users.role")} sortKey="role" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
+              <TableSortHeader label={t("users.branch")} sortKey="branch" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
+              <TableSortHeader label={t("users.status")} sortKey="isActive" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
+              <th className="w-20">{t("branches.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -236,7 +245,7 @@ export function UsersPage() {
                 <td>{u.email ?? "—"}</td>
                 <td>{roleLabel(u.role)}</td>
                 <td>{u.branch ? `${u.branch.name} (${u.branch.code})` : "—"}</td>
-                <td>{u.isActive ? "Activo" : "Inactivo"}</td>
+                <td>{u.isActive ? t("users.active") : t("users.inactive")}</td>
                 <td>
                   <span className="inline-flex gap-3">
                     <button
@@ -244,7 +253,7 @@ export function UsersPage() {
                       onClick={() => openEdit(u)}
                       className="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium"
                     >
-                      Editar
+                      {t("branches.edit")}
                     </button>
                     {u.isActive && (
                       <button
@@ -252,7 +261,7 @@ export function UsersPage() {
                         onClick={() => setUserToDelete(u)}
                         className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
                       >
-                        Eliminar
+                        {t("branches.delete")}
                       </button>
                     )}
                   </span>
@@ -267,38 +276,38 @@ export function UsersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true">
           <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white shadow-sm p-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold">Nuevo usuario</h3>
+              <h3 className="font-semibold">{t("users.createTitle")}</h3>
               <button type="button" onClick={() => setShowCreate(false)} className="text-slate-500 hover:text-slate-800">✕</button>
             </div>
             <form onSubmit={handleCreate} className="space-y-3">
               <div>
-                <label className="block text-xs text-slate-600 mb-1">Nombre completo *</label>
+                <label className="block text-xs text-slate-600 mb-1">{t("users.fullName")} *</label>
                 <input value={fullName} onChange={(e) => setFullName(e.target.value)} className="input-minimal" required />
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">Usuario (para iniciar sesión) *</label>
+                <label className="block text-xs text-slate-600 mb-1">{t("users.username")} *</label>
                 <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="input-minimal" required placeholder="ej. jperez" />
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">Email (opcional)</label>
+                <label className="block text-xs text-slate-600 mb-1">{t("users.email")}</label>
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-minimal" placeholder="opcional" />
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">Contraseña (mín. 6) *</label>
+                <label className="block text-xs text-slate-600 mb-1">{t("users.passwordMinLabel")}</label>
                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="input-minimal" required minLength={6} />
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">Rol</label>
+                <label className="block text-xs text-slate-600 mb-1">{t("users.role")}</label>
                 <select value={role} onChange={(e) => setRole(e.target.value)} className="input-minimal">
                   {ROLES.map((r) => (
-                    <option key={r.value} value={r.value}>{r.label}</option>
+                    <option key={r.value} value={r.value}>{t(r.labelKey)}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">Sucursal (opcional)</label>
+                <label className="block text-xs text-slate-600 mb-1">{t("users.branchOptional")}</label>
                 <select value={branchId} onChange={(e) => setBranchId(e.target.value)} className="input-minimal">
-                  <option value="">Todas</option>
+                  <option value="">{t("users.allBranches")}</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
                   ))}
@@ -306,9 +315,9 @@ export function UsersPage() {
               </div>
               {createError && <p className="text-sm text-red-600">{createError}</p>}
               <div className="flex gap-2 pt-2">
-                <button type="button" onClick={() => setShowCreate(false)} className="rounded-md btn-secondary px-3 py-2 text-sm">Cancelar</button>
+                <button type="button" onClick={() => setShowCreate(false)} className="rounded-md btn-secondary px-3 py-2 text-sm">{t("branches.cancel")}</button>
                 <button type="submit" disabled={submitting} className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-400 disabled:opacity-60">
-                  {submitting ? "Creando..." : "Crear usuario"}
+                  {submitting ? t("users.creatingUser") : t("users.createUser")}
                 </button>
               </div>
             </form>
@@ -320,31 +329,31 @@ export function UsersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" role="dialog" aria-modal="true">
           <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white shadow-sm p-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold">Editar usuario</h3>
+              <h3 className="font-semibold">{t("users.editUser")}</h3>
               <button type="button" onClick={() => setEditUser(null)} className="text-slate-500 hover:text-slate-800">✕</button>
             </div>
             <p className="text-sm text-slate-500 mb-3">Usuario: {editUser.username}</p>
             <form onSubmit={handleUpdate} className="space-y-3">
               <div>
-                <label className="block text-xs text-slate-600 mb-1">Nombre completo *</label>
+                <label className="block text-xs text-slate-600 mb-1">{t("users.fullName")} *</label>
                 <input value={editFullName} onChange={(e) => setEditFullName(e.target.value)} className="input-minimal" required />
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">Email (opcional)</label>
+                <label className="block text-xs text-slate-600 mb-1">{t("users.email")}</label>
                 <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="input-minimal" placeholder="opcional" />
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">Rol</label>
+                <label className="block text-xs text-slate-600 mb-1">{t("users.role")}</label>
                 <select value={editRole} onChange={(e) => setEditRole(e.target.value)} className="input-minimal">
                   {ROLES.map((r) => (
-                    <option key={r.value} value={r.value}>{r.label}</option>
+                    <option key={r.value} value={r.value}>{t(r.labelKey)}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">Sucursal (opcional)</label>
+                <label className="block text-xs text-slate-600 mb-1">{t("users.branchOptional")}</label>
                 <select value={editBranchId} onChange={(e) => setEditBranchId(e.target.value)} className="input-minimal">
-                  <option value="">Todas</option>
+                  <option value="">{t("users.allBranches")}</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
                   ))}
@@ -358,10 +367,10 @@ export function UsersPage() {
                   onChange={(e) => setEditIsActive(e.target.checked)}
                   className="rounded border-slate-300"
                 />
-                <label htmlFor="edit-isActive" className="text-sm text-slate-600">Usuario activo</label>
+                <label htmlFor="edit-isActive" className="text-sm text-slate-600">{t("users.userActive")}</label>
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">Nueva contraseña (dejar en blanco para no cambiar)</label>
+                <label className="block text-xs text-slate-600 mb-1">{t("users.newPasswordLabel")}</label>
                 <input
                   type="password"
                   value={editPassword}
@@ -373,9 +382,9 @@ export function UsersPage() {
               </div>
               {editError && <p className="text-sm text-red-600">{editError}</p>}
               <div className="flex gap-2 pt-2">
-                <button type="button" onClick={() => setEditUser(null)} className="btn-secondary flex-1">Cancelar</button>
+                <button type="button" onClick={() => setEditUser(null)} className="btn-secondary flex-1">{t("branches.cancel")}</button>
                 <button type="submit" disabled={editSubmitting} className="btn-primary flex-1 disabled:opacity-50">
-                  {editSubmitting ? "Guardando…" : "Guardar"}
+                  {editSubmitting ? t("users.saving") : t("branches.save")}
                 </button>
               </div>
             </form>
@@ -385,18 +394,15 @@ export function UsersPage() {
 
       <ConfirmModal
         open={!!userToDelete}
-        title="Eliminar usuario"
+        title={t("users.deleteUserTitle")}
         message={
           userToDelete ? (
-            <>
-              ¿Estás seguro de eliminar a <strong>{userToDelete.fullName}</strong> ({userToDelete.username})?
-              El usuario quedará desactivado y no podrá iniciar sesión.
-            </>
+            t("users.deleteUserMessage", { name: userToDelete.fullName, username: userToDelete.username })
           ) : (
             ""
           )
         }
-        confirmLabel="Eliminar"
+        confirmLabel={t("branches.delete")}
         variant="danger"
         loading={deleting}
         onConfirm={handleDeleteUser}

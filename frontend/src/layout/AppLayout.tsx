@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { setAccessToken } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { Tooltip } from "../components/Tooltip";
@@ -21,23 +22,23 @@ import {
 } from "../components/Icons";
 import { useTheme } from "../contexts/ThemeContext";
 
-const navItems: { path: string; label: string; tooltip: string; Icon: () => JSX.Element }[] = [
-  { path: "/app/dashboard", label: "Inicio", tooltip: "Resumen general", Icon: IconHome },
-  { path: "/app/inventory", label: "Inventario", tooltip: "Productos y stock", Icon: IconPackage },
-  { path: "/app/sales", label: "Ventas", tooltip: "Punto de venta", Icon: IconShoppingCart },
-  { path: "/app/transfers", label: "Traspasos", tooltip: "Mover entre sucursales", Icon: IconTransfer },
-  { path: "/app/reports", label: "Reportes", tooltip: "Reportes por fecha", Icon: IconChart },
+const navItems: { path: string; labelKey: string; tooltipKey: string; Icon: () => JSX.Element }[] = [
+  { path: "/app/dashboard", labelKey: "home", tooltipKey: "home", Icon: IconHome },
+  { path: "/app/inventory", labelKey: "inventory", tooltipKey: "inventory", Icon: IconPackage },
+  { path: "/app/sales", labelKey: "sales", tooltipKey: "sales", Icon: IconShoppingCart },
+  { path: "/app/transfers", labelKey: "transfers", tooltipKey: "transfers", Icon: IconTransfer },
+  { path: "/app/reports", labelKey: "reports", tooltipKey: "reports", Icon: IconChart },
 ];
 
-const titles: Record<string, string> = {
-  "/app/dashboard": "Inicio",
-  "/app/inventory": "Inventario",
-  "/app/sales": "Ventas",
-  "/app/transfers": "Traspasos",
-  "/app/branches": "Sucursales",
-  "/app/users": "Usuarios",
-  "/app/reports": "Reportes",
-  "/app/plan": "Plan",
+const titleKeys: Record<string, string> = {
+  "/app/dashboard": "nav.home",
+  "/app/inventory": "nav.inventory",
+  "/app/sales": "nav.sales",
+  "/app/transfers": "nav.transfers",
+  "/app/branches": "nav.branches",
+  "/app/users": "nav.users",
+  "/app/reports": "nav.reports",
+  "/app/plan": "nav.plan",
 };
 
 const PLAN_LABELS: Record<string, string> = {
@@ -81,11 +82,13 @@ function NavLinkItem({
 
 export function AppLayout() {
   const location = useLocation();
-  const { canManageBranches, canManageUsers, company } = useAuth();
+  const { t, i18n } = useTranslation();
+  const { canManageBranches, canManageUsers, canViewReports, canManageTransfers, company } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const trialEndsAt = company?.trialEndsAt ? new Date(company.trialEndsAt) : null;
   const isTrialing = company?.subscriptionStatus === "trialing" && trialEndsAt && trialEndsAt > new Date();
-  const title = titles[location.pathname] ?? "Panel";
+  const titleKey = titleKeys[location.pathname];
+  const title = titleKey ? t(titleKey) : "Panel";
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -144,23 +147,25 @@ export function AppLayout() {
         {/* Navegación */}
         <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4">
           <ul className="space-y-0.5">
-            {navItems.map(({ path, label, tooltip, Icon }) => (
-              <li key={path}>
-                <NavLinkItem to={path} label={label} tooltip={tooltip} Icon={Icon} onNavigate={closeSidebar} />
-              </li>
-            ))}
+            {navItems
+              .filter(({ path }) => (path === "/app/reports" ? canViewReports : path === "/app/transfers" ? canManageTransfers : true))
+              .map(({ path, labelKey, tooltipKey, Icon }) => (
+                <li key={path}>
+                  <NavLinkItem to={path} label={t(`nav.${labelKey}`)} tooltip={t(`navTooltip.${tooltipKey}`)} Icon={Icon} onNavigate={closeSidebar} />
+                </li>
+              ))}
             {canManageBranches && (
               <li>
-                <NavLinkItem to="/app/branches" label="Sucursales" tooltip="Crear y editar sucursales" Icon={IconBuilding} onNavigate={closeSidebar} />
+                <NavLinkItem to="/app/branches" label={t("nav.branches")} tooltip={t("navTooltip.branches")} Icon={IconBuilding} onNavigate={closeSidebar} />
               </li>
             )}
             {canManageUsers && (
               <li>
-                <NavLinkItem to="/app/users" label="Usuarios" tooltip="Usuarios y permisos" Icon={IconUsers} onNavigate={closeSidebar} />
+                <NavLinkItem to="/app/users" label={t("nav.users")} tooltip={t("navTooltip.users")} Icon={IconUsers} onNavigate={closeSidebar} />
               </li>
             )}
             <li>
-              <NavLinkItem to="/app/plan" label="Plan" tooltip="Tu plan y membresía" Icon={IconCurrency} onNavigate={closeSidebar} />
+              <NavLinkItem to="/app/plan" label={t("nav.plan")} tooltip={t("navTooltip.plan")} Icon={IconCurrency} onNavigate={closeSidebar} />
             </li>
           </ul>
         </nav>
@@ -187,14 +192,14 @@ export function AppLayout() {
               </Link>
             </div>
           )}
-          <Tooltip content="Salir de la sesión" side="right">
+          <Tooltip content={t("navTooltip.logout")} side="right">
             <button
               type="button"
               onClick={handleLogout}
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100 transition-colors"
             >
               <IconLogOut />
-              <span>Cerrar sesión</span>
+              <span>{t("nav.logout")}</span>
             </button>
           </Tooltip>
         </div>
@@ -213,6 +218,22 @@ export function AppLayout() {
               <IconMenu />
             </button>
             <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{title}</h1>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-slate-400 dark:text-slate-500 mr-1 hidden sm:inline">Idioma</span>
+            {(["es", "en"] as const).map((lng) => (
+              <button
+                key={lng}
+                type="button"
+                onClick={() => i18n.changeLanguage(lng)}
+                className={`rounded px-2 py-1 text-xs font-medium ${
+                  i18n.language?.startsWith(lng) ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300" : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-slate-400"
+                }`}
+                aria-label={lng === "es" ? "Español" : "English"}
+              >
+                {lng.toUpperCase()}
+              </button>
+            ))}
           </div>
           <Tooltip content={theme === "dark" ? "Usar tema claro" : "Usar tema oscuro"} side="bottom">
             <button

@@ -17,5 +17,13 @@ export const env = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET ?? required(process.env.JWT_SECRET, "JWT_SECRET"),
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
+  // Recuperación de contraseña (opcionales)
+  appUrl: process.env.APP_URL ?? "http://localhost:5173",
+  smtpHost: process.env.SMTP_HOST,
+  smtpPort: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : undefined,
+  smtpSecure: process.env.SMTP_SECURE === "true",
+  smtpUser: process.env.SMTP_USER,
+  smtpPass: process.env.SMTP_PASS,
+  emailFrom: process.env.EMAIL_FROM ?? "noreply@giro.app",
 };
 

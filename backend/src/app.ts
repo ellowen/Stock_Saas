@@ -1,6 +1,7 @@
 import express, { Application } from "express";
 import cors from "cors";
 import { json, urlencoded } from "express";
+import rateLimit from "express-rate-limit";
 import { env } from "./config/env";
 import { authRouter } from "./infrastructure/http/routers/auth.router";
 import { protectedRouter } from "./infrastructure/http/routers/protected.router";
@@ -18,6 +19,19 @@ export const createApp = (): Application => {
   app.use(cors());
   app.use(json());
   app.use(urlencoded({ extended: true }));
+
+  // Rate limit global (desactivado en test para no bloquear tests)
+  if (env.nodeEnv !== "test") {
+    app.use(
+      rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: env.nodeEnv === "production" ? 100 : 500,
+        message: { message: "Demasiadas solicitudes. Probá de nuevo en unos minutos." },
+        standardHeaders: true,
+        legacyHeaders: false,
+      })
+    );
+  }
 
   app.use("/auth", authRouter);
   app.use("/protected", protectedRouter);

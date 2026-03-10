@@ -20,6 +20,8 @@ type AuthContextValue = {
   refetch: () => void;
   canManageUsers: boolean;
   canManageBranches: boolean;
+  canViewReports: boolean;
+  canManageTransfers: boolean;
   company: UserMe["company"];
 };
 
@@ -79,6 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const role = user?.auth?.role ?? "";
   const canManageUsers = role === "OWNER" || role === "MANAGER";
   const canManageBranches = role === "OWNER" || role === "MANAGER";
+  const canViewReports = role === "OWNER" || role === "MANAGER";
+  const canManageTransfers = role === "OWNER" || role === "MANAGER";
 
   if (loading) {
     return (
@@ -96,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, refetch, canManageUsers, canManageBranches, company: user?.company }}>
+    <AuthContext.Provider value={{ user, loading, refetch, canManageUsers, canManageBranches, canViewReports, canManageTransfers, company: user?.company }}>
       {children}
     </AuthContext.Provider>
   );

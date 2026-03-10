@@ -1,7 +1,64 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { API_BASE_URL, authFetch, authHeaders } from "../lib/api";
+import { useAuth } from "../contexts/AuthContext";
 import { Tooltip } from "../components/Tooltip";
 import { IconCurrency, IconSearch, IconShoppingCart, IconPlus, IconMinus, IconX } from "../components/Icons";
+
+type ReceiptPrintData = {
+  companyName: string;
+  branchName: string;
+  date: string;
+  items: Array<{ name: string; sku: string; qty: number; unitPrice: number; subtotal: number }>;
+  total: number;
+  paymentLabel: string;
+  paid?: number;
+  change?: number;
+};
+
+function buildReceiptHtml(data: ReceiptPrintData): string {
+  const rows = data.items
+    .map(
+      (i) =>
+        `<tr><td>${escapeHtml(i.name)}</td><td>${escapeHtml(i.sku)}</td><td>${i.qty}</td><td>$${i.unitPrice.toFixed(2)}</td><td>$${i.subtotal.toFixed(2)}</td></tr>`
+    )
+    .join("");
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Recibo - ${escapeHtml(data.companyName)}</title><style>
+    body { font-family: system-ui, sans-serif; max-width: 320px; margin: 16px auto; padding: 12px; font-size: 14px; }
+    h1 { font-size: 18px; margin: 0 0 4px 0; }
+    .meta { color: #64748b; font-size: 12px; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; border-bottom: 1px solid #e2e8f0; padding: 6px 4px; font-size: 11px; color: #64748b; }
+    td { padding: 6px 4px; border-bottom: 1px solid #f1f5f9; }
+    .total { font-weight: 700; font-size: 16px; margin-top: 12px; padding-top: 8px; border-top: 2px solid #0f172a; }
+    .change { margin-top: 8px; color: #059669; }
+    @media print { body { margin: 0; } }
+  </style></head><body>
+    <h1>${escapeHtml(data.companyName)}</h1>
+    <p class="meta">${escapeHtml(data.branchName)} · ${escapeHtml(data.date)}</p>
+    <table><thead><tr><th>Producto</th><th>SKU</th><th>Cant.</th><th>P.unit.</th><th>Subtotal</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="total">Total: $${data.total.toFixed(2)} · ${escapeHtml(data.paymentLabel)}</p>
+    ${data.paid != null && data.change != null && data.change > 0 ? `<p class="change">Pagado: $${data.paid.toFixed(2)} · Vuelto: $${data.change.toFixed(2)}</p>` : ""}
+    <p class="meta" style="margin-top: 24px;">— GIRO —</p>
+  </body></html>`;
+}
+
+function openReceiptPrint(data: ReceiptPrintData) {
+  const html = buildReceiptHtml(data);
+  const w = window.open("", "_blank", "noopener");
+  if (w) {
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    w.onload = () => setTimeout(() => w.print(), 250);
+  }
+}
+
+function escapeHtml(s: string): string {
+  const div = document.createElement("div");
+  div.textContent = s;
+  return div.innerHTML;
+}
 
 type Branch = { id: number; name: string; code: string };
 
@@ -47,6 +104,28 @@ const PAYMENT_LABELS: Record<string, string> = {
 
 const MAX_SUGGESTIONS = 10;
 
+function playSuccessSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const playTone = (freq: number, startTime: number, duration: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.15, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+    playTone(523, 0, 0.08);
+    playTone(659, 0.1, 0.12);
+  } catch {
+    // ignore if AudioContext not supported or blocked
+  }
+}
+
 type SaleListItem = {
   id: number;
   totalAmount: string | number;
@@ -60,6 +139,7 @@ type SaleListItem = {
 type SalesTab = "pos" | "historial";
 
 export function SalesPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<SalesTab>("pos");
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchId, setBranchId] = useState<number | "">("");
@@ -71,6 +151,7 @@ export function SalesPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionHighlightIndex, setSuggestionHighlightIndex] = useState(-1);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentMethodToConfirm, setPaymentMethodToConfirm] = useState<"CASH" | "CARD" | "MIXED" | "OTHER">("CASH");
   const [mixedCash, setMixedCash] = useState("");
@@ -79,6 +160,8 @@ export function SalesPage() {
   const [mixedCashReceived, setMixedCashReceived] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const suggestionButtonsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  const cobrarButtonRef = useRef<HTMLButtonElement>(null);
 
   const [historyBranchId, setHistoryBranchId] = useState<string>("");
   const [historyFrom, setHistoryFrom] = useState(() => {
@@ -90,6 +173,10 @@ export function SalesPage() {
   const [historySales, setHistorySales] = useState<SaleListItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
+
+  const [receipt, setReceipt] = useState<{ total: number; paid: number; change: number } | null>(null);
+  const [lastSaleReceipt, setLastSaleReceipt] = useState<ReceiptPrintData | null>(null);
+  const { company } = useAuth();
 
   const loadBranches = useCallback(async () => {
     try {
@@ -184,6 +271,17 @@ export function SalesPage() {
       .slice(0, MAX_SUGGESTIONS);
   }, [variantsWithStock, searchTerm]);
 
+  useEffect(() => {
+    if (!searchTerm || suggestions.length === 0) setSuggestionHighlightIndex(-1);
+    else setSuggestionHighlightIndex((prev) => (prev < 0 || prev >= suggestions.length ? 0 : prev));
+  }, [searchTerm, suggestions.length]);
+
+  useEffect(() => {
+    if (suggestionHighlightIndex >= 0 && suggestionButtonsRef.current[suggestionHighlightIndex]) {
+      suggestionButtonsRef.current[suggestionHighlightIndex]?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [suggestionHighlightIndex]);
+
   const addToCart = useCallback(
     (variantId: number, quantity: number) => {
       const add = Math.max(1, quantity || 1);
@@ -217,40 +315,67 @@ export function SalesPage() {
     setCart((c) => c.filter((_, i) => i !== index));
   };
 
+  const addHighlightedAndClose = () => {
+    if (suggestionHighlightIndex >= 0 && suggestionHighlightIndex < suggestions.length) {
+      const v = suggestions[suggestionHighlightIndex];
+      addToCart(v.productVariantId, 1);
+      setSearchInput("");
+      setShowSuggestions(false);
+      setSuggestionHighlightIndex(-1);
+      setTimeout(() => searchInputRef.current?.focus(), 0);
+    }
+  };
+
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setShowSuggestions(true);
+      if (suggestions.length === 0) return;
+      setSuggestionHighlightIndex((prev) =>
+        prev < suggestions.length - 1 ? prev + 1 : suggestions.length - 1
+      );
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setShowSuggestions(true);
+      if (suggestions.length === 0) return;
+      setSuggestionHighlightIndex((prev) => (prev <= 0 ? 0 : prev - 1));
+      return;
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setShowSuggestions(false);
+      setSuggestionHighlightIndex(-1);
+      return;
+    }
     if (e.key !== "Enter") return;
     e.preventDefault();
+    if (suggestionHighlightIndex >= 0 && suggestionHighlightIndex < suggestions.length) {
+      addHighlightedAndClose();
+      return;
+    }
     if (!searchTerm) return;
     const byBarcode = variantsWithStock.find(
       (v) => v.barcode && v.barcode.trim().toLowerCase() === searchTerm
     );
     if (byBarcode) {
       addToCart(byBarcode.productVariantId, 1);
+      setSearchInput("");
+      setTimeout(() => searchInputRef.current?.focus(), 0);
       return;
     }
     if (suggestions.length === 1) {
       addToCart(suggestions[0].productVariantId, 1);
+      setSearchInput("");
+      setTimeout(() => searchInputRef.current?.focus(), 0);
       return;
     }
     if (suggestions.length > 1) {
       setShowSuggestions(true);
+      setSuggestionHighlightIndex(0);
     }
   };
-
-  useEffect(() => {
-    const handleClickOutside = (ev: MouseEvent) => {
-      if (
-        suggestionsRef.current &&
-        !suggestionsRef.current.contains(ev.target as Node) &&
-        searchInputRef.current &&
-        !searchInputRef.current.contains(ev.target as Node)
-      ) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const totalItems = cart.reduce((s, x) => s + x.quantity, 0);
   const totalAmount = cart.reduce((s, item) => {
@@ -259,7 +384,11 @@ export function SalesPage() {
     return s + parseFloat(v.price) * item.quantity;
   }, 0);
 
-  const confirmSale = async (method: "CASH" | "CARD" | "MIXED" | "OTHER", mixedBreakdown?: { cash: number; card: number }) => {
+  const confirmSale = async (
+    method: "CASH" | "CARD" | "MIXED" | "OTHER",
+    mixedBreakdown?: { cash: number; card: number },
+    options?: { cashChange?: number; mixedCashChange?: number; receipt?: { total: number; paid: number; change: number } }
+  ) => {
     if (cart.length === 0 || !branchId) return;
     setSubmitting(true);
     setError(null);
@@ -289,7 +418,37 @@ export function SalesPage() {
       if (method === "MIXED" && mixedBreakdown) {
         msg += ` (Efectivo $${mixedBreakdown.cash.toFixed(2)}, Tarjeta $${mixedBreakdown.card.toFixed(2)})`;
       }
+      if (options?.cashChange != null && options.cashChange > 0) {
+        msg += ` Entregar $${options.cashChange.toFixed(2)} de vuelto.`;
+      }
+      if (options?.mixedCashChange != null && options.mixedCashChange > 0) {
+        msg += ` Vuelto efectivo: $${options.mixedCashChange.toFixed(2)}.`;
+      }
       setSuccess(msg);
+      playSuccessSound();
+      if (options?.receipt) setReceipt(options.receipt);
+      const branch = branches.find((b) => b.id === Number(branchId));
+      const receiptItems = cart.map((c) => {
+        const v = variantsWithStock.find((x) => x.productVariantId === c.productVariantId);
+        const unitPrice = v ? parseFloat(v.price) : 0;
+        return {
+          name: v?.productName ?? "—",
+          sku: v?.sku ?? "",
+          qty: c.quantity,
+          unitPrice,
+          subtotal: unitPrice * c.quantity,
+        };
+      });
+      setLastSaleReceipt({
+        companyName: company?.name ?? "Empresa",
+        branchName: branch?.name ?? "—",
+        date: new Date().toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" }),
+        items: receiptItems,
+        total: amount,
+        paymentLabel: PAYMENT_LABELS[method] ?? method,
+        paid: options?.receipt?.paid,
+        change: options?.receipt?.change,
+      });
       setCart([]);
       setShowPaymentModal(false);
       setMixedCash("");
@@ -298,6 +457,7 @@ export function SalesPage() {
       setMixedCashReceived("");
       searchInputRef.current?.focus();
       setTimeout(() => setSuccess(null), 5000);
+      if (options?.receipt) setTimeout(() => setReceipt(null), 5000);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error");
     } finally {
@@ -305,12 +465,106 @@ export function SalesPage() {
     }
   };
 
+  useEffect(() => {
+    const handleClickOutside = (ev: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(ev.target as Node) &&
+        searchInputRef.current &&
+        !searchInputRef.current.contains(ev.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "pos" && typeof branchId === "number") {
+      searchInputRef.current?.focus();
+    }
+  }, [activeTab, branchId]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "F2" && !showPaymentModal && activeTab === "pos" && typeof branchId === "number") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        return;
+      }
+      if (e.key === "F4" && !showPaymentModal && activeTab === "pos" && typeof branchId === "number" && cart.length > 0) {
+        e.preventDefault();
+        setPaymentMethodToConfirm("CASH");
+        setMixedCash("");
+        setMixedCard("");
+        setCashReceived(String(Math.round(totalAmount * 100) / 100));
+        setMixedCashReceived("");
+        setShowPaymentModal(true);
+        return;
+      }
+      const isInput = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement;
+      if (showPaymentModal && !isInput && ["1", "2", "3", "4"].includes(e.key)) {
+        const methods: Array<"CASH" | "CARD" | "MIXED" | "OTHER"> = ["CASH", "CARD", "MIXED", "OTHER"];
+        const idx = parseInt(e.key, 10) - 1;
+        if (idx >= 0 && idx < 4) {
+          e.preventDefault();
+          setPaymentMethodToConfirm(methods[idx]);
+          if (methods[idx] === "CASH") setCashReceived(String(Math.round(totalAmount * 100) / 100));
+        }
+        return;
+      }
+      if (e.key === "Escape") {
+        if (showPaymentModal) {
+          setShowPaymentModal(false);
+          setCashReceived("");
+          setMixedCashReceived("");
+          e.preventDefault();
+        } else if (showSuggestions) {
+          setShowSuggestions(false);
+          setSuggestionHighlightIndex(-1);
+          e.preventDefault();
+        }
+      }
+      if (e.key === "Enter" && showPaymentModal) {
+        const totalRounded = Math.round(totalAmount * 100) / 100;
+        const cashNum = parseFloat(mixedCash) || 0;
+        const cardNum = parseFloat(mixedCard) || 0;
+        const mixedSum = Math.round((cashNum + cardNum) * 100) / 100;
+        const mixedValid = paymentMethodToConfirm !== "MIXED" || (mixedSum === totalRounded && cashNum >= 0 && cardNum >= 0);
+        const cashReceivedNum = parseFloat(cashReceived) || 0;
+        const cashChange = Math.round((cashReceivedNum - totalRounded) * 100) / 100;
+        const cashValid = paymentMethodToConfirm !== "CASH" || cashReceivedNum >= totalRounded;
+        const mixedCashReceivedNum = parseFloat(mixedCashReceived) || 0;
+        const mixedCashChange = Math.round((mixedCashReceivedNum - cashNum) * 100) / 100;
+        if (!submitting && mixedValid && cashValid) {
+          const cashChangeVal = paymentMethodToConfirm === "CASH" && cashChange >= 0 ? cashChange : undefined;
+          const mixedCashChangeVal = paymentMethodToConfirm === "MIXED" && mixedCashChange >= 0 ? mixedCashChange : undefined;
+          const paid = paymentMethodToConfirm === "CASH" ? cashReceivedNum : totalRounded;
+          const changeVal = paymentMethodToConfirm === "CASH" ? cashChange : paymentMethodToConfirm === "MIXED" ? mixedCashChange : 0;
+          confirmSale(
+            paymentMethodToConfirm,
+            paymentMethodToConfirm === "MIXED" ? { cash: cashNum, card: cardNum } : undefined,
+            {
+              ...(cashChangeVal != null && { cashChange: cashChangeVal }),
+              ...(mixedCashChangeVal != null && { mixedCashChange: mixedCashChangeVal }),
+              receipt: { total: totalRounded, paid, change: changeVal },
+            }
+          );
+          e.preventDefault();
+        }
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showPaymentModal, showSuggestions, submitting, paymentMethodToConfirm, mixedCash, mixedCard, cashReceived, mixedCashReceived, totalAmount, confirmSale, activeTab, branchId, cart.length]);
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <div className="flex items-center gap-2 text-slate-500 text-sm">
-          <span className="inline-block w-5 h-5 border-2 border-slate-300 border-t-indigo-500 rounded-full animate-spin" />
-          Cargando punto de venta…
+        <div className="flex items-center justify-center min-h-[200px]">
+          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
+            <span className="inline-block w-5 h-5 border-2 border-slate-300 dark:border-slate-600 border-t-indigo-500 rounded-full animate-spin" />
+          {t("sales.loading")}
         </div>
       </div>
     );
@@ -328,7 +582,7 @@ export function SalesPage() {
               : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
           }`}
         >
-          Punto de venta
+          {t("sales.pos")}
         </button>
         <button
           type="button"
@@ -339,7 +593,7 @@ export function SalesPage() {
               : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
           }`}
         >
-          Historial
+          {t("sales.history")}
         </button>
       </nav>
 
@@ -377,7 +631,7 @@ export function SalesPage() {
                 className="input-minimal dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
               />
             </div>
-            <button type="button" onClick={loadHistory} className="btn-secondary text-sm">
+            <button type="button" onClick={loadHistory} className="btn-secondary text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200">
               Filtrar
             </button>
           </div>
@@ -425,7 +679,7 @@ export function SalesPage() {
           </div>
         </div>
       ) : (
-    <div className="flex flex-col gap-8 max-w-2xl">
+    <div className="flex flex-col gap-8 max-w-2xl rounded-2xl p-6 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-600">
       {/* Sucursal + buscar producto */}
       <div className="space-y-6">
         <Tooltip content="Las ventas y el stock se registran para esta sucursal">
@@ -448,15 +702,26 @@ export function SalesPage() {
 
         {typeof branchId === "number" && (
           <div className="space-y-3">
-            <Tooltip content="Escribí nombre o SKU para buscar, o pasá el escáner y apretá Enter">
-              <label className="block text-sm font-medium text-slate-600">Buscar producto</label>
-            </Tooltip>
+            <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
+              Buscar producto
+            </label>
+            <p className="text-xs text-slate-500 dark:text-slate-500 mb-1">
+              Escribí nombre o SKU, o pasá el escáner por el código de barras y apretá Enter.
+            </p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">
+              F2 buscar · ↑↓ navegar · Enter agregar · F4 cobrar (con ítems)
+            </p>
             <div className="relative">
               <div className="relative">
-                <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400 pointer-events-none" />
+                <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400 dark:text-slate-500 pointer-events-none" />
                 <input
                   ref={searchInputRef}
+                  id="pos-search-input"
                   type="text"
+                  role="combobox"
+                  aria-expanded={showSuggestions}
+                  aria-controls="search-suggestions-list"
+                  aria-activedescendant={suggestionHighlightIndex >= 0 && suggestions[suggestionHighlightIndex] ? `suggestion-${suggestions[suggestionHighlightIndex].productVariantId}` : undefined}
                   value={searchInput}
                   onChange={(e) => {
                     setSearchInput(e.target.value);
@@ -465,41 +730,54 @@ export function SalesPage() {
                   onKeyDown={handleSearchKeyDown}
                   onFocus={() => setShowSuggestions(true)}
                   placeholder="Nombre, SKU o código de barras…"
-                  className="input-minimal w-full pl-12 pr-5 py-4 text-lg dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
+                  className="input-minimal w-full pl-12 pr-5 py-4 text-lg rounded-xl dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100 dark:placeholder-slate-500"
                   autoComplete="off"
+                  aria-label="Buscar producto por nombre, SKU o código de barras"
                 />
               </div>
               <div
                 ref={suggestionsRef}
-                className="absolute top-full left-0 right-0 z-20 mt-2 rounded-xl border border-slate-200 bg-white shadow-lg max-h-80 overflow-y-auto"
+                id="search-suggestions-list"
+                className={`absolute top-full left-0 right-0 z-20 mt-2 rounded-xl border shadow-xl max-h-80 overflow-y-auto
+                  border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800
+                  ${showSuggestions ? "block" : "hidden"}`}
               >
-                {showSuggestions && (suggestions.length > 0 || searchTerm) && (
-                  <>
-                    {suggestions.length === 0 ? (
-                      <div className="px-5 py-5 text-base text-slate-500">
-                        No hay coincidencias con stock en esta sucursal.
-                      </div>
-                    ) : (
-                      <ul className="p-2 space-y-1">
-                        {suggestions.map((v) => (
-                          <li key={v.productVariantId}>
-                            <button
-                              type="button"
-                              onClick={() => addToCart(v.productVariantId, 1)}
-                              className="w-full text-left px-5 py-4 rounded-xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100 flex justify-between items-center gap-4 transition-colors text-base"
-                            >
-                              <span className="font-medium text-slate-800">
-                                {v.productName} · {v.size} / {v.color}
-                              </span>
-                              <span className="text-sm text-slate-500 shrink-0">
-                                ${v.price} · Stock: {v.availableQty}
-                              </span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </>
+                {searchTerm ? (
+                  suggestions.length === 0 ? (
+                    <div className="px-5 py-6 text-center text-slate-500 dark:text-slate-400 text-sm">
+                      No hay coincidencias con stock en esta sucursal.
+                    </div>
+                  ) : (
+                    <ul className="p-2 space-y-1" role="listbox" aria-label="Sugerencias de productos">
+                      {suggestions.map((v, index) => (
+                        <li key={v.productVariantId} role="option" id={`suggestion-${v.productVariantId}`} aria-selected={index === suggestionHighlightIndex}>
+                          <button
+                            ref={(el) => { suggestionButtonsRef.current[index] = el; }}
+                            type="button"
+                            onClick={() => {
+                              addToCart(v.productVariantId, 1);
+                              setSearchInput("");
+                              setShowSuggestions(false);
+                              setSuggestionHighlightIndex(-1);
+                              setTimeout(() => searchInputRef.current?.focus(), 0);
+                            }}
+                            className={`w-full text-left px-4 py-3 rounded-lg border flex justify-between items-center gap-4 transition-colors text-base focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:focus:ring-indigo-400/50 ${index === suggestionHighlightIndex ? "bg-indigo-100 dark:bg-indigo-900/50 border-indigo-300 dark:border-indigo-700" : "hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border-transparent hover:border-indigo-200 dark:hover:border-indigo-800"}`}
+                          >
+                            <span className="font-medium text-slate-800 dark:text-slate-200 truncate">
+                              {v.productName} · {v.size} / {v.color}
+                            </span>
+                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0 tabular-nums">
+                              ${v.price} · Stock: {v.availableQty}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )
+                ) : (
+                  <div className="px-5 py-5 text-sm text-slate-500 dark:text-slate-400">
+                    Escribí para buscar por nombre, SKU o escaneá un código de barras.
+                  </div>
                 )}
               </div>
             </div>
@@ -521,26 +799,26 @@ export function SalesPage() {
             <div className="max-h-[320px] overflow-y-auto">
               {cart.length === 0 ? (
                 <div className="px-5 py-14 text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 text-slate-400 mb-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 mb-4">
                     <IconShoppingCart className="w-8 h-8" />
                   </div>
-                  <p className="text-base text-slate-500 leading-relaxed">
+                  <p className="text-base text-slate-500 dark:text-slate-400 leading-relaxed">
                     Escaneá o buscá un producto para agregarlo al carrito.
                   </p>
                 </div>
               ) : (
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y divide-slate-100 dark:divide-slate-600">
                   {cart.map((item, i) => {
                     const v = variantsWithStock.find((x) => x.productVariantId === item.productVariantId);
                     const price = v ? parseFloat(v.price) : 0;
                     const subtotal = price * item.quantity;
                     return (
-                      <li key={`${item.productVariantId}-${i}`} className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50/50">
+                      <li key={`${item.productVariantId}-${i}`} className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors">
                         <div className="flex-1 min-w-0">
-                          <p className="text-base font-medium text-slate-800 truncate">
+                          <p className="text-base font-medium text-slate-800 dark:text-slate-200 truncate">
                             {v ? `${v.productName} · ${v.sku}` : `ID ${item.productVariantId}`}
                           </p>
-                          <p className="text-sm text-slate-500 mt-0.5">
+                          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                             ${price.toFixed(2)} × {item.quantity} = ${subtotal.toFixed(2)}
                           </p>
                         </div>
@@ -549,17 +827,17 @@ export function SalesPage() {
                             <button
                               type="button"
                               onClick={() => updateCartQty(i, -1)}
-                              className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
+                              className="p-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
                             >
                               <IconMinus className="w-5 h-5" />
                             </button>
                           </Tooltip>
-                          <span className="min-w-[2rem] text-center text-base font-medium text-slate-700">{item.quantity}</span>
+                          <span className="min-w-[2rem] text-center text-base font-medium text-slate-700 dark:text-slate-200">{item.quantity}</span>
                           <Tooltip content="Más una unidad">
                             <button
                               type="button"
                               onClick={() => updateCartQty(i, 1)}
-                              className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
+                              className="p-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
                             >
                               <IconPlus className="w-5 h-5" />
                             </button>
@@ -568,7 +846,7 @@ export function SalesPage() {
                             <button
                               type="button"
                               onClick={() => removeFromCart(i)}
-                              className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50"
+                              className="p-2 rounded-lg text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                             >
                               <IconX className="w-5 h-5" />
                             </button>
@@ -583,15 +861,16 @@ export function SalesPage() {
 
             {cart.length > 0 && (
               <>
-                <div className="border-t border-slate-200 bg-slate-50 px-5 py-4">
+                <div className="border-t border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 px-5 py-4">
                   <div className="flex justify-between items-baseline gap-4">
-                    <span className="text-base font-medium text-slate-600">Total a cobrar</span>
-                    <span className="text-2xl font-bold text-slate-900">${totalAmount.toFixed(2)}</span>
+                    <span className="text-base font-medium text-slate-600 dark:text-slate-400">Total a cobrar</span>
+                    <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">${totalAmount.toFixed(2)}</span>
                   </div>
                 </div>
-                <div className="p-5 border-t border-slate-200">
-                  <Tooltip content="Elegí el método de pago en el siguiente paso">
+                <div className="p-5 border-t border-slate-200 dark:border-slate-600">
+                  <Tooltip content="F4 para abrir con teclado. Elegí el método de pago en el siguiente paso.">
                     <button
+                      ref={cobrarButtonRef}
                       type="button"
                       onClick={() => {
                         setPaymentMethodToConfirm("CASH");
@@ -603,24 +882,56 @@ export function SalesPage() {
                       }}
                       disabled={submitting || cart.length === 0 || !branchId}
                       className="btn-primary w-full py-4 text-lg font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-keyshortcuts="F4"
                     >
                       <IconCurrency className="w-6 h-6" />
                       Cobrar
                     </button>
                   </Tooltip>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 text-center">
+                    F4 cobrar
+                  </p>
                 </div>
               </>
             )}
           </div>
 
           {error && (
-            <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-4 text-base text-red-700">
+            <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-5 py-4 text-base text-red-700 dark:text-red-300">
               {error}
             </div>
           )}
           {success && (
-            <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-5 py-4 text-base text-emerald-800">
-              {success}
+            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-5 py-4 text-base text-emerald-800 dark:text-emerald-200 space-y-3">
+              <p>{success}</p>
+              {lastSaleReceipt && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => openReceiptPrint(lastSaleReceipt)}
+                    className="text-sm font-medium text-emerald-700 dark:text-emerald-300 hover:underline inline-flex items-center gap-1.5"
+                  >
+                    {t("sales.printReceipt")}
+                  </button>
+                  <span className="text-emerald-400 dark:text-emerald-500">·</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const html = buildReceiptHtml(lastSaleReceipt);
+                      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `recibo-${lastSaleReceipt.date.replace(/[/:]/g, "-").replace(/, /g, "_")}.html`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="text-sm font-medium text-emerald-700 dark:text-emerald-300 hover:underline inline-flex items-center gap-1.5"
+                  >
+                    {t("sales.downloadReceipt")}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -653,9 +964,9 @@ export function SalesPage() {
                 Total: ${totalAmount.toFixed(2)}
               </p>
               <div>
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Medio de pago</label>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Medio de pago (1–4)</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {PAYMENT_METHODS.map((m) => (
+                  {PAYMENT_METHODS.map((m, idx) => (
                     <button
                       key={m.value}
                       type="button"
@@ -663,13 +974,15 @@ export function SalesPage() {
                         setPaymentMethodToConfirm(m.value);
                         if (m.value === "CASH") setCashReceived(totalRounded.toFixed(2));
                       }}
-                      className={`py-3 px-4 rounded-xl border-2 text-base font-medium transition-colors ${
+                      className={`py-3 px-4 rounded-xl border-2 text-base font-medium transition-colors flex items-center justify-between ${
                         paymentMethodToConfirm === m.value
                           ? "border-indigo-500 bg-indigo-50 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-200 dark:border-indigo-500"
                           : "border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500"
                       }`}
+                      aria-keyshortcuts={String(idx + 1)}
                     >
-                      {m.label}
+                      <span>{m.label}</span>
+                      <span className="text-xs font-normal opacity-70">({idx + 1})</span>
                     </button>
                   ))}
                 </div>
@@ -695,6 +1008,8 @@ export function SalesPage() {
                       { label: "+20", value: totalRounded + 20 },
                       { label: "+50", value: totalRounded + 50 },
                       { label: "+100", value: totalRounded + 100 },
+                      { label: "+200", value: totalRounded + 200 },
+                      { label: "+500", value: totalRounded + 500 },
                     ].map(({ label, value }) => (
                       <button
                         key={label}
@@ -794,14 +1109,21 @@ export function SalesPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
+                  onClick={() => {
+                    const cashChangeVal = paymentMethodToConfirm === "CASH" && cashChange >= 0 ? cashChange : undefined;
+                    const mixedCashChangeVal = paymentMethodToConfirm === "MIXED" && mixedCashChange >= 0 ? mixedCashChange : undefined;
+                    const paid = paymentMethodToConfirm === "CASH" ? cashReceivedNum : totalRounded;
+                    const changeVal = paymentMethodToConfirm === "CASH" ? cashChange : paymentMethodToConfirm === "MIXED" ? mixedCashChange : 0;
                     confirmSale(
                       paymentMethodToConfirm,
-                      paymentMethodToConfirm === "MIXED"
-                        ? { cash: cashNum, card: cardNum }
-                        : undefined
-                    )
-                  }
+                      paymentMethodToConfirm === "MIXED" ? { cash: cashNum, card: cardNum } : undefined,
+                      {
+                        ...(cashChangeVal != null && { cashChange: cashChangeVal }),
+                        ...(mixedCashChangeVal != null && { mixedCashChange: mixedCashChangeVal }),
+                        receipt: { total: totalRounded, paid, change: changeVal },
+                      }
+                    );
+                  }}
                   disabled={submitting || !mixedValid || !cashValid}
                   className="flex-1 btn-primary py-3 text-base font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -809,11 +1131,69 @@ export function SalesPage() {
                   {submitting ? "Procesando…" : "Confirmar venta"}
                 </button>
               </div>
+              <p className="text-xs text-slate-400 dark:text-slate-500 text-center pt-1">
+                1 Efectivo · 2 Tarjeta · 3 Mixto · 4 Otro · Enter confirmar · Escape cancelar
+              </p>
             </div>
           </div>
         );
       })()}
     </div>
+      )}
+      {receipt && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/60 backdrop-blur-sm"
+          role="dialog"
+          aria-label="Recibo de venta"
+        >
+          <div className="rounded-2xl border-2 border-emerald-200 dark:border-emerald-700 bg-white dark:bg-slate-800 shadow-2xl p-8 max-w-sm w-full text-center">
+            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-4">Venta registrada</p>
+            <div className="space-y-3 text-lg">
+              <div className="flex justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Total</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">${receipt.total.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Pagado</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">${receipt.paid.toFixed(2)}</span>
+              </div>
+              {receipt.change > 0 && (
+                <div className="flex justify-between pt-2 border-t border-slate-200 dark:border-slate-600">
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">Entregar de vuelto</span>
+                  <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">${receipt.change.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+            {lastSaleReceipt && (
+              <div className="flex flex-wrap justify-center gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
+                <button
+                  type="button"
+                    onClick={() => openReceiptPrint(lastSaleReceipt)}
+                    className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    {t("sales.printReceipt")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const html = buildReceiptHtml(lastSaleReceipt);
+                      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `recibo-${lastSaleReceipt.date.replace(/[/:]/g, "-").replace(/, /g, "_")}.html`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    {t("sales.downloadReceiptShort")}
+                  </button>
+              </div>
+            )}
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-4">Se cierra en 5 segundos</p>
+          </div>
+        </div>
       )}
     </div>
   );

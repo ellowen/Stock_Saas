@@ -11,30 +11,45 @@ Este documento reúne **mejoras futuras** del producto y opciones para **subir l
 Ideas para seguir mejorando GIRO más adelante:
 
 - **POS / Ventas**
-  - Mostrar en el mensaje de éxito el vuelto a entregar (ej. “Entregar $X de vuelto”) para que quede anotado.
-  - Botones rápidos de monto recibido: +200, +500.
-  - Sonido o notificación clara al confirmar la venta.
-  - Opción de “recibo” en pantalla (total, pagado, vuelto) que quede visible unos segundos después de cobrar.
+  - [x] Mostrar en el mensaje de éxito el vuelto a entregar (ej. “Entregar $X de vuelto”) para que quede anotado.
+  - [x] Botones rápidos de monto recibido: +200, +500.
+  - [x] Sonido o notificación clara al confirmar la venta (beep de éxito con Web Audio API).
+  - [x] Opción de “recibo” en pantalla (total, pagado, vuelto) que quede visible unos segundos después de cobrar.
+  - *Las anteriores ya implementadas en Ventas (SalesPage).*
 
 - **Inventario**
-  - Alertas de stock bajo (aviso cuando la cantidad baje de un mínimo configurable).
-  - Código de barras en etiquetas o en pantalla para imprimir.
-  - Historial de movimientos por producto o por sucursal (quién modificó, cuándo).
+  - [x] Alertas de stock bajo (aviso cuando la cantidad baje de un mínimo configurable). *Mínimo por ítem en Inventario (modal Editar); si no se define, alerta cuando &lt; 5. Badge "Bajo mínimo" en tabla y contador en Dashboard.*
+  - [x] Código de barras en etiquetas o en pantalla para imprimir. *Inventario → Stock → "Imprimir etiquetas": vista previa con código de barras (CODE128) por ítem y botón Imprimir.*
+  - [x] Historial de movimientos por producto o por sucursal (quién modificó, cuándo). *Tab "Historial de movimientos" en Inventario: filtros sucursal y fechas; tabla con fecha, sucursal, producto/variante, tipo (Venta, Ajuste, Edición, Traspaso), antes/después, usuario.*
 
 - **Reportes**
-  - Gráficos exportables a imagen o PDF.
-  - Comparativa de períodos (este mes vs mes anterior).
-  - Reporte de productos sin movimiento en X días.
+  - [x] Gráficos exportables a imagen o PDF. *Cada gráfico tiene "Descargar PNG"; botón "Exportar gráficos a PDF" genera un PDF con todos los gráficos del reporte (html2canvas + jsPDF).*
+  - [x] Comparativa de períodos (este mes vs mes anterior). *Sección "Comparativa con período anterior" en Reportes: período seleccionado vs mismo número de días anteriores; tabla lado a lado + gráfico de barras Actual vs Anterior.*
+  - [x] Reporte de productos sin movimiento en X días. *En Reportes, sección "Productos sin movimiento": indicás cantidad de días y sucursal opcional; lista ítems en inventario sin movimientos (venta, ajuste, traspaso) en ese período; exportable a CSV.*
 
 - **Usuarios y permisos**
-  - Permisos más granulares (ej. solo ventas en una sucursal, sin ver reportes).
-  - Recuperación de contraseña por email (olvidé mi contraseña).
+  - [x] Permisos más granulares (ej. solo ventas en una sucursal, sin ver reportes). *SELLER solo ve Dashboard, Inventario, Ventas y Plan; Reportes y Traspasos solo OWNER/MANAGER; Sucursales y Usuarios solo OWNER/MANAGER. Backend protege rutas de analytics (reportes) y stock-transfers con requireRole.*
+  - [x] Recuperación de contraseña por email (olvidé mi contraseña). *Por compañía y email: en /forgot-password se indica nombre de la empresa + email de la cuenta; el enlace se envía solo a ese correo (usuario de esa empresa). /reset-password?token=… para nueva contraseña. SMTP opcional; en dev el link se imprime en consola.*
 
 - **General**
-  - PWA (instalable en el celular como app).
-  - Notificaciones push (opcional) para alertas de stock o resúmenes diarios.
-  - Multi-idioma (es/en) si en el futuro se abre a otros mercados.
-  - App móvil nativa (React Native o similar) si hace falta uso intensivo en celular.
+  - [x] PWA (instalable en el celular como app). *vite-plugin-pwa con manifest (nombre GIRO, theme-color); instalable desde el navegador en móvil/desktop.*
+  - [x] Notificaciones in-app para stock bajo. *Al entrar al Dashboard, si hay ítems bajo mínimo: toast informativo + banner con enlace a Inventario (una vez por sesión).*
+  - [ ] Notificaciones push (navegador, opcional) para alertas de stock o resúmenes cuando la app está cerrada.
+  - [x] Multi-idioma (es/en). *Base: i18next + react-i18next; selector ES/EN en header (app) y en login; traducciones en menú, login y dashboard; idioma guardado en localStorage. Resto de pantallas se puede ir traduciendo con las mismas claves.*
+  - [ ] App móvil nativa (React Native o similar) si hace falta uso intensivo en celular.
+  - [x] Atajos de teclado en POS. *Enter en el modal de cobro confirma la venta; Escape cierra el modal o las sugerencias de búsqueda. Hint en el modal: "Enter confirmar · Escape cancelar".*
+  - [x] Exportar datos de la empresa (backup productos, inventario, ventas). *En Plan: sección "Exportar datos de la empresa"; descarga un Excel con hojas Productos, Inventario (por sucursal), Ventas (último año, hasta 100).*
+
+- **Landing, alta y planes**
+  - [x] Landing mejorada. *Hero claro, sección "Qué es GIRO" (inventario, POS, sucursales, reportes, permisos), beneficios, CTA "3 meses gratis. Sin tarjeta." Ver [LANDING-PLANES-Y-PAGO.md](./LANDING-PLANES-Y-PAGO.md).*
+  - [x] Registro por pasos. *Alta en 2–3 pasos: (1) Empresa, (2) Cuenta administrador, (3) Confirmación con resumen y "3 meses gratis".*
+  - [x] Prueba gratuita de 3 meses. *Backend: trialEndsAt = hoy + 90 días en register. Frontend: reemplazar "14 días" por "3 meses" en landing, registro, sidebar y Plan.*
+  - [x] Planes visibles y post-trial. *En Plan: sección "Planes disponibles" (Free, Pro, Enterprise) con descripción y precio/placeholder. Aviso cuando el trial terminó o está por vencer: "Elegí un plan para seguir".*
+  - [x] Método de pago preparado (sin funcionar). *Botón "Elegir plan" / "Suscribirme" en Pro/Enterprise; modal o pantalla "Método de pago" con texto "Próximamente" o formulario mock; sin integración real (Stripe, etc.). Opcional: endpoint placeholder que responda "Próximamente".*
+  - *Especificación completa y prompt listo para implementar: **[LANDING-PLANES-Y-PAGO.md](./LANDING-PLANES-Y-PAGO.md)**.*
+
+- **Más propuestas (lista extendida)**  
+  - Ideas adicionales de mejora (i18n en más pantallas, importación masiva, Stripe real, tests, seguridad, accesibilidad, etc.) están en **[PROPUESTAS-INTEGRAR.md](./PROPUESTAS-INTEGRAR.md)**. Podés elegir de ahí los próximos ítems a implementar.
 
 ---
 
@@ -44,7 +59,7 @@ GIRO tiene **frontend** (React/Vite), **backend** (Node/Express) y **base de dat
 
 ### Resumen rápido
 
-| Parte      | Opciones gratuitas / económicas        |
+| Parte     | Opciones gratuitas / económicas        |
 |-----------|----------------------------------------|
 | Frontend  | Vercel, Netlify, Cloudflare Pages      |
 | Backend   | Render, Railway, Fly.io                |

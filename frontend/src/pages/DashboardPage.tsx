@@ -1,5 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { API_BASE_URL, authFetch, getAccessToken } from "../lib/api";
+import { useToast } from "../contexts/ToastContext";
 import { Tooltip } from "../components/Tooltip";
 import { SkeletonCard } from "../components/Skeleton";
 import {
@@ -29,10 +32,13 @@ function formatDay(dateStr: string) {
 }
 
 export function DashboardPage() {
+  const { t } = useTranslation();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
+  const lowStockNotifiedRef = useRef(false);
 
   const load = useCallback(async (isRefresh = false) => {
     const token = getAccessToken();
@@ -58,6 +64,13 @@ export function DashboardPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (data?.lowStockAlerts > 0 && !lowStockNotifiedRef.current) {
+      lowStockNotifiedRef.current = true;
+      showToast(t("dashboard.lowStockToast", { count: data.lowStockAlerts }), "info");
+    }
+  }, [data?.lowStockAlerts, showToast, t]);
 
   if (loading) {
     return (
@@ -102,30 +115,30 @@ export function DashboardPage() {
 
   const cards = [
     {
-      label: "Ventas hoy",
+      label: t("dashboard.salesToday"),
       value: data.salesToday,
       sub: `$${Number(data.revenueToday).toFixed(2)}`,
       tooltip: "Operaciones e ingresos del día de hoy",
       accent: "emerald",
     },
     {
-      label: "Stock total",
+      label: t("dashboard.totalStock"),
       value: data.totalStockUnits,
-      sub: "unidades",
+      sub: t("dashboard.units"),
       tooltip: "Suma de unidades en inventario en todas las sucursales",
       accent: "slate",
     },
     {
-      label: "Locales activos",
+      label: t("dashboard.activeBranches"),
       value: data.branchesCount,
-      sub: "sucursales",
+      sub: t("dashboard.branches"),
       tooltip: "Sucursales activas de tu empresa",
       accent: "slate",
     },
     {
-      label: "Alertas de reposición",
+      label: t("dashboard.lowStockAlerts"),
       value: data.lowStockAlerts,
-      sub: "ítems bajo mínimo",
+      sub: t("dashboard.lowStockSub"),
       tooltip: "Productos con stock por debajo del mínimo o menor a 5 unidades",
       accent: data.lowStockAlerts > 0 ? "red" : "slate",
     },
@@ -133,14 +146,29 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Aviso stock bajo */}
+      {data.lowStockAlerts > 0 && (
+        <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-amber-800 dark:text-amber-200">
+            <span className="font-medium">{data.lowStockAlerts}</span> {t("dashboard.lowStockBanner", { count: data.lowStockAlerts })}
+          </p>
+          <Link
+            to="/app/inventory"
+            className="text-sm font-medium text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-100 underline"
+          >
+            {t("dashboard.viewInventory")}
+          </Link>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 tracking-tight">
-            Panel de control
+            {t("dashboard.title")}
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Resumen ejecutivo de tu negocio
+            {t("dashboard.subtitle")}
           </p>
         </div>
         <button
@@ -152,10 +180,10 @@ export function DashboardPage() {
           {refreshing ? (
             <>
               <span className="inline-block w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-              Actualizando…
+              {t("dashboard.refreshing")}
             </>
           ) : (
-            "Actualizar"
+            t("dashboard.refresh")
           )}
         </button>
       </div>
@@ -201,7 +229,7 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4">
-            Ingresos (últimos 7 días)
+            {t("dashboard.incomeLast7")}
           </h3>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
@@ -253,7 +281,7 @@ export function DashboardPage() {
         </div>
         <div className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4">
-            Operaciones por día (últimos 7 días)
+            {t("dashboard.salesLast7")}
           </h3>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">

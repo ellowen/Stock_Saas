@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
+import { requireRole } from "../middleware/requireRole";
 import {
   completeTransferController,
   createTransferController,
@@ -9,6 +10,7 @@ import {
 const router = Router();
 
 router.use(authMiddleware);
+router.use(requireRole(["OWNER", "MANAGER"]));
 
 router.get("/", listTransfersController);
 router.post("/", createTransferController);

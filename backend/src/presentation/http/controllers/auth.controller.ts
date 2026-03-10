@@ -15,6 +15,16 @@ const registerSchema = z.object({
   email: z.string().email().optional().nullable().or(z.literal("")),
 });
 
+const forgotPasswordSchema = z.object({
+  companyName: z.string().min(1, "El nombre de la empresa es obligatorio").max(200),
+  email: z.string().email("Email inválido"),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Token obligatorio"),
+  newPassword: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+});
+
 const authService = new AuthService();
 
 export const loginController = async (req: Request, res: Response) => {
@@ -79,6 +89,53 @@ export const registerController = async (req: Request, res: Response) => {
     // eslint-disable-next-line no-console
     console.error(error);
     return res.status(500).json({ message: "Error al crear la cuenta" });
+  }
+};
+
+export const forgotPasswordController = async (req: Request, res: Response) => {
+  const parseResult = forgotPasswordSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({
+      message: "Empresa y email son obligatorios. Revisá los datos.",
+      errors: parseResult.error.flatten(),
+    });
+  }
+
+  try {
+    await authService.forgotPassword(parseResult.data.companyName, parseResult.data.email);
+    return res.status(200).json({
+      message: "Si la empresa y el correo están registrados, recibirás un enlace para restablecer tu contraseña.",
+    });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error(error);
+    return res.status(500).json({ message: "Error inesperado" });
+  }
+};
+
+export const resetPasswordController = async (req: Request, res: Response) => {
+  const parseResult = resetPasswordSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({
+      message: parseResult.error.issues[0]?.message ?? "Datos inválidos",
+      errors: parseResult.error.flatten(),
+    });
+  }
+
+  try {
+    await authService.resetPassword(parseResult.data.token, parseResult.data.newPassword);
+    return res.status(200).json({
+      message: "Contraseña actualizada. Ya podés iniciar sesión.",
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_OR_EXPIRED_TOKEN") {
+      return res.status(400).json({
+        message: "El enlace expiró o no es válido. Solicitá uno nuevo.",
+      });
+    }
+    // eslint-disable-next-line no-console
+    console.error(error);
+    return res.status(500).json({ message: "Error inesperado" });
   }
 };
 

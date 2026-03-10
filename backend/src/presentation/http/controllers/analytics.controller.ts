@@ -24,6 +24,11 @@ const reportDetailSchema = z.object({
   to: z.string(),
 });
 
+const productsWithoutMovementSchema = z.object({
+  days: z.coerce.number().int().min(1).max(365),
+  branchId: z.coerce.number().int().positive().optional(),
+});
+
 const service = new AnalyticsService();
 
 export const analyticsDashboardController = async (
@@ -171,3 +176,32 @@ export const analyticsReportDetailController = async (
   }
 };
 
+export const analyticsProductsWithoutMovementController = async (
+  req: Request,
+  res: Response,
+) => {
+  if (!req.auth) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const parseResult = productsWithoutMovementSchema.safeParse(req.query);
+  if (!parseResult.success) {
+    return res.status(400).json({
+      message: "Parámetro days obligatorio (1–365). branchId opcional.",
+      errors: parseResult.error.flatten(),
+    });
+  }
+
+  try {
+    const data = await service.productsWithoutMovement(
+      req.auth.companyId,
+      parseResult.data.days,
+      parseResult.data.branchId != null ? { branchId: parseResult.data.branchId } : undefined,
+    );
+    return res.json(data);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error(error);
+    return res.status(500).json({ message: "Unexpected error" });
+  }
+};

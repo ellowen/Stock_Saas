@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Navigate } from "react-router-dom";
 import { API_BASE_URL, authFetch, authHeaders } from "../lib/api";
+import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { Tooltip } from "../components/Tooltip";
 import { IconPlus } from "../components/Icons";
@@ -16,6 +19,8 @@ type Branch = {
 };
 
 export function BranchesPage() {
+  const { t } = useTranslation();
+  const { canManageBranches } = useAuth();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +55,7 @@ export function BranchesPage() {
     setError(null);
     try {
       const res = await authFetch(`${API_BASE_URL}/branches`, { headers: authHeaders() });
-      if (!res.ok) throw new Error("Error al cargar sucursales");
+      if (!res.ok) throw new Error(t("branches.errorLoad"));
       const data = await res.json();
       setBranches(data);
     } catch (e) {
@@ -64,10 +69,14 @@ export function BranchesPage() {
     load();
   }, [load]);
 
+  if (!canManageBranches) {
+    return <Navigate to="/app/dashboard" replace />;
+  }
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !code.trim()) {
-      setCreateError("Nombre y código son obligatorios.");
+      setCreateError(t("branches.nameCodeRequired"));
       return;
     }
     setSubmitting(true);
@@ -85,7 +94,7 @@ export function BranchesPage() {
         }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || "Error al crear sucursal");
+      if (!res.ok) throw new Error(data.message || t("branches.createError"));
       setShowCreate(false);
       setName("");
       setCode("");
@@ -110,11 +119,11 @@ export function BranchesPage() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Error al eliminar sucursal");
+        throw new Error(data.message || t("branches.delete"));
       }
       setBranchToDelete(null);
       load();
-      showToast("Sucursal eliminada correctamente.");
+      showToast(t("branches.deleted"));
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Error", "error");
     } finally {
@@ -122,17 +131,17 @@ export function BranchesPage() {
     }
   };
 
-  if (loading) return <p className="text-sm text-slate-500">Cargando…</p>;
+  if (loading) return <p className="text-sm text-slate-500">{t("branches.loading")}</p>;
   if (error) return <p className="text-sm text-red-400/90">{error}</p>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-slate-500 text-sm">Locales donde vendés y tenés stock.</p>
-        <Tooltip content="Cada sucursal tiene su propio inventario; podés traspasar entre ellas">
+        <p className="text-slate-500 text-sm">{t("branches.subtitle")}</p>
+        <Tooltip content={t("branches.tooltip")}>
           <button type="button" onClick={() => setShowCreate(true)} className="btn-primary inline-flex items-center gap-2">
             <IconPlus />
-            Nueva sucursal
+            {t("branches.newBranch")}
           </button>
         </Tooltip>
       </div>
@@ -140,18 +149,18 @@ export function BranchesPage() {
         <table className="min-w-[320px]">
           <thead>
             <tr>
-              <TableSortHeader label="Código" sortKey="code" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
-              <TableSortHeader label="Nombre" sortKey="name" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
-              <TableSortHeader label="Ciudad" sortKey="city" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
-              <TableSortHeader label="Teléfono" sortKey="phone" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
-              <th className="w-24">Acciones</th>
+              <TableSortHeader label={t("branches.code")} sortKey="code" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
+              <TableSortHeader label={t("branches.name")} sortKey="name" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
+              <TableSortHeader label={t("branches.city")} sortKey="city" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
+              <TableSortHeader label={t("branches.phone")} sortKey="phone" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
+              <th className="w-24">{t("branches.actions")}</th>
             </tr>
           </thead>
           <tbody>
             {sortedBranches.length === 0 ? (
               <tr>
                 <td colSpan={5} className="text-center text-slate-500 dark:text-slate-400 py-8">
-                  No hay sucursales. Creá una para empezar.
+                  {t("branches.noBranches")}
                 </td>
               </tr>
             ) : (
@@ -167,7 +176,7 @@ export function BranchesPage() {
                       onClick={() => setBranchToDelete(b)}
                       className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
                     >
-                      Eliminar
+                      {t("branches.delete")}
                     </button>
                   </td>
                 </tr>
@@ -181,37 +190,37 @@ export function BranchesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 dark:bg-black/50 backdrop-blur-sm p-4" role="dialog" aria-modal="true">
           <div className="w-full max-w-md rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg p-5">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-medium text-slate-900 dark:text-slate-100">Nueva sucursal</h3>
+              <h3 className="text-base font-medium text-slate-900 dark:text-slate-100">{t("branches.createTitle")}</h3>
               <button type="button" onClick={() => setShowCreate(false)} className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 p-1 rounded">✕</button>
             </div>
             <form onSubmit={handleCreate} className="space-y-3">
               <div>
-                <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Nombre *</label>
+                <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t("branches.name")} *</label>
                 <input value={name} onChange={(e) => setName(e.target.value)} className="input-minimal" required />
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Código (ej. SUC2) *</label>
+                <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t("branches.code")} (ej. SUC2) *</label>
                 <input value={code} onChange={(e) => setCode(e.target.value)} className="input-minimal" required />
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Dirección</label>
+                <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t("branches.address")}</label>
                 <input value={address} onChange={(e) => setAddress(e.target.value)} className="input-minimal" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Ciudad</label>
+                  <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t("branches.city")}</label>
                   <input value={city} onChange={(e) => setCity(e.target.value)} className="input-minimal" />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Teléfono</label>
+                  <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t("branches.phone")}</label>
                   <input value={phone} onChange={(e) => setPhone(e.target.value)} className="input-minimal" />
                 </div>
               </div>
               {createError && <p className="text-sm text-red-600">{createError}</p>}
               <div className="flex gap-2 pt-2">
-                <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">Cancelar</button>
+                <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">{t("branches.cancel")}</button>
                 <button type="submit" disabled={submitting} className="btn-primary disabled:opacity-50">
-                  {submitting ? "Creando…" : "Crear"}
+                  {submitting ? t("branches.creating") : t("branches.create")}
                 </button>
               </div>
             </form>
@@ -221,18 +230,15 @@ export function BranchesPage() {
 
       <ConfirmModal
         open={!!branchToDelete}
-        title="Eliminar sucursal"
+        title={t("branches.deleteBranchTitle")}
         message={
           branchToDelete ? (
-            <>
-              ¿Estás seguro de eliminar la sucursal <strong>{branchToDelete.name}</strong> ({branchToDelete.code})?
-              Dejará de aparecer en listados y no podrás asignar ventas o stock a esta sucursal.
-            </>
+            t("branches.deleteBranchMessage", { name: branchToDelete.name, code: branchToDelete.code })
           ) : (
             ""
           )
         }
-        confirmLabel="Eliminar"
+        confirmLabel={t("branches.delete")}
         variant="danger"
         loading={deleting}
         onConfirm={handleDeleteBranch}

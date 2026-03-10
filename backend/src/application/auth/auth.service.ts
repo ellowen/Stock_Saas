@@ -1,8 +1,10 @@
 import bcrypt from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
+import crypto from "crypto";
 import { prisma } from "../../config/database/prisma";
 import { env } from "../../config/env";
 import { UserRole } from "@prisma/client";
+import { sendPasswordResetEmail } from "../../infrastructure/email/sendPasswordResetEmail";
 
 interface LoginInput {
   username: string;
@@ -89,7 +91,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(input.password, 10);
 
     const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+    trialEndsAt.setDate(trialEndsAt.getDate() + 90);
 
     const result = await prisma.$transaction(async (tx) => {
       const company = await tx.company.create({
@@ -118,6 +120,62 @@ export class AuthService {
     });
 
     return result;
+  }
+
+  private hashToken(token: string): string {
+    return crypto.createHash("sha256").update(token).digest("hex");
+  }
+
+  async forgotPassword(companyName: string, email: string): Promise<void> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const companyNameTrim = companyName.trim();
+    if (!companyNameTrim || !normalizedEmail) return;
+
+    const company = await prisma.company.findFirst({
+      where: { isActive: true, name: companyNameTrim },
+    });
+    if (!company) return;
+
+    const user = await prisma.user.findFirst({
+      where: {
+        companyId: company.id,
+        email: normalizedEmail,
+        isActive: true,
+      },
+    });
+    if (!user) return;
+
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = this.hashToken(rawToken);
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+
+    await prisma.passwordResetToken.create({
+      data: { userId: user.id, tokenHash, expiresAt },
+    });
+
+    const resetLink = `${env.appUrl.replace(/\/$/, "")}/reset-password?token=${rawToken}`;
+    await sendPasswordResetEmail(normalizedEmail, resetLink);
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const tokenHash = this.hashToken(token.trim());
+    const record = await prisma.passwordResetToken.findFirst({
+      where: { tokenHash, expiresAt: { gt: new Date() } },
+      include: { user: true },
+    });
+    if (!record) {
+      throw new Error("INVALID_OR_EXPIRED_TOKEN");
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: record.userId },
+        data: { password: passwordHash },
+      }),
+      prisma.passwordResetToken.deleteMany({ where: { userId: record.userId } }),
+    ]);
   }
 }
 

@@ -1,4 +1,4 @@
-import { PaymentMethod, Prisma } from "@prisma/client";
+import { InventoryMovementType, PaymentMethod, Prisma } from "@prisma/client";
 import { prisma } from "../../config/database/prisma";
 
 export interface SaleItemInput {
@@ -123,6 +123,29 @@ export class SalesService {
             quantity: {
               decrement: item.quantity,
             },
+          },
+        });
+      }
+
+      const qtyByVariant = new Map<number, number>();
+      for (const item of input.items) {
+        const cur = qtyByVariant.get(item.productVariantId) ?? 0;
+        qtyByVariant.set(item.productVariantId, cur + item.quantity);
+      }
+      for (const [productVariantId, totalQty] of qtyByVariant) {
+        const before = inventoryByVariant.get(productVariantId) ?? 0;
+        const after = before - totalQty;
+        await tx.inventoryMovement.create({
+          data: {
+            companyId,
+            branchId: input.branchId,
+            productVariantId,
+            type: InventoryMovementType.SALE,
+            quantityBefore: before,
+            quantityAfter: after,
+            userId,
+            referenceType: "sale",
+            referenceId: sale.id,
           },
         });
       }

@@ -8,12 +8,19 @@ const listSchema = z.object({
   productVariantId: z.coerce.number().int().optional(),
   search: z.string().optional(),
   category: z.string().optional(),
+  brand: z.string().optional(),
   hideZero: z
+    .string()
+    .optional()
+    .transform((v) => v === "true" || v === "1"),
+  lowStockOnly: z
     .string()
     .optional()
     .transform((v) => v === "true" || v === "1"),
   page: z.coerce.number().int().min(1).optional(),
   pageSize: z.coerce.number().int().min(1).max(100).optional(),
+  minPrice: z.coerce.number().min(0).optional(),
+  maxPrice: z.coerce.number().min(0).optional(),
 });
 
 const adjustSchema = z.object({
@@ -26,6 +33,16 @@ const setQuantitySchema = z.object({
   branchId: z.number().int().positive(),
   productVariantId: z.number().int().positive(),
   quantity: z.number().int().min(0),
+  minStock: z.number().int().min(0).nullable().optional(),
+});
+
+const listMovementsSchema = z.object({
+  branchId: z.coerce.number().int().optional(),
+  productVariantId: z.coerce.number().int().optional(),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(100).optional(),
 });
 
 const service = new InventoryService();
@@ -93,6 +110,7 @@ export const adjustInventoryController = async (req: Request, res: Response) => 
       branchId: effectiveBranchId,
       productVariantId,
       quantityDelta,
+      userId: req.auth.userId,
     });
     return res.status(200).json(updated);
   } catch (error) {
@@ -120,7 +138,7 @@ export const setQuantityController = async (req: Request, res: Response) => {
     });
   }
 
-  const { branchId, productVariantId, quantity } = parseResult.data;
+  const { branchId, productVariantId, quantity, minStock } = parseResult.data;
 
   try {
     const updated = await service.setQuantity({
@@ -128,12 +146,41 @@ export const setQuantityController = async (req: Request, res: Response) => {
       branchId,
       productVariantId,
       quantity,
+      minStock,
+      userId: req.auth.userId,
     });
     return res.status(200).json(updated);
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_QUANTITY") {
       return res.status(400).json({ message: "La cantidad debe ser mayor o igual a 0" });
     }
+    // eslint-disable-next-line no-console
+    console.error(error);
+    return res.status(500).json({ message: "Unexpected error" });
+  }
+};
+
+export const listMovementsController = async (req: Request, res: Response) => {
+  if (!req.auth) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const parseResult = listMovementsSchema.safeParse(req.query);
+  if (!parseResult.success) {
+    return res.status(400).json({
+      message: "Invalid query parameters",
+      errors: parseResult.error.flatten(),
+    });
+  }
+
+  try {
+    const { page, pageSize, ...filter } = parseResult.data;
+    const result = await service.listMovements(req.auth.companyId, filter, {
+      page: page ?? 1,
+      pageSize: pageSize ?? 25,
+    });
+    return res.json(result);
+  } catch (error) {
     // eslint-disable-next-line no-console
     console.error(error);
     return res.status(500).json({ message: "Unexpected error" });

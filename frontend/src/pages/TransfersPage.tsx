@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Navigate } from "react-router-dom";
 import { API_BASE_URL, authFetch, authHeaders } from "../lib/api";
+import { useAuth } from "../contexts/AuthContext";
 import { Tooltip } from "../components/Tooltip";
 import { IconPlus } from "../components/Icons";
 import { TableSortHeader, sortByColumn } from "../components/TableSortHeader";
@@ -17,6 +20,8 @@ type Transfer = {
 };
 
 export function TransfersPage() {
+  const { t } = useTranslation();
+  const { canManageTransfers } = useAuth();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,8 +59,8 @@ export function TransfersPage() {
         authFetch(`${API_BASE_URL}/branches`, { headers: authHeaders() }),
         authFetch(`${API_BASE_URL}/stock-transfers`, { headers: authHeaders() }),
       ]);
-      if (!bRes.ok) throw new Error("Error al cargar sucursales");
-      if (!tRes.ok) throw new Error("Error al cargar traspasos");
+      if (!bRes.ok) throw new Error(t("transfers.errorBranches"));
+      if (!tRes.ok) throw new Error(t("transfers.errorTransfers"));
       const bData = await bRes.json();
       const tData = await tRes.json();
       setBranches(bData);
@@ -70,6 +75,10 @@ export function TransfersPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  if (!canManageTransfers) {
+    return <Navigate to="/app/dashboard" replace />;
+  }
 
   const addItem = () => {
     setTransferItems((i) => [...i, { productVariantId: "", quantity: "1" }]);
@@ -89,7 +98,7 @@ export function TransfersPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fromBranchId || !toBranchId || fromBranchId === toBranchId) {
-      setCreateError("Elegí dos sucursales distintas.");
+      setCreateError(t("transfers.selectTwoBranches"));
       return;
     }
     const items = transferItems
@@ -99,7 +108,7 @@ export function TransfersPage() {
         quantity: parseInt(i.quantity, 10),
       }));
     if (items.length === 0) {
-      setCreateError("Agregá al menos un ítem con variante y cantidad.");
+      setCreateError(t("transfers.addItemHint"));
       return;
     }
     setSubmitting(true);
@@ -151,17 +160,17 @@ export function TransfersPage() {
     }
   };
 
-  if (loading) return <p className="text-sm text-slate-500">Cargando…</p>;
+  if (loading) return <p className="text-sm text-slate-500">{t("transfers.loading")}</p>;
   if (error) return <p className="text-sm text-red-400/90">{error}</p>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-slate-500 text-sm">Mover stock de una sucursal a otra.</p>
-        <Tooltip content="Elegí origen, destino y ítems; el stock se descuenta al completar">
+        <p className="text-slate-500 text-sm">{t("transfers.subtitleLong")}</p>
+        <Tooltip content={t("transfers.tooltipCreate")}>
           <button type="button" onClick={() => setCreateOpen(true)} className="btn-primary inline-flex items-center gap-2">
             <IconPlus />
-            Nuevo traspaso
+            {t("transfers.newTransfer")}
           </button>
         </Tooltip>
       </div>
@@ -171,34 +180,34 @@ export function TransfersPage() {
           <thead>
             <tr>
               <TableSortHeader label="ID" sortKey="id" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
-              <TableSortHeader label="Origen" sortKey="from" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
-              <TableSortHeader label="Destino" sortKey="to" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
-              <TableSortHeader label="Estado" sortKey="status" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
-              <TableSortHeader label="Fecha" sortKey="date" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
+              <TableSortHeader label={t("transfers.from")} sortKey="from" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
+              <TableSortHeader label={t("transfers.to")} sortKey="to" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
+              <TableSortHeader label={t("transfers.status")} sortKey="status" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
+              <TableSortHeader label={t("transfers.date")} sortKey="date" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
             </tr>
           </thead>
           <tbody>
             {sortedTransfers.length === 0 ? (
               <tr>
                 <td colSpan={5} className="text-center text-slate-500 dark:text-slate-400 py-8">
-                  No hay traspasos.
+                  {t("transfers.noTransfers")}
                 </td>
               </tr>
             ) : (
-              sortedTransfers.map((t) => (
-                <tr key={t.id}>
-                  <td>{t.id}</td>
+              sortedTransfers.map((tr) => (
+                <tr key={tr.id}>
+                  <td>{tr.id}</td>
                   <td>
-                    {t.fromBranch
-                      ? `${t.fromBranch.name} (${t.fromBranch.code})`
-                      : t.fromBranchId}
+                    {tr.fromBranch
+                      ? `${tr.fromBranch.name} (${tr.fromBranch.code})`
+                      : tr.fromBranchId}
                   </td>
                   <td>
-                    {t.toBranch ? `${t.toBranch.name} (${t.toBranch.code})` : t.toBranchId}
+                    {tr.toBranch ? `${tr.toBranch.name} (${tr.toBranch.code})` : tr.toBranchId}
                   </td>
-                  <td>{t.status}</td>
+                  <td>{tr.status === "PENDING" ? t("transfers.pending") : tr.status === "COMPLETED" ? t("transfers.completed") : tr.status}</td>
                   <td>
-                    {new Date(t.createdAt).toLocaleString()}
+                    {new Date(tr.createdAt).toLocaleString()}
                   </td>
                 </tr>
               ))
@@ -208,8 +217,8 @@ export function TransfersPage() {
       </div>
 
       <section className="card-minimal max-w-sm">
-        <Tooltip content="Cuando el traspaso llegue a destino, ingresá el ID y completalo para actualizar el stock">
-          <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Completar traspaso</h3>
+        <Tooltip content={t("transfers.completeSectionTooltip")}>
+          <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">{t("transfers.completeSectionTitle")}</h3>
         </Tooltip>
         <form onSubmit={handleComplete} className="flex gap-2">
           <input
@@ -220,7 +229,7 @@ export function TransfersPage() {
             className="input-minimal w-24"
           />
           <button type="submit" disabled={submitting || !completeId} className="btn-secondary disabled:opacity-50">
-            {submitting ? "…" : "Completar"}
+            {submitting ? "…" : t("transfers.completeButton")}
           </button>
         </form>
         {createError && <p className="text-sm text-red-400/90 mt-2">{createError}</p>}
@@ -230,32 +239,32 @@ export function TransfersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 dark:bg-black/50 backdrop-blur-sm p-4" role="dialog" aria-modal="true">
           <div className="w-full max-w-md rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg p-5 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-medium text-slate-900 dark:text-slate-100">Nuevo traspaso</h3>
+              <h3 className="text-base font-medium text-slate-900 dark:text-slate-100">{t("transfers.newTransferTitle")}</h3>
               <button type="button" onClick={() => setCreateOpen(false)} className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 p-1 rounded">✕</button>
             </div>
             <form onSubmit={handleCreate} className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Desde</label>
+                  <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t("transfers.fromLabel")}</label>
                   <select
                     value={fromBranchId === "" ? "" : String(fromBranchId)}
                     onChange={(e) => setFromBranchId(e.target.value ? Number(e.target.value) : "")}
                     className="input-minimal"
                   >
-                    <option value="">Seleccionar</option>
+                    <option value="">{t("transfers.selectOption")}</option>
                     {branches.map((b) => (
                       <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Hacia</label>
+                  <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t("transfers.toLabel")}</label>
                   <select
                     value={toBranchId === "" ? "" : String(toBranchId)}
                     onChange={(e) => setToBranchId(e.target.value ? Number(e.target.value) : "")}
                     className="input-minimal"
                   >
-                    <option value="">Seleccionar</option>
+                    <option value="">{t("transfers.selectOption")}</option>
                     {branches.map((b) => (
                       <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
                     ))}
@@ -264,21 +273,21 @@ export function TransfersPage() {
               </div>
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs text-slate-500">Ítems (variante + cantidad)</span>
-                  <button type="button" onClick={addItem} className="text-xs text-slate-500 hover:text-slate-700">+ Ítem</button>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{t("transfers.itemsLabel")}</span>
+                  <button type="button" onClick={addItem} className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">{t("transfers.addRow")}</button>
                 </div>
                 {transferItems.map((item, i) => (
                   <div key={i} className="flex gap-2 mb-2">
-                    <input type="number" placeholder="ID variante" value={item.productVariantId} onChange={(e) => updateItem(i, "productVariantId", e.target.value)} className="input-minimal flex-1 py-1.5" />
-                    <input type="number" placeholder="Cant." min={1} value={item.quantity} onChange={(e) => updateItem(i, "quantity", e.target.value)} className="input-minimal w-20 py-1.5" />
+                    <input type="number" placeholder={t("transfers.variantId")} value={item.productVariantId} onChange={(e) => updateItem(i, "productVariantId", e.target.value)} className="input-minimal flex-1 py-1.5" />
+                    <input type="number" placeholder={t("transfers.qty")} min={1} value={item.quantity} onChange={(e) => updateItem(i, "quantity", e.target.value)} className="input-minimal w-20 py-1.5" />
                     <button type="button" onClick={() => removeItem(i)} disabled={transferItems.length <= 1} className="text-slate-500 hover:text-red-600 disabled:opacity-40 p-1.5 rounded">✕</button>
                   </div>
                 ))}
               </div>
               {createError && <p className="text-sm text-red-400/90">{createError}</p>}
               <div className="flex gap-2 pt-2">
-                <button type="button" onClick={() => setCreateOpen(false)} className="btn-secondary">Cancelar</button>
-                <button type="submit" disabled={submitting} className="btn-primary disabled:opacity-50">{submitting ? "Creando…" : "Crear"}</button>
+                <button type="button" onClick={() => setCreateOpen(false)} className="btn-secondary">{t("branches.cancel")}</button>
+                <button type="submit" disabled={submitting} className="btn-primary disabled:opacity-50">{submitting ? t("transfers.creating") : t("transfers.create")}</button>
               </div>
             </form>
           </div>

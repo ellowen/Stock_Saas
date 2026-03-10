@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Navigate } from "react-router-dom";
+import html2canvas from "html2canvas";
 import { jsPDF } from "../lib/pdf";
 import { API_BASE_URL, authFetch, authHeaders } from "../lib/api";
 import { useToast } from "../contexts/ToastContext";
-import { Tooltip } from "../components/Tooltip";
+import { useAuth } from "../contexts/AuthContext";
 import { IconChart } from "../components/Icons";
 import { TableSortHeader, sortByColumn } from "../components/TableSortHeader";
 import { SkeletonReportCards } from "../components/Skeleton";
@@ -29,6 +31,46 @@ const PAYMENT_LABELS: Record<string, string> = {
   OTHER: "Otro",
 };
 
+async function exportChartAsPng(element: HTMLElement | null, filename: string): Promise<void> {
+  if (!element) return;
+  const canvas = await html2canvas(element, { scale: 2, useCORS: true, logging: false, backgroundColor: "#ffffff" });
+  const url = canvas.toDataURL("image/png");
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+}
+
+async function exportChartsToPdf(
+  chartRefs: { ref: React.RefObject<HTMLElement | null>; title: string }[]
+): Promise<void> {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageW = doc.getPageWidth();
+  const pageH = doc.getPageHeight();
+  const margin = 15;
+  const maxW = pageW - margin * 2;
+  const maxH = pageH - margin * 2 - 20;
+
+  const pxToMm = 0.264583;
+  for (let i = 0; i < chartRefs.length; i++) {
+    const el = chartRefs[i].ref.current;
+    if (!el) continue;
+    const canvas = await html2canvas(el, { scale: 2, useCORS: true, logging: false, backgroundColor: "#ffffff" });
+    const imgData = canvas.toDataURL("image/png");
+    let wMm = canvas.width * pxToMm;
+    let hMm = canvas.height * pxToMm;
+    const scale = Math.min(maxW / wMm, maxH / hMm, 1);
+    wMm *= scale;
+    hMm *= scale;
+    if (i > 0) doc.addPage();
+    doc.setFontSize(12);
+    doc.text(chartRefs[i].title, margin, 12);
+    doc.addImage(imgData, "PNG", margin, 18, wMm, hMm);
+  }
+
+  doc.save("reporte-graficos.pdf");
+}
+
 type Overview = {
   totalSales: number;
   totalRevenue: number;
@@ -52,6 +94,17 @@ type ReportDetail = {
   }[];
   salesByDay: { date: string; count: number; totalAmount: number }[];
   salesByCategory?: { category: string; revenue: number; quantitySold: number }[];
+};
+
+type NoMovementRow = {
+  productVariantId: number;
+  productName: string;
+  variantLabel: string;
+  sku: string;
+  branchId: number;
+  branchName: string;
+  quantity: number;
+  lastMovementAt: string | null;
 };
 
 function todayISO() {
@@ -233,7 +286,28 @@ function exportReportToPdf(detail: ReportDetail, from: string, to: string) {
   doc.save(`reporte-${from}-${to}.pdf`);
 }
 
+function exportNoMovementToCsv(rows: NoMovementRow[], days: number) {
+  const header = ["Producto", "Variante", "SKU", "Sucursal", "Cantidad", "Último movimiento"];
+  const body = rows.map((r) => [
+    r.productName,
+    r.variantLabel,
+    r.sku,
+    r.branchName,
+    r.quantity,
+    r.lastMovementAt ? new Date(r.lastMovementAt).toLocaleString("es-AR") : "Nunca",
+  ]);
+  const csv = "\uFEFF" + [header.map(escapeCsvCell).join(","), ...body.map((row) => row.map(escapeCsvCell).join(","))].join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `productos-sin-movimiento-${days}-dias.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function ReportsPage() {
+  const { canViewReports } = useAuth();
   const [quickOverview, setQuickOverview] = useState<Overview | null>(null);
   const [quickLoading, setQuickLoading] = useState(true);
   const [detail, setDetail] = useState<ReportDetail | null>(null);
@@ -252,7 +326,35 @@ export function ReportsPage() {
   const [daySortKey, setDaySortKey] = useState<string | null>(null);
   const [daySortDir, setDaySortDir] = useState<"asc" | "desc">("asc");
   const [previousPeriod, setPreviousPeriod] = useState<ReportDetail | null>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [noMovementDays, setNoMovementDays] = useState(30);
+  const [noMovementBranchId, setNoMovementBranchId] = useState<number | "">("");
+  const [noMovementLoading, setNoMovementLoading] = useState(false);
+  const [noMovementData, setNoMovementData] = useState<NoMovementRow[] | null>(null);
+  const [branches, setBranches] = useState<{ id: number; name: string; code: string }[]>([]);
   const { showToast } = useToast();
+
+  const chartIngresosDiaRef = useRef<HTMLDivElement>(null);
+  const chartPagoPieRef = useRef<HTMLDivElement>(null);
+  const chartPagoBarRef = useRef<HTMLDivElement>(null);
+  const chartCategoriaRef = useRef<HTMLDivElement>(null);
+
+  const handleExportChartsPdf = useCallback(async () => {
+    setExportingPdf(true);
+    try {
+      await exportChartsToPdf([
+        { ref: chartIngresosDiaRef, title: "Ingresos por día" },
+        { ref: chartPagoPieRef, title: "Ingresos por medio de pago" },
+        { ref: chartPagoBarRef, title: "Ventas por medio de pago" },
+        { ref: chartCategoriaRef, title: "Ventas por categoría" },
+      ]);
+      showToast("Gráficos exportados a PDF.");
+    } catch {
+      showToast("Error al exportar PDF.", "error");
+    } finally {
+      setExportingPdf(false);
+    }
+  }, [showToast]);
 
   const loadQuickReport = useCallback(() => {
     const today = todayISO();
@@ -307,6 +409,32 @@ export function ReportsPage() {
   useEffect(() => {
     loadQuickReport();
   }, [loadQuickReport]);
+
+  useEffect(() => {
+    authFetch(`${API_BASE_URL}/branches`, { headers: authHeaders() })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setBranches(Array.isArray(data) ? data : []))
+      .catch(() => setBranches([]));
+  }, []);
+
+  const loadNoMovementReport = useCallback(() => {
+    setNoMovementLoading(true);
+    setNoMovementData(null);
+    const params = new URLSearchParams({ days: String(noMovementDays) });
+    if (noMovementBranchId !== "") params.set("branchId", String(noMovementBranchId));
+    authFetch(`${API_BASE_URL}/analytics/products-without-movement?${params}`, { headers: authHeaders() })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setNoMovementData(Array.isArray(data) ? data : []))
+      .catch(() => {
+        setNoMovementData([]);
+        showToast("Error al cargar el reporte.", "error");
+      })
+      .finally(() => setNoMovementLoading(false));
+  }, [noMovementDays, noMovementBranchId, showToast]);
+
+  if (!canViewReports) {
+    return <Navigate to="/app/dashboard" replace />;
+  }
 
   return (
     <div className="space-y-8">
@@ -519,10 +647,73 @@ export function ReportsPage() {
             return (
           <div className="space-y-8 pt-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h4 className="text-base font-semibold text-slate-800">
+              <h4 className="text-base font-semibold text-slate-800 dark:text-slate-100">
                 Reporte: {formatReportDate(from)} – {formatReportDate(to)}
               </h4>
+              <button
+                type="button"
+                onClick={handleExportChartsPdf}
+                disabled={exportingPdf}
+                className="btn-secondary text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 disabled:opacity-50"
+              >
+                {exportingPdf ? "Exportando…" : "Exportar gráficos a PDF"}
+              </button>
             </div>
+
+            {/* Comparativa con período anterior */}
+            {previousPeriod && (() => {
+              const fromDate = new Date(from + "T12:00:00");
+              const toDate = new Date(to + "T12:00:00");
+              const daysDiff = Math.round((toDate.getTime() - fromDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+              const toPrev = new Date(fromDate);
+              toPrev.setDate(toPrev.getDate() - 1);
+              const fromPrev = new Date(toPrev);
+              fromPrev.setDate(fromPrev.getDate() - daysDiff + 1);
+              const prev = previousPeriod.summary;
+              const comparisonData = [
+                { name: "Ventas (operaciones)", Actual: detail.summary.totalSales, Anterior: prev.totalSales },
+                { name: "Ingresos ($)", Actual: Math.round(Number(detail.summary.totalRevenue)), Anterior: Math.round(Number(prev.totalRevenue)) },
+              ];
+              return (
+                <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-900/20 p-5">
+                  <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-1">Comparativa con período anterior</h5>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Mismo número de días inmediatamente anteriores al rango elegido.</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Período seleccionado</p>
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{formatReportDate(from)} – {formatReportDate(to)}</p>
+                      <ul className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-300">
+                        <li><strong>{detail.summary.totalSales}</strong> ventas {pctVentas != null && <span className={pctVentas >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}> ({pctVentas >= 0 ? "+" : ""}{pctVentas}% vs anterior)</span>}</li>
+                        <li><strong>${Number(detail.summary.totalRevenue).toFixed(2)}</strong> ingresos {pctIngresos != null && <span className={pctIngresos >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}> ({pctIngresos >= 0 ? "+" : ""}{pctIngresos}% vs anterior)</span>}</li>
+                        <li><strong>{detail.summary.totalItemsSold}</strong> ítems vendidos {pctItems != null && <span className={pctItems >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}> ({pctItems >= 0 ? "+" : ""}{pctItems}% vs anterior)</span>}</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Período anterior</p>
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{fromPrev.toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" })} – {toPrev.toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" })}</p>
+                      <ul className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-300">
+                        <li><strong>{prev.totalSales}</strong> ventas</li>
+                        <li><strong>${Number(prev.totalRevenue).toFixed(2)}</strong> ingresos</li>
+                        <li><strong>{prev.totalItemsSold}</strong> ítems vendidos</li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="h-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={comparisonData} margin={{ top: 8, right: 8, left: 8, bottom: 24 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="dark:opacity-30" />
+                        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} />
+                        <RechartsTooltip />
+                        <Legend />
+                        <Bar dataKey="Actual" fill="#6366f1" name="Período seleccionado" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="Anterior" fill="#94a3b8" name="Período anterior" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Resumen del período */}
             <div>
@@ -576,8 +767,17 @@ export function ReportsPage() {
             {/* Gráfico ventas por día */}
             {chartSalesByDay.length > 0 && (
               <div>
-                <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Ingresos por día</h5>
-                <div className="rounded-xl border border-slate-200 bg-white p-4 h-[280px]">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <h5 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Ingresos por día</h5>
+                  <button
+                    type="button"
+                    onClick={() => exportChartAsPng(chartIngresosDiaRef.current, "ingresos-por-dia.png")}
+                    className="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+                  >
+                    Descargar PNG
+                  </button>
+                </div>
+                <div ref={chartIngresosDiaRef} className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 p-4 h-[280px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={chartSalesByDay} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
                       <defs>
@@ -604,8 +804,11 @@ export function ReportsPage() {
             {chartPayment.length > 0 && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Ingresos por medio de pago</h5>
-                  <div className="rounded-xl border border-slate-200 bg-white p-4 h-[240px]">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <h5 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Ingresos por medio de pago</h5>
+                    <button type="button" onClick={() => exportChartAsPng(chartPagoPieRef.current, "ingresos-por-medio-pago.png")} className="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">Descargar PNG</button>
+                  </div>
+                  <div ref={chartPagoPieRef} className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 p-4 h-[240px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -628,8 +831,11 @@ export function ReportsPage() {
                   </div>
                 </div>
                 <div>
-                  <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Cantidad de ventas por medio</h5>
-                  <div className="rounded-xl border border-slate-200 bg-white p-4 h-[240px]">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <h5 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cantidad de ventas por medio</h5>
+                    <button type="button" onClick={() => exportChartAsPng(chartPagoBarRef.current, "ventas-por-medio.png")} className="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">Descargar PNG</button>
+                  </div>
+                  <div ref={chartPagoBarRef} className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 p-4 h-[240px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={chartPayment} layout="vertical" margin={{ top: 8, right: 24, left: 8, bottom: 8 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -646,8 +852,11 @@ export function ReportsPage() {
 
             {detail.salesByCategory && detail.salesByCategory.length > 0 && (
               <div>
-                <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Ventas por categoría</h5>
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <h5 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Ventas por categoría</h5>
+                  <button type="button" onClick={() => exportChartAsPng(chartCategoriaRef.current, "ventas-por-categoria.png")} className="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">Descargar PNG</button>
+                </div>
+                <div ref={chartCategoriaRef} className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 p-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="h-[220px]">
                       <ResponsiveContainer width="100%" height="100%">
@@ -791,6 +1000,100 @@ export function ReportsPage() {
               <p className="text-slate-500 text-sm">
                 Elegí un rango de fechas y hacé clic en &quot;Ver reporte&quot; para ver gráficos y tablas.
               </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Productos sin movimiento</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Productos en inventario que no tuvieron ningún movimiento (venta, ajuste, traspaso) en la cantidad de días indicada.</p>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="flex flex-wrap items-end gap-4">
+            <div>
+              <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Últimos días sin movimiento</label>
+              <input
+                type="number"
+                min={1}
+                max={365}
+                value={noMovementDays}
+                onChange={(e) => setNoMovementDays(Math.max(1, Math.min(365, parseInt(e.target.value, 10) || 30)))}
+                className="input-minimal w-24 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Sucursal</label>
+              <select
+                value={noMovementBranchId === "" ? "" : noMovementBranchId}
+                onChange={(e) => setNoMovementBranchId(e.target.value === "" ? "" : Number(e.target.value))}
+                className="input-minimal w-48 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
+              >
+                <option value="">Todas</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={loadNoMovementReport}
+              disabled={noMovementLoading}
+              className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
+            >
+              <IconChart />
+              {noMovementLoading ? "Cargando…" : "Generar reporte"}
+            </button>
+            {noMovementData && noMovementData.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  exportNoMovementToCsv(noMovementData, noMovementDays);
+                  showToast("Reporte exportado en CSV.");
+                }}
+                className="btn-secondary text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
+              >
+                Exportar CSV
+              </button>
+            )}
+          </div>
+          {noMovementData && (
+            <div className="table-modern">
+              <table>
+                <thead>
+                  <tr>
+                    <th className="text-left font-medium">Producto</th>
+                    <th className="text-left font-medium">Variante</th>
+                    <th className="text-left font-medium">SKU</th>
+                    <th className="text-left font-medium">Sucursal</th>
+                    <th className="text-right font-medium">Cantidad</th>
+                    <th className="text-left font-medium">Último movimiento</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {noMovementData.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center text-slate-500 dark:text-slate-400 py-8">
+                        No hay productos sin movimiento en los últimos {noMovementDays} días.
+                      </td>
+                    </tr>
+                  ) : (
+                    noMovementData.map((row) => (
+                      <tr key={`${row.branchId}-${row.productVariantId}`}>
+                        <td>{row.productName}</td>
+                        <td>{row.variantLabel}</td>
+                        <td className="font-mono text-xs">{row.sku}</td>
+                        <td>{row.branchName}</td>
+                        <td className="text-right">{row.quantity}</td>
+                        <td className="text-slate-500 dark:text-slate-400 text-sm">
+                          {row.lastMovementAt ? new Date(row.lastMovementAt).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" }) : "Nunca"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

@@ -26,14 +26,15 @@ model Company {
   createdAt          DateTime    @default(now()) @map("created_at")
   updatedAt          DateTime    @updatedAt @map("updated_at")
 
-  branches       Branch[]
-  users          User[]
-  products       Product[]
-  sales          Sale[]
-  ProductVariant ProductVariant[]
-  Inventory      Inventory[]
-  SaleItem       SaleItem[]
-  StockTransfer  StockTransfer[]
+  branches           Branch[]
+  users              User[]
+  products           Product[]
+  sales              Sale[]
+  ProductVariant     ProductVariant[]
+  Inventory          Inventory[]
+  InventoryMovement  InventoryMovement[]
+  SaleItem           SaleItem[]
+  StockTransfer      StockTransfer[]
 
   @@map("companies")
 }
@@ -59,8 +60,9 @@ model Branch {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  company   Company         @relation(fields: [companyId], references: [id])
+  company   Company             @relation(fields: [companyId], references: [id])
   inventory Inventory[]
+  inventoryMovements InventoryMovement[]
   sales     Sale[]
   stockFrom StockTransfer[] @relation("StockTransferFrom")
   stockTo   StockTransfer[] @relation("StockTransferTo")
@@ -84,12 +86,14 @@ model User {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 
-  company Company @relation(fields: [companyId], references: [id])
-  branch  Branch? @relation(fields: [branchId], references: [id])
-  sales   Sale[]
+  company  Company  @relation(fields: [companyId], references: [id])
+  branch   Branch?  @relation(fields: [branchId], references: [id])
+  sales    Sale[]
+  inventoryMovements InventoryMovement[]
 
   createdStockTransfers  StockTransfer[] @relation("StockTransferCreatedBy")
   approvedStockTransfers StockTransfer[] @relation("StockTransferApprovedBy")
+  passwordResetTokens    PasswordResetToken[]
 
   @@map("users")
 }
@@ -98,6 +102,20 @@ enum UserRole {
   OWNER
   MANAGER
   SELLER
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  tokenHash String   @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId, expiresAt])
+  @@map("password_reset_tokens")
 }
 
 model Product {
@@ -131,10 +149,11 @@ model ProductVariant {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  company           Company             @relation(fields: [companyId], references: [id])
-  product           Product             @relation(fields: [productId], references: [id])
-  stocks            Inventory[]
-  items             SaleItem[]
+  company   Company             @relation(fields: [companyId], references: [id])
+  product   Product             @relation(fields: [productId], references: [id])
+  stocks    Inventory[]
+  movements InventoryMovement[]
+  items     SaleItem[]
   StockTransferItem StockTransferItem[]
 
   @@unique([companyId, sku])
@@ -152,12 +171,43 @@ model Inventory {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  company Company        @relation(fields: [companyId], references: [id])
-  branch  Branch         @relation(fields: [branchId], references: [id])
-  variant ProductVariant @relation(fields: [productVariantId], references: [id])
+  company  Company         @relation(fields: [companyId], references: [id])
+  branch   Branch          @relation(fields: [branchId], references: [id])
+  variant  ProductVariant  @relation(fields: [productVariantId], references: [id])
 
   @@unique([companyId, branchId, productVariantId])
   @@map("inventory")
+}
+
+model InventoryMovement {
+  id               Int                 @id @default(autoincrement())
+  companyId        Int                 @map("company_id")
+  branchId         Int                  @map("branch_id")
+  productVariantId Int                  @map("product_variant_id")
+  type             InventoryMovementType @map("type")
+  quantityBefore   Int                  @map("quantity_before")
+  quantityAfter    Int                  @map("quantity_after")
+  userId           Int?                 @map("user_id")
+  referenceType    String?              @map("reference_type")
+  referenceId      Int?                 @map("reference_id")
+  createdAt        DateTime            @default(now()) @map("created_at")
+
+  company  Company         @relation(fields: [companyId], references: [id])
+  branch   Branch          @relation(fields: [branchId], references: [id])
+  variant  ProductVariant  @relation(fields: [productVariantId], references: [id])
+  user     User?           @relation(fields: [userId], references: [id])
+
+  @@index([companyId, branchId, createdAt(sort: Desc)])
+  @@index([companyId, productVariantId, createdAt(sort: Desc)])
+  @@map("inventory_movements")
+}
+
+enum InventoryMovementType {
+  SALE
+  MANUAL_ADJUST
+  SET_QUANTITY
+  TRANSFER_IN
+  TRANSFER_OUT
 }
 
 model Sale {
