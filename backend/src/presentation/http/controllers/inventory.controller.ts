@@ -34,6 +34,20 @@ const setQuantitySchema = z.object({
   productVariantId: z.number().int().positive(),
   quantity: z.number().int().min(0),
   minStock: z.number().int().min(0).nullable().optional(),
+  location: z.string().max(100).nullable().optional(),
+});
+
+const bulkAdjustSchema = z.object({
+  branchId: z.number().int().positive(),
+  reason: z.string().min(1).max(255),
+  adjustments: z
+    .array(
+      z.object({
+        variantId: z.number().int().positive(),
+        newQty: z.number().int().min(0),
+      })
+    )
+    .min(1),
 });
 
 const listMovementsSchema = z.object({
@@ -138,7 +152,7 @@ export const setQuantityController = async (req: Request, res: Response) => {
     });
   }
 
-  const { branchId, productVariantId, quantity, minStock } = parseResult.data;
+  const { branchId, productVariantId, quantity, minStock, location } = parseResult.data;
 
   try {
     const updated = await service.setQuantity({
@@ -147,6 +161,7 @@ export const setQuantityController = async (req: Request, res: Response) => {
       productVariantId,
       quantity,
       minStock,
+      location,
       userId: req.auth.userId,
     });
     return res.status(200).json(updated);
@@ -155,6 +170,30 @@ export const setQuantityController = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "La cantidad debe ser mayor o igual a 0" });
     }
     // eslint-disable-next-line no-console
+    console.error(error);
+    return res.status(500).json({ message: "Unexpected error" });
+  }
+};
+
+export const bulkAdjustController = async (req: Request, res: Response) => {
+  if (!req.auth) return res.status(401).json({ message: "Unauthorized" });
+
+  const parseResult = bulkAdjustSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ message: "Invalid request body", errors: parseResult.error.flatten() });
+  }
+
+  const { branchId, reason, adjustments } = parseResult.data;
+  try {
+    const result = await service.bulkAdjust({
+      companyId: req.auth.companyId,
+      branchId,
+      reason,
+      adjustments,
+      userId: req.auth.userId,
+    });
+    return res.status(200).json(result);
+  } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Unexpected error" });
   }

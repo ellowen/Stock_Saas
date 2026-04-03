@@ -12,6 +12,15 @@ import { stockTransferRouter } from "./infrastructure/http/routers/stock-transfe
 import { analyticsRouter } from "./infrastructure/http/routers/analytics.router";
 import { branchesRouter } from "./infrastructure/http/routers/branches.router";
 import { usersRouter } from "./infrastructure/http/routers/users.router";
+import { attributesRouter } from "./infrastructure/http/routers/attributes.router";
+import { customersRouter } from "./infrastructure/http/routers/customers.router";
+import { suppliersRouter } from "./infrastructure/http/routers/suppliers.router";
+import { taxConfigsRouter } from "./infrastructure/http/routers/tax-configs.router";
+import { documentsRouter } from "./infrastructure/http/routers/documents.router";
+import { purchaseOrdersRouter } from "./infrastructure/http/routers/purchase-orders.router";
+import { stockCountsRouter } from "./infrastructure/http/routers/stock-counts.router";
+import { batchesRouter } from "./infrastructure/http/routers/batches.router";
+import { accountsReceivableRouter } from "./infrastructure/http/routers/accounts-receivable.router";
 
 export const createApp = (): Application => {
   const app = express();
@@ -42,6 +51,15 @@ export const createApp = (): Application => {
   app.use("/analytics", analyticsRouter);
   app.use("/branches", branchesRouter);
   app.use("/users", usersRouter);
+  app.use("/attributes", attributesRouter);
+  app.use("/customers", customersRouter);
+  app.use("/suppliers", suppliersRouter);
+  app.use("/tax-configs", taxConfigsRouter);
+  app.use("/documents", documentsRouter);
+  app.use("/purchase-orders", purchaseOrdersRouter);
+  app.use("/stock-counts", stockCountsRouter);
+  app.use("/batches", batchesRouter);
+  app.use("/accounts-receivable", accountsReceivableRouter);
 
   app.get("/health", (_req, res) => {
     res.json({

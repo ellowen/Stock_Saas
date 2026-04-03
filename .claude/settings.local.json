@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx prisma:*)",
+      "Bash(npx tsc:*)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(python3 -c \"import json; f=open\\('C:/Dev/Stock_Saas/frontend/src/i18n/locales/es.json'\\); data=f.read\\(\\); print\\('valid' if len\\(data\\) > 0 else 'empty'\\)\")",
+      "Bash(node:*)",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)"
+    ]
+  }
+}

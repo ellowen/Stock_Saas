@@ -12,7 +12,13 @@ import { SalesPage } from "./pages/SalesPage";
 import { TransfersPage } from "./pages/TransfersPage";
 import { BranchesPage } from "./pages/BranchesPage";
 import { UsersPage } from "./pages/UsersPage";
-import { ReportsPage } from "./pages/ReportsPage";
+import { ReportsPage } from "./pages/reports/ReportsPage";
+import { SettingsPage } from "./pages/settings/SettingsPage";
+import CustomersPage from "./pages/customers/CustomersPage";
+import SuppliersPage from "./pages/suppliers/SuppliersPage";
+import DocumentsPage from "./pages/documents/DocumentsPage";
+import PurchaseOrdersPage from "./pages/purchases/PurchaseOrdersPage";
+import { AccountsPage } from "./pages/accounts/AccountsPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./contexts/ToastContext";
@@ -49,6 +55,12 @@ function App() {
         <Route path="users" element={<UsersPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="plan" element={<PlanPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="customers" element={<CustomersPage />} />
+        <Route path="suppliers" element={<SuppliersPage />} />
+        <Route path="documents" element={<DocumentsPage />} />
+        <Route path="purchases" element={<PurchaseOrdersPage />} />
+        <Route path="accounts" element={<AccountsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

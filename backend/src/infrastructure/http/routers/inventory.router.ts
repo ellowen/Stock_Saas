@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
 import {
   adjustInventoryController,
+  bulkAdjustController,
   listInventoryController,
   listMovementsController,
   setQuantityController,
@@ -13,6 +14,7 @@ router.use(authMiddleware);
 
 router.get("/", listInventoryController);
 router.get("/movements", listMovementsController);
+router.post("/bulk-adjust", bulkAdjustController);
 router.post("/adjust", adjustInventoryController);
 router.patch("/quantity", setQuantityController);
 

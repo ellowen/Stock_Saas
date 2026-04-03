@@ -6,6 +6,7 @@ import { SalesService } from "../../../application/sales/sales.service";
 const saleItemSchema = z.object({
   productVariantId: z.number().int().positive(),
   quantity: z.number().int().positive(),
+  discount: z.number().min(0).optional(),
 });
 
 const createSaleSchema = z.object({
@@ -14,6 +15,8 @@ const createSaleSchema = z.object({
   paymentCashAmount: z.number().min(0).optional(),
   paymentCardAmount: z.number().min(0).optional(),
   notes: z.string().optional(),
+  customerId: z.number().int().positive().optional().nullable(),
+  discountTotal: z.number().min(0).optional(),
   items: z.array(saleItemSchema).min(1),
 });
 

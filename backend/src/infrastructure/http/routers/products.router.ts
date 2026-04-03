@@ -8,12 +8,14 @@ import {
   listProductsController,
   updateProductController,
 } from "../../../presentation/http/controllers/products.controller";
+import { importCsvController, uploadMiddleware } from "../../../presentation/http/controllers/csv-import.controller";
 
 const router = Router();
 
 router.use(authMiddleware);
 
 router.get("/categories", listCategoriesController);
+router.post("/import-csv", uploadMiddleware, importCsvController);
 router.get("/brands", listBrandsController);
 router.get("/", listProductsController);
 router.post("/", createProductController);

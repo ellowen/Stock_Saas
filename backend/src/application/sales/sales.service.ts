@@ -1,9 +1,13 @@
 import { InventoryMovementType, PaymentMethod, Prisma } from "@prisma/client";
 import { prisma } from "../../config/database/prisma";
+import { NotificationsService } from "../notifications/notifications.service";
+
+const notificationsService = new NotificationsService();
 
 export interface SaleItemInput {
   productVariantId: number;
   quantity: number;
+  discount?: number;
 }
 
 export interface CreateSaleInput {
@@ -12,6 +16,8 @@ export interface CreateSaleInput {
   paymentCashAmount?: number;
   paymentCardAmount?: number;
   notes?: string;
+  customerId?: number | null;
+  discountTotal?: number;
   items: SaleItemInput[];
 }
 
@@ -77,7 +83,8 @@ export class SalesService {
       const saleItemsData = input.items.map((item) => {
         const variant = variants.find((v) => v.id === item.productVariantId)!;
         const unitPrice = variant.price;
-        const lineTotal = unitPrice.mul(item.quantity);
+        const itemDiscount = new Prisma.Decimal(item.discount ?? 0);
+        const lineTotal = unitPrice.mul(item.quantity).sub(itemDiscount.mul(item.quantity));
 
         totalAmount = totalAmount.add(lineTotal);
         totalItems += item.quantity;
@@ -87,9 +94,14 @@ export class SalesService {
           productVariantId: item.productVariantId,
           quantity: item.quantity,
           unitPrice,
+          discount: itemDiscount,
           totalPrice: lineTotal,
         };
       });
+
+      const globalDiscount = new Prisma.Decimal(input.discountTotal ?? 0);
+      totalAmount = totalAmount.sub(globalDiscount);
+      if (totalAmount.lessThan(0)) totalAmount = new Prisma.Decimal(0);
 
       const sale = await tx.sale.create({
         data: {
@@ -99,9 +111,11 @@ export class SalesService {
           paymentMethod: input.paymentMethod,
           totalAmount,
           totalItems,
+          discountTotal: globalDiscount,
           notes: input.notes,
           paymentCashAmount: input.paymentCashAmount != null ? new Prisma.Decimal(input.paymentCashAmount) : undefined,
           paymentCardAmount: input.paymentCardAmount != null ? new Prisma.Decimal(input.paymentCardAmount) : undefined,
+          ...(input.customerId != null && { customerId: input.customerId }),
         },
       });
 
@@ -150,6 +164,18 @@ export class SalesService {
         });
       }
 
+      // If payment is CREDIT and there's a customer, create an AccountReceivable
+      if (input.paymentMethod === "CREDIT" && input.customerId) {
+        await tx.accountReceivable.create({
+          data: {
+            companyId,
+            customerId: input.customerId,
+            saleId: sale.id,
+            amount: totalAmount,
+          },
+        });
+      }
+
       return tx.sale.findUnique({
         where: { id: sale.id },
         include: {
@@ -165,6 +191,10 @@ export class SalesService {
           branch: true,
         },
       });
+    }).then((result) => {
+      // Fire-and-forget: check low stock alerts after sale completes
+      notificationsService.checkAndNotifyLowStock(companyId).catch(console.error);
+      return result;
     });
   }
 
@@ -186,7 +216,9 @@ export class SalesService {
       include: {
         items: {
           include: {
-            variant: true,
+            variant: {
+              include: { product: { select: { name: true } } },
+            },
           },
         },
         branch: true,

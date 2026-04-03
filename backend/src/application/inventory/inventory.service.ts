@@ -69,7 +69,7 @@ export class InventoryService {
       productWhere.id = filter.productId;
     }
     if (filter.search !== undefined && filter.search.trim() !== "") {
-      productWhere.name = { contains: filter.search.trim(), mode: "insensitive" };
+      productWhere.name = { contains: filter.search.trim() };
     }
     if (filter.category !== undefined && filter.category.trim() !== "") {
       productWhere.category = { equals: filter.category.trim() };
@@ -146,7 +146,7 @@ export class InventoryService {
       productWherePaginated.id = filter.productId;
     }
     if (filter.search !== undefined && filter.search.trim() !== "") {
-      productWherePaginated.name = { contains: filter.search.trim(), mode: "insensitive" };
+      productWherePaginated.name = { contains: filter.search.trim() };
     }
     if (filter.category !== undefined && filter.category.trim() !== "") {
       productWherePaginated.category = { equals: filter.category.trim() };
@@ -393,9 +393,10 @@ export class InventoryService {
     productVariantId: number;
     quantity: number;
     minStock?: number | null;
+    location?: string | null;
     userId?: number;
   }) {
-    const { companyId, branchId, productVariantId, quantity, minStock, userId } = input;
+    const { companyId, branchId, productVariantId, quantity, minStock, location, userId } = input;
     if (quantity < 0) {
       throw new Error("INVALID_QUANTITY");
     }
@@ -410,10 +411,9 @@ export class InventoryService {
         },
       });
       const before = existing?.quantity ?? 0;
-      const data: { quantity: number; minStock?: number | null } = { quantity };
-      if (minStock !== undefined) {
-        data.minStock = minStock === null ? null : minStock;
-      }
+      const data: { quantity: number; minStock?: number | null; location?: string | null } = { quantity };
+      if (minStock !== undefined) data.minStock = minStock === null ? null : minStock;
+      if (location !== undefined) data.location = location === null ? null : location;
       const updated = !existing
         ? await tx.inventory.create({
             data: {
@@ -422,6 +422,7 @@ export class InventoryService {
               productVariantId,
               quantity,
               ...(data.minStock !== undefined && { minStock: data.minStock }),
+              ...(data.location !== undefined && { location: data.location }),
             },
           })
         : await tx.inventory.update({
@@ -444,6 +445,59 @@ export class InventoryService {
       }
 
       return updated;
+    });
+  }
+
+  async bulkAdjust(input: {
+    companyId: number;
+    branchId: number;
+    reason: string;
+    adjustments: Array<{ variantId: number; newQty: number }>;
+    userId?: number;
+  }) {
+    const { companyId, branchId, reason, adjustments, userId } = input;
+
+    return prisma.$transaction(async (tx) => {
+      const results = [];
+      for (const adj of adjustments) {
+        const existing = await tx.inventory.findUnique({
+          where: {
+            companyId_branchId_productVariantId: {
+              companyId,
+              branchId,
+              productVariantId: adj.variantId,
+            },
+          },
+        });
+
+        const before = existing?.quantity ?? 0;
+        const newQty = adj.newQty;
+
+        const updated = !existing
+          ? await tx.inventory.create({
+              data: { companyId, branchId, productVariantId: adj.variantId, quantity: newQty },
+            })
+          : await tx.inventory.update({
+              where: { id: existing.id },
+              data: { quantity: newQty },
+            });
+
+        await tx.inventoryMovement.create({
+          data: {
+            companyId,
+            branchId,
+            productVariantId: adj.variantId,
+            type: InventoryMovementType.MANUAL_ADJUST,
+            quantityBefore: before,
+            quantityAfter: newQty,
+            userId: userId ?? undefined,
+            referenceType: "BULK_ADJUST",
+          },
+        });
+
+        results.push({ variantId: adj.variantId, before, after: newQty, diff: newQty - before });
+      }
+      return { branchId, reason, count: results.length, results };
     });
   }
 

@@ -92,6 +92,7 @@ export class AnalyticsService {
       where: { id: { in: variantIds } },
       include: {
         product: true,
+        attributes: { include: { attribute: true }, orderBy: { attribute: { sortOrder: "asc" } } },
       },
     });
 
@@ -104,9 +105,8 @@ export class AnalyticsService {
         quantitySold: item._sum.quantity ?? 0,
         revenue: item._sum.totalPrice ?? 0,
         sku: variant?.sku,
-        size: variant?.size,
-        color: variant?.color,
         price: variant?.price,
+        attributes: (variant?.attributes ?? []).map((va) => ({ name: va.attribute.name, value: va.value })),
         product: variant?.product
           ? {
             id: variant.product.id,
@@ -261,18 +261,23 @@ export class AnalyticsService {
         const variantIds = items.map((i) => i.productVariantId);
         const variants = await prisma.productVariant.findMany({
           where: { id: { in: variantIds } },
-          include: { product: true },
+          include: {
+            product: true,
+            attributes: { include: { attribute: true }, orderBy: { attribute: { sortOrder: "asc" } } },
+          },
         });
         const variantById = new Map(variants.map((v) => [v.id, v]));
         return items.map((item) => {
           const v = variantById.get(item.productVariantId);
+          const attrList = (v?.attributes ?? []).map((va) => ({ name: va.attribute.name, value: va.value }));
+          const variantLabel = attrList.length > 0 ? attrList.map((a) => a.value).join(" / ") : (v?.sku ?? "");
           return {
             productVariantId: item.productVariantId,
             quantitySold: item._sum.quantity ?? 0,
             revenue: item._sum.totalPrice ?? 0,
-            sku: v?.sku,
-            size: v?.size,
-            color: v?.color,
+            sku: v?.sku ?? "",
+            variantLabel,
+            attributes: attrList,
             product: v?.product
               ? { id: v.product.id, name: v.product.name, category: v.product.category, brand: v.product.brand }
               : null,
@@ -383,7 +388,12 @@ export class AnalyticsService {
       prisma.inventory.findMany({
         where: inventoryWhere,
         include: {
-          variant: { include: { product: true } },
+          variant: {
+            include: {
+              product: true,
+              attributes: { include: { attribute: true }, orderBy: { attribute: { sortOrder: "asc" } } },
+            },
+          },
           branch: true,
         },
       }),
@@ -419,7 +429,9 @@ export class AnalyticsService {
       result.push({
         productVariantId: row.productVariantId,
         productName: row.variant.product.name,
-        variantLabel: `${row.variant.size} / ${row.variant.color}`,
+        variantLabel: row.variant.attributes.length > 0
+          ? row.variant.attributes.map((a) => a.value).join(" / ")
+          : row.variant.sku,
         sku: row.variant.sku,
         branchId: row.branchId,
         branchName: row.branch.name,
