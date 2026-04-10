@@ -27,7 +27,9 @@ import { accountsChartRouter } from "./infrastructure/http/routers/accounts-char
 import { journalRouter } from "./infrastructure/http/routers/journal.router";
 import { ivaBookRouter } from "./infrastructure/http/routers/iva-book.router";
 import { auditRouter } from "./infrastructure/http/routers/audit.router";
+import { checkSubscription } from "./infrastructure/http/middleware/checkSubscription";
 import { pushRouter } from "./infrastructure/http/routers/push.router";
+import { billingRouter } from "./infrastructure/http/routers/billing.router";
 
 export const createApp = (): Application => {
   const app = express();
@@ -49,6 +51,7 @@ export const createApp = (): Application => {
     );
   }
 
+  app.use(checkSubscription);
   app.use("/auth", authRouter);
   app.use("/protected", protectedRouter);
   app.use("/products", productsRouter);
@@ -74,6 +77,7 @@ export const createApp = (): Application => {
   app.use("/iva-book", ivaBookRouter);
   app.use("/audit-logs", auditRouter);
   app.use("/push", pushRouter);
+  app.use("/billing", billingRouter);
 
   app.get("/health", (_req, res) => {
     res.json({

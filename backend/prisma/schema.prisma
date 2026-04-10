@@ -31,8 +31,11 @@ model Company {
   isActive           Boolean     @default(true) @map("is_active")
   trialEndsAt        DateTime?   @map("trial_ends_at")
   subscriptionStatus String?     @map("subscription_status")
-  stripeCustomerId   String?     @map("stripe_customer_id")
-  createdAt          DateTime    @default(now()) @map("created_at")
+  stripeCustomerId      String?     @map("stripe_customer_id")
+  stripeSubscriptionId  String?     @map("stripe_subscription_id")
+  mpSubscriptionId      String?     @map("mp_subscription_id")
+  currentPeriodEnd      DateTime?   @map("current_period_end")
+  createdAt             DateTime    @default(now()) @map("created_at")
   updatedAt          DateTime    @updatedAt @map("updated_at")
 
   branches           Branch[]

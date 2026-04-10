@@ -9,6 +9,7 @@ import {
   updateProductController,
 } from "../../../presentation/http/controllers/products.controller";
 import { importCsvController, uploadMiddleware } from "../../../presentation/http/controllers/csv-import.controller";
+import { checkProductLimit } from "../../../application/billing/plan-limits";
 
 const router = Router();
 
@@ -18,7 +19,7 @@ router.get("/categories", listCategoriesController);
 router.post("/import-csv", uploadMiddleware, importCsvController);
 router.get("/brands", listBrandsController);
 router.get("/", listProductsController);
-router.post("/", createProductController);
+router.post("/", checkProductLimit, createProductController);
 router.patch("/:id", updateProductController);
 router.delete("/:id", deleteProductController);
 

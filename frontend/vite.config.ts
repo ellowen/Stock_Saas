@@ -46,6 +46,7 @@ export default defineConfig({
       '/health': { target: 'http://localhost:4000', changeOrigin: true },
       '/audit-logs': { target: 'http://localhost:4000', changeOrigin: true },
       '/push': { target: 'http://localhost:4000', changeOrigin: true },
+      '/billing': { target: 'http://localhost:4000', changeOrigin: true },
     },
   },
 })

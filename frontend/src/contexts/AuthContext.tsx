@@ -11,6 +11,8 @@ type UserMe = {
     plan: string;
     trialEndsAt: string | null;
     subscriptionStatus: string | null;
+    currentPeriodEnd: string | null;
+    stripeCustomerId: string | null;
   };
 };
 

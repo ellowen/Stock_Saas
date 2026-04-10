@@ -42,6 +42,16 @@ export async function authFetch(
     sessionStorage.setItem(SESSION_EXPIRED_KEY, "1");
     window.location.href = "/login";
   }
+  if (res.status === 402 && typeof window !== "undefined") {
+    // Clone to allow the caller to also read the body
+    const clone = res.clone();
+    clone.json().then((data) => {
+      if (data.code === "SUBSCRIPTION_EXPIRED") {
+        window.location.href = "/app/plan";
+      }
+      // PLAN_LIMIT_REACHED is handled per-call by each page
+    }).catch(() => {});
+  }
   return res;
 }
 

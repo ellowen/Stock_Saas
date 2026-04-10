@@ -25,6 +25,8 @@ export const meController = async (req: Request, res: Response) => {
           plan: true,
           trialEndsAt: true,
           subscriptionStatus: true,
+          currentPeriodEnd: true,
+          stripeCustomerId: true,
         },
       },
     },
