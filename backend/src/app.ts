@@ -21,6 +21,13 @@ import { purchaseOrdersRouter } from "./infrastructure/http/routers/purchase-ord
 import { stockCountsRouter } from "./infrastructure/http/routers/stock-counts.router";
 import { batchesRouter } from "./infrastructure/http/routers/batches.router";
 import { accountsReceivableRouter } from "./infrastructure/http/routers/accounts-receivable.router";
+import { employeesRouter } from "./infrastructure/http/routers/employees.router";
+import { payrollsRouter } from "./infrastructure/http/routers/payrolls.router";
+import { accountsChartRouter } from "./infrastructure/http/routers/accounts-chart.router";
+import { journalRouter } from "./infrastructure/http/routers/journal.router";
+import { ivaBookRouter } from "./infrastructure/http/routers/iva-book.router";
+import { auditRouter } from "./infrastructure/http/routers/audit.router";
+import { pushRouter } from "./infrastructure/http/routers/push.router";
 
 export const createApp = (): Application => {
   const app = express();
@@ -60,6 +67,13 @@ export const createApp = (): Application => {
   app.use("/stock-counts", stockCountsRouter);
   app.use("/batches", batchesRouter);
   app.use("/accounts-receivable", accountsReceivableRouter);
+  app.use("/employees", employeesRouter);
+  app.use("/payrolls", payrollsRouter);
+  app.use("/accounts-chart", accountsChartRouter);
+  app.use("/journal", journalRouter);
+  app.use("/iva-book", ivaBookRouter);
+  app.use("/audit-logs", auditRouter);
+  app.use("/push", pushRouter);
 
   app.get("/health", (_req, res) => {
     res.json({

@@ -24,6 +24,10 @@ import {
   IconTruck,
   IconDocument,
   IconClipboardList,
+  IconBriefcase,
+  IconCash,
+  IconBook,
+  IconShield,
 } from "../components/Icons";
 import { useTheme } from "../contexts/ThemeContext";
 
@@ -42,10 +46,14 @@ const navItems: {
   { path: "/app/suppliers",  labelKey: "suppliers", Icon: IconTruck,       permission: "reports" },
   { path: "/app/purchases",  labelKey: "purchases", Icon: IconClipboardList, permission: "reports" },
   { path: "/app/accounts",   labelKey: "accounts",  Icon: IconCurrency,      permission: "reports" },
+  { path: "/app/employees",  labelKey: "employees",  Icon: IconBriefcase,  permission: "reports" },
+  { path: "/app/payroll",    labelKey: "payroll",    Icon: IconCash,         permission: "reports" },
+  { path: "/app/accounting", labelKey: "accounting", Icon: IconBook,         permission: "reports" },
   { path: "/app/reports",    labelKey: "reports",   Icon: IconChart,       permission: "reports" },
   { path: "/app/branches",   labelKey: "branches",  Icon: IconBuilding,    permission: "branches" },
   { path: "/app/users",      labelKey: "users",     Icon: IconUsers,       permission: "users" },
   { path: "/app/plan",       labelKey: "plan",      Icon: IconCurrency },
+  { path: "/app/audit",     labelKey: "audit",     Icon: IconShield,    permission: "users" },
 ];
 
 const PLAN_LABELS: Record<string, string> = {

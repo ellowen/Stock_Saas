@@ -1,5 +1,6 @@
 import { prisma } from "../../config/database/prisma";
 import { sendEmail } from "../../infrastructure/email/mailer";
+import { pushService } from "../push/push.service";
 
 export class NotificationsService {
   /**
@@ -69,6 +70,14 @@ export class NotificationsService {
     `;
 
     await sendEmail({ to: ownerEmail, subject, html });
+
+    // Also send push notification
+    pushService.sendToCompany(companyId, {
+      title: `⚠️ Stock bajo — ${company.name}`,
+      body: `${lowStock.length} producto(s) por debajo del mínimo.`,
+      url: "/app/inventory",
+      tag: "low-stock",
+    }).catch(() => {});
   }
 
   /**

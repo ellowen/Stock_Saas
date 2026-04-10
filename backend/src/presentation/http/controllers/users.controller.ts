@@ -3,6 +3,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "../../../config/database/prisma";
 import { UserRole } from "@prisma/client";
+import { auditService } from "../../../application/audit/audit.service";
 
 const createUserSchema = z.object({
   username: z.string().min(1).max(100),
@@ -88,6 +89,15 @@ export async function createUserController(req: Request, res: Response) {
         createdAt: true,
       },
     });
+    auditService.log({
+      companyId: req.auth.companyId,
+      userId: req.auth.userId,
+      action: "CREATE",
+      entity: "User",
+      entityId: user.id,
+      after: { username: user.username, role: user.role },
+      ip: req.ip,
+    });
     return res.status(201).json(user);
   } catch (error) {
     console.error(error);
@@ -143,6 +153,16 @@ export async function updateUserController(req: Request, res: Response) {
         createdAt: true,
       },
     });
+    auditService.log({
+      companyId: req.auth.companyId,
+      userId: req.auth.userId,
+      action: "UPDATE",
+      entity: "User",
+      entityId: updated.id,
+      before: { role: user.role, isActive: user.isActive },
+      after: { role: updated.role, isActive: updated.isActive },
+      ip: req.ip,
+    });
     return res.json(updated);
   } catch (error) {
     console.error(error);
@@ -174,6 +194,15 @@ export async function deleteUserController(req: Request, res: Response) {
     await prisma.user.update({
       where: { id: userId },
       data: { isActive: false },
+    });
+    auditService.log({
+      companyId: req.auth.companyId,
+      userId: req.auth.userId,
+      action: "DELETE",
+      entity: "User",
+      entityId: userId,
+      before: { username: user.username, role: user.role },
+      ip: req.ip,
     });
     return res.status(204).send();
   } catch (error) {

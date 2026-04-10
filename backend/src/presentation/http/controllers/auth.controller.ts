@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { AuthService } from "../../../application/auth/auth.service";
+import { prisma } from "../../../config/database/prisma";
+import { auditService } from "../../../application/audit/audit.service";
 
 const loginSchema = z.object({
   username: z.string().min(1),
@@ -38,6 +40,23 @@ export const loginController = async (req: Request, res: Response) => {
 
   try {
     const tokens = await authService.login(parseResult.data);
+    // Log successful login (fire-and-forget, skip if lookup fails)
+    const term = parseResult.data.username.trim();
+    prisma.user.findFirst({
+      where: term.includes("@") ? { email: term } : { username: term },
+      select: { id: true, companyId: true },
+    }).then((u) => {
+      if (u) {
+        auditService.log({
+          companyId: u.companyId,
+          userId: u.id,
+          action: "LOGIN",
+          entity: "User",
+          entityId: u.id,
+          ip: req.ip,
+        });
+      }
+    }).catch(() => {});
     return res.status(200).json(tokens);
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_CREDENTIALS") {

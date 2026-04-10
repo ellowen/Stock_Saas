@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { PaymentMethod } from "@prisma/client";
 import { z } from "zod";
 import { SalesService } from "../../../application/sales/sales.service";
+import { auditService } from "../../../application/audit/audit.service";
 
 const saleItemSchema = z.object({
   productVariantId: z.number().int().positive(),
@@ -57,6 +58,15 @@ export const createSaleController = async (req: Request, res: Response) => {
     const sale = await service.createSale(req.auth.companyId, req.auth.userId, {
       branchId: effectiveBranchId,
       ...rest,
+    });
+    auditService.log({
+      companyId: req.auth.companyId,
+      userId: req.auth.userId,
+      action: "CREATE",
+      entity: "Sale",
+      entityId: sale?.id,
+      after: { totalAmount: sale?.totalAmount, totalItems: sale?.totalItems, paymentMethod: rest.paymentMethod },
+      ip: req.ip,
     });
     return res.status(201).json(sale);
   } catch (error) {

@@ -24,6 +24,7 @@ router.get("/company", authMiddleware, async (req: Request, res: Response) => {
       address: true, city: true, phone: true, email: true,
       currency: true, industryType: true, plan: true,
       trialEndsAt: true, subscriptionStatus: true,
+      lowStockAlerts: true, salesReportFreq: true,
     },
   });
   if (!company) return res.status(404).json({ message: "Empresa no encontrada" });

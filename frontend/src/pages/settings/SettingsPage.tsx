@@ -5,6 +5,7 @@ import { useToast } from "../../contexts/ToastContext";
 import { API_BASE_URL, authFetch, authHeaders } from "../../lib/api";
 import { PageHeader, Button, FormField, Badge, Modal } from "../../components/ui";
 import { thermalPrinter } from "../../lib/thermal-printer";
+import { usePushNotifications } from "../../hooks/usePushNotifications";
 
 type Attribute = {
   id: number;
@@ -76,6 +77,7 @@ export function SettingsPage() {
   const [applyingProfile, setApplyingProfile] = useState(false);
 
   const isOwner = user?.user.role === "OWNER";
+  const push = usePushNotifications();
 
   // Load full company data
   useEffect(() => {
@@ -376,6 +378,45 @@ export function SettingsPage() {
               </select>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t("settings.salesReportDesc")}</p>
             </FormField>
+
+            {/* Push notifications */}
+            {push.state !== "unsupported" && (
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t("settings.pushNotifications", "Notificaciones push")}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {push.state === "denied"
+                      ? t("settings.pushDenied", "El navegador bloqueó los permisos. Habilitá las notificaciones desde la configuración del sitio.")
+                      : push.state === "subscribed"
+                      ? t("settings.pushEnabled", "Las notificaciones están activas en este dispositivo.")
+                      : t("settings.pushDesc", "Recibí alertas de stock bajo y resúmenes directamente en tu navegador.")}
+                  </p>
+                </div>
+                {push.state !== "denied" && (
+                  <button
+                    type="button"
+                    disabled={push.loading}
+                    onClick={push.state === "subscribed" ? push.disable : push.enable}
+                    className={[
+                      "shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                      push.state === "subscribed"
+                        ? "bg-primary-600"
+                        : "bg-gray-200 dark:bg-gray-600",
+                      push.loading ? "opacity-50 cursor-not-allowed" : "",
+                    ].join(" ")}
+                  >
+                    <span
+                      className={[
+                        "inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform",
+                        push.state === "subscribed" ? "translate-x-6" : "translate-x-1",
+                      ].join(" ")}
+                    />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {isOwner && (

@@ -19,6 +19,10 @@ import SuppliersPage from "./pages/suppliers/SuppliersPage";
 import DocumentsPage from "./pages/documents/DocumentsPage";
 import PurchaseOrdersPage from "./pages/purchases/PurchaseOrdersPage";
 import { AccountsPage } from "./pages/accounts/AccountsPage";
+import EmployeesPage from "./pages/employees/EmployeesPage";
+import PayrollPage from "./pages/payroll/PayrollPage";
+import AccountingPage from "./pages/accounting/AccountingPage";
+import AuditPage from "./pages/audit/AuditPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./contexts/ToastContext";
@@ -61,6 +65,10 @@ function App() {
         <Route path="documents" element={<DocumentsPage />} />
         <Route path="purchases" element={<PurchaseOrdersPage />} />
         <Route path="accounts" element={<AccountsPage />} />
+        <Route path="employees" element={<EmployeesPage />} />
+        <Route path="payroll" element={<PayrollPage />} />
+        <Route path="accounting" element={<AccountingPage />} />
+        <Route path="audit" element={<AuditPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

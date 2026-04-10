@@ -144,11 +144,11 @@ export class CsvImportService {
         if (attrPairs.length > 0) {
           // Delete old attribute values for this variant and re-create
           await prisma.productVariantAttribute.deleteMany({
-            where: { productVariantId: variantId },
+            where: { variantId },
           });
           await prisma.productVariantAttribute.createMany({
             data: attrPairs.map((a) => ({
-              productVariantId: variantId,
+              variantId,
               attributeId: a.attributeId,
               value: a.value,
             })),

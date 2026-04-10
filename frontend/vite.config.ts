@@ -44,6 +44,8 @@ export default defineConfig({
       '/branches': { target: 'http://localhost:4000', changeOrigin: true },
       '/users': { target: 'http://localhost:4000', changeOrigin: true },
       '/health': { target: 'http://localhost:4000', changeOrigin: true },
+      '/audit-logs': { target: 'http://localhost:4000', changeOrigin: true },
+      '/push': { target: 'http://localhost:4000', changeOrigin: true },
     },
   },
 })

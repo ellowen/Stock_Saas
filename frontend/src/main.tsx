@@ -4,6 +4,9 @@ import { BrowserRouter } from "react-router-dom";
 import "./i18n";
 import "./index.css";
 import App from "./App.tsx";
+import { registerServiceWorker } from "./lib/push";
+
+registerServiceWorker();
 
 // Aplicar tema antes del primer paint para evitar parpadeo
 const stored = localStorage.getItem("giro-theme");
