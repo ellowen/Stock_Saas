@@ -87,12 +87,35 @@ export default function PurchaseOrdersPage() {
   // New order form
   const [branches, setBranches] = useState<Branch[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [branchId, setBranchId] = useState<number | "">("");
-  const [supplierId, setSupplierId] = useState<number | "">("");
-  const [expectedAt, setExpectedAt] = useState("");
-  const [formNotes, setFormNotes] = useState("");
-  const [items, setItems] = useState<ItemRow[]>([{ ...EMPTY_ITEM }]);
+
+  const DRAFT_KEY = "oc_draft";
+  const loadDraft = () => {
+    try { return JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "null"); } catch { return null; }
+  };
+  const draft = loadDraft();
+
+  const [branchId, setBranchId] = useState<number | "">(draft?.branchId ?? "");
+  const [supplierId, setSupplierId] = useState<number | "">(draft?.supplierId ?? "");
+  const [expectedAt, setExpectedAt] = useState<string>(draft?.expectedAt ?? "");
+  const [formNotes, setFormNotes] = useState<string>(draft?.formNotes ?? "");
+  const [items, setItems] = useState<ItemRow[]>(draft?.items ?? [{ ...EMPTY_ITEM }]);
+  const [hasDraft, setHasDraft] = useState(!!draft);
   const [submitting, setSubmitting] = useState(false);
+
+  // Autosave draft on any form change
+  useEffect(() => {
+    const data = { branchId, supplierId, expectedAt, formNotes, items };
+    const isEmpty = !branchId && !supplierId && !expectedAt && !formNotes && items.length === 1 && !items[0].description;
+    if (isEmpty) { localStorage.removeItem(DRAFT_KEY); setHasDraft(false); }
+    else { localStorage.setItem(DRAFT_KEY, JSON.stringify(data)); setHasDraft(true); }
+  }, [branchId, supplierId, expectedAt, formNotes, items]);
+
+  const clearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setHasDraft(false);
+    setBranchId(""); setSupplierId(""); setExpectedAt(""); setFormNotes("");
+    setItems([{ ...EMPTY_ITEM }]);
+  };
 
   // Receive modal
   const [receiveOrder, setReceiveOrder] = useState<PODetail | null>(null);
@@ -181,8 +204,7 @@ export default function PurchaseOrdersPage() {
       showToast(t("purchases.created"), "success");
       setTab("list");
       loadOrders();
-      setItems([{ ...EMPTY_ITEM }]);
-      setBranchId(""); setSupplierId(""); setExpectedAt(""); setFormNotes("");
+      clearDraft();
     } catch (e: any) {
       showToast(e.message ?? t("purchases.saveError"), "error");
     } finally {
@@ -259,13 +281,16 @@ export default function PurchaseOrdersPage() {
             key={tb}
             type="button"
             onClick={() => setTab(tb)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               tab === tb
                 ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
                 : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400"
             }`}
           >
             {tb === "list" ? t("purchases.tabList") : t("purchases.tabNew")}
+            {tb === "new" && hasDraft && (
+              <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" title="Borrador guardado" />
+            )}
           </button>
         ))}
       </div>
@@ -386,6 +411,13 @@ export default function PurchaseOrdersPage() {
 
       {tab === "new" && (
         <div className="space-y-6 max-w-3xl">
+          {hasDraft && (
+            <div className="flex items-center gap-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 px-4 py-2.5">
+              <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <span className="text-sm text-amber-700 dark:text-amber-300 flex-1">Borrador guardado automaticamente</span>
+              <button type="button" onClick={clearDraft} className="text-xs text-amber-600 dark:text-amber-400 hover:underline">Descartar</button>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">

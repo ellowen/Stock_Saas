@@ -63,6 +63,7 @@ export default function CustomersPage() {
   const [editing, setEditing] = useState<Customer | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
+  const [formTouched, setFormTouched] = useState(false);
   const [historyCustomer, setHistoryCustomer] = useState<Customer | null>(null);
   const [history, setHistory] = useState<{ totalSpent: number; count: number; sales: SaleHistory[] } | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -104,10 +105,12 @@ export default function CustomersPage() {
   function openCreate() {
     setEditing(null);
     setForm({ ...EMPTY_FORM });
+    setFormTouched(false);
     setModalOpen(true);
   }
 
   function openEdit(c: Customer) {
+    setFormTouched(false);
     setEditing(c);
     setForm({
       name: c.name,
@@ -349,10 +352,14 @@ export default function CustomersPage() {
                 <input
                   type="text"
                   value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="input-minimal w-full"
+                  onChange={(e) => { setForm({ ...form, name: e.target.value }); setFormTouched(true); }}
+                  onBlur={() => setFormTouched(true)}
+                  className={`input-minimal w-full ${formTouched && !form.name.trim() ? "border-red-400 dark:border-red-500 focus:ring-red-400" : ""}`}
                   autoFocus
                 />
+                {formTouched && !form.name.trim() && (
+                  <p className="text-xs text-red-500 mt-1">{t("customers.nameRequired")}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">

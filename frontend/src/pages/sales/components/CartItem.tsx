@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "../../../components/Tooltip";
 import { IconMinus, IconPlus, IconX } from "../../../components/Icons";
@@ -28,7 +29,29 @@ export function CartItem({
   onDiscountChange,
 }: Props) {
   const { t } = useTranslation();
+  const [editingQty, setEditingQty] = useState(false);
+  const [qtyInput, setQtyInput] = useState("");
+  const qtyInputRef = useRef<HTMLInputElement>(null);
   const lineTotal = Math.max(0, (price - discount) * quantity);
+
+  const startEditQty = () => {
+    setQtyInput(String(quantity));
+    setEditingQty(true);
+    setTimeout(() => qtyInputRef.current?.select(), 0);
+  };
+
+  const commitQty = () => {
+    const v = parseInt(qtyInput, 10);
+    if (!isNaN(v) && v > 0) {
+      // delta to target
+      const delta = v - quantity;
+      if (delta !== 0) {
+        if (delta > 0) for (let i = 0; i < delta; i++) onIncrease();
+        else for (let i = 0; i < -delta; i++) onDecrease();
+      }
+    }
+    setEditingQty(false);
+  };
 
   return (
     <li className="px-5 py-4 flex items-start gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors">
@@ -78,9 +101,31 @@ export function CartItem({
             <IconMinus className="w-5 h-5" />
           </button>
         </Tooltip>
-        <span className="min-w-[2rem] text-center text-base font-medium text-slate-700 dark:text-slate-200">
-          {quantity}
-        </span>
+        {editingQty ? (
+          <input
+            ref={qtyInputRef}
+            type="number"
+            min={1}
+            value={qtyInput}
+            onChange={(e) => setQtyInput(e.target.value)}
+            onBlur={commitQty}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitQty();
+              if (e.key === "Escape") setEditingQty(false);
+            }}
+            className="w-12 text-center text-base font-medium rounded border border-indigo-400 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-400 py-0.5"
+          />
+        ) : (
+          <Tooltip content="Click para editar cantidad">
+            <button
+              type="button"
+              onClick={startEditQty}
+              className="min-w-[2rem] text-center text-base font-medium text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline cursor-pointer"
+            >
+              {quantity}
+            </button>
+          </Tooltip>
+        )}
         <Tooltip content={t("sales.cartIncrease")}>
           <button
             type="button"

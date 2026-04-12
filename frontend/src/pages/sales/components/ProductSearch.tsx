@@ -154,12 +154,25 @@ export function ProductSearch({
       <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
         {t("sales.searchLabel")}
       </label>
-      <p className="text-xs text-slate-500 dark:text-slate-500 mb-1">
+      <p className="text-xs text-slate-500 dark:text-slate-500 mb-2">
         {t("sales.searchHint")}
       </p>
-      <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">
-        {t("sales.searchShortcuts")}
-      </p>
+      <div className="flex flex-wrap gap-1.5 mb-2">
+        {[
+          ["F2", "buscar"],
+          ["↑↓", "navegar"],
+          ["Enter", "agregar"],
+          ["F4", "cobrar"],
+          ["Esc", "cerrar"],
+        ].map(([key, label]) => (
+          <span key={key} className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+            <kbd className="px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 font-mono text-slate-600 dark:text-slate-300 text-[11px] leading-none">
+              {key}
+            </kbd>
+            <span>{label}</span>
+          </span>
+        ))}
+      </div>
       <div className="relative">
         <div className="relative">
           <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400 dark:text-slate-500 pointer-events-none" />
