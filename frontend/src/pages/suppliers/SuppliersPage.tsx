@@ -182,59 +182,70 @@ export default function SuppliersPage() {
           </button>
         </div>
       ) : (
-        <div className="table-modern">
-          <table>
-            <thead>
-              <tr>
-                {([
-                  ["name", t("suppliers.colName")],
-                  ["taxId", t("suppliers.colTaxId")],
-                  ["phone", t("suppliers.colPhone")],
-                  ["email", t("suppliers.colEmail")],
-                  ["city", t("suppliers.colCity")],
-                ] as [keyof Supplier, string][]).map(([col, label]) => (
-                  <th key={col}>
-                    <button type="button" onClick={() => toggle(col)}
-                      className="group inline-flex items-center text-left font-semibold hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                      {label}
-                      <SortIcon active={sortKey === col} dir={sortDir} />
-                    </button>
-                  </th>
-                ))}
-                <th>{t("suppliers.colActions")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedSuppliers.map((s) => (
-                <tr key={s.id} className="group">
-                  <td className="font-medium">{s.name}</td>
-                  <td className="text-slate-500 dark:text-slate-400">{s.taxId ?? "—"}</td>
-                  <td className="text-slate-500 dark:text-slate-400">{s.phone ?? "—"}</td>
-                  <td className="text-slate-500 dark:text-slate-400">{s.email ?? "—"}</td>
-                  <td className="text-slate-500 dark:text-slate-400">{s.city ?? "—"}</td>
-                  <td>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        type="button"
-                        onClick={() => openEdit(s)}
-                        className="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded px-2 py-1"
-                      >
-                        {t("suppliers.edit")}
+        <>
+          {/* Mobile cards */}
+          <div className="sm:hidden space-y-2">
+            {sortedSuppliers.map((s) => (
+              <div key={s.id} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 space-y-1">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-semibold text-slate-800 dark:text-slate-100">{s.name}</p>
+                  <div className="flex gap-1 shrink-0">
+                    <button type="button" onClick={() => openEdit(s)} className="text-xs text-slate-500 dark:text-slate-400 hover:underline px-2 py-1">{t("suppliers.edit")}</button>
+                    <button type="button" onClick={() => handleDelete(s)} className="text-xs text-red-500 dark:text-red-400 hover:underline px-2 py-1">{t("suppliers.delete")}</button>
+                  </div>
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap gap-x-3 gap-y-0.5">
+                  {s.taxId && <span>{s.taxId}</span>}
+                  {s.phone && <span>{s.phone}</span>}
+                  {s.email && <span>{s.email}</span>}
+                  {s.city && <span>{s.city}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Desktop table */}
+          <div className="hidden sm:block table-modern">
+            <table>
+              <thead>
+                <tr>
+                  {([
+                    ["name", t("suppliers.colName")],
+                    ["taxId", t("suppliers.colTaxId")],
+                    ["phone", t("suppliers.colPhone")],
+                    ["email", t("suppliers.colEmail")],
+                    ["city", t("suppliers.colCity")],
+                  ] as [keyof Supplier, string][]).map(([col, label]) => (
+                    <th key={col}>
+                      <button type="button" onClick={() => toggle(col)}
+                        className="group inline-flex items-center text-left font-semibold hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                        {label}
+                        <SortIcon active={sortKey === col} dir={sortDir} />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(s)}
-                        className="text-xs text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded px-2 py-1"
-                      >
-                        {t("suppliers.delete")}
-                      </button>
-                    </div>
-                  </td>
+                    </th>
+                  ))}
+                  <th>{t("suppliers.colActions")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {sortedSuppliers.map((s) => (
+                  <tr key={s.id} className="group">
+                    <td className="font-medium">{s.name}</td>
+                    <td className="text-slate-500 dark:text-slate-400">{s.taxId ?? "—"}</td>
+                    <td className="text-slate-500 dark:text-slate-400">{s.phone ?? "—"}</td>
+                    <td className="text-slate-500 dark:text-slate-400">{s.email ?? "—"}</td>
+                    <td className="text-slate-500 dark:text-slate-400">{s.city ?? "—"}</td>
+                    <td>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button type="button" onClick={() => openEdit(s)} className="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded px-2 py-1">{t("suppliers.edit")}</button>
+                        <button type="button" onClick={() => handleDelete(s)} className="text-xs text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded px-2 py-1">{t("suppliers.delete")}</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* Modal */}

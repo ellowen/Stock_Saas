@@ -64,6 +64,8 @@ export default function CustomersPage() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [formTouched, setFormTouched] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [historyCustomer, setHistoryCustomer] = useState<Customer | null>(null);
   const [history, setHistory] = useState<{ totalSpent: number; count: number; sales: SaleHistory[] } | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -173,10 +175,28 @@ export default function CustomersPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       showToast(t("customers.deleted"), "success");
+      setSelected((s) => { const n = new Set(s); n.delete(c.id); return n; });
       load(search || undefined);
     } catch {
       showToast(t("customers.deleteError"), "error");
     }
+  }
+
+  async function handleBulkDelete() {
+    if (!confirm(`Eliminar ${selected.size} cliente${selected.size !== 1 ? "s" : ""}?`)) return;
+    setBulkDeleting(true);
+    const token = localStorage.getItem("accessToken");
+    let errors = 0;
+    for (const id of selected) {
+      try {
+        await fetch(`${API}/customers/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      } catch { errors++; }
+    }
+    setSelected(new Set());
+    if (errors > 0) showToast(`${errors} clientes no pudieron eliminarse`, "error");
+    else showToast(`${selected.size} clientes eliminados`, "success");
+    load(search || undefined);
+    setBulkDeleting(false);
   }
 
   return (
@@ -211,68 +231,98 @@ export default function CustomersPage() {
           </button>
         </div>
       ) : (
-        <div className="table-modern">
-          <table>
-            <thead>
-              <tr>
-                {([
-                  ["name", t("customers.colName")],
-                  ["taxId", t("customers.colTaxId")],
-                  ["phone", t("customers.colPhone")],
-                  ["email", t("customers.colEmail")],
-                  ["city", t("customers.colCity")],
-                ] as [keyof Customer, string][]).map(([col, label]) => (
-                  <th key={col}>
-                    <button type="button" onClick={() => toggle(col)}
-                      className="group inline-flex items-center text-left font-semibold hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                      {label}
-                      <SortIcon active={sortKey === col} dir={sortDir} />
-                    </button>
+        <>
+          {/* Mobile cards */}
+          <div className="sm:hidden space-y-2">
+            {sortedCustomers.map((c) => (
+              <div key={c.id} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 space-y-1">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-semibold text-slate-800 dark:text-slate-100">{c.name}</p>
+                  <div className="flex gap-1 shrink-0">
+                    <button type="button" onClick={() => openHistory(c)} className="text-xs text-primary-600 dark:text-primary-400 hover:underline px-2 py-1">Historial</button>
+                    <button type="button" onClick={() => openEdit(c)} className="text-xs text-slate-500 dark:text-slate-400 hover:underline px-2 py-1">{t("customers.edit")}</button>
+                    <button type="button" onClick={() => handleDelete(c)} className="text-xs text-red-500 dark:text-red-400 hover:underline px-2 py-1">{t("customers.delete")}</button>
+                  </div>
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap gap-x-3 gap-y-0.5">
+                  {c.taxId && <span>{c.taxType ?? ""} {c.taxId}</span>}
+                  {c.phone && <span>{c.phone}</span>}
+                  {c.email && <span>{c.email}</span>}
+                  {c.city && <span>{c.city}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Bulk action toolbar */}
+          {selected.size > 0 && (
+            <div className="hidden sm:flex items-center gap-3 rounded-xl bg-slate-900 dark:bg-slate-700 text-white px-4 py-2.5 shadow-lg">
+              <span className="text-sm font-medium">{selected.size} seleccionado{selected.size !== 1 ? "s" : ""}</span>
+              <button type="button" onClick={handleBulkDelete} disabled={bulkDeleting}
+                className="ml-auto text-sm text-red-300 hover:text-red-200 disabled:opacity-50">
+                {bulkDeleting ? "Eliminando..." : "Eliminar seleccionados"}
+              </button>
+              <button type="button" onClick={() => setSelected(new Set())} className="text-sm text-slate-300 hover:text-white">Cancelar</button>
+            </div>
+          )}
+          {/* Desktop table */}
+          <div className="hidden sm:block table-modern">
+            <table>
+              <thead>
+                <tr>
+                  <th className="w-10">
+                    <input type="checkbox"
+                      className="rounded border-slate-300 dark:border-slate-600"
+                      checked={selected.size === sortedCustomers.length && sortedCustomers.length > 0}
+                      onChange={(e) => setSelected(e.target.checked ? new Set(sortedCustomers.map((c) => c.id)) : new Set())}
+                    />
                   </th>
-                ))}
-                <th>{t("customers.colActions")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedCustomers.map((c) => (
-                <tr key={c.id} className="group">
-                  <td className="font-medium">{c.name}</td>
-                  <td className="text-slate-500 dark:text-slate-400">
-                    {c.taxId ? `${c.taxType ?? ""} ${c.taxId}`.trim() : "—"}
-                  </td>
-                  <td className="text-slate-500 dark:text-slate-400">{c.phone ?? "—"}</td>
-                  <td className="text-slate-500 dark:text-slate-400">{c.email ?? "—"}</td>
-                  <td className="text-slate-500 dark:text-slate-400">{c.city ?? "—"}</td>
-                  <td>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        type="button"
-                        onClick={() => openHistory(c)}
-                        className="text-xs text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded px-2 py-1"
-                      >
-                        Historial
+                  {([
+                    ["name", t("customers.colName")],
+                    ["taxId", t("customers.colTaxId")],
+                    ["phone", t("customers.colPhone")],
+                    ["email", t("customers.colEmail")],
+                    ["city", t("customers.colCity")],
+                  ] as [keyof Customer, string][]).map(([col, label]) => (
+                    <th key={col}>
+                      <button type="button" onClick={() => toggle(col)}
+                        className="group inline-flex items-center text-left font-semibold hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                        {label}
+                        <SortIcon active={sortKey === col} dir={sortDir} />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => openEdit(c)}
-                        className="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded px-2 py-1"
-                      >
-                        {t("customers.edit")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(c)}
-                        className="text-xs text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded px-2 py-1"
-                      >
-                        {t("customers.delete")}
-                      </button>
-                    </div>
-                  </td>
+                    </th>
+                  ))}
+                  <th>{t("customers.colActions")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {sortedCustomers.map((c) => (
+                  <tr key={c.id} className={`group ${selected.has(c.id) ? "bg-primary-50 dark:bg-primary-900/10" : ""}`}>
+                    <td>
+                      <input type="checkbox" className="rounded border-slate-300 dark:border-slate-600"
+                        checked={selected.has(c.id)}
+                        onChange={(e) => setSelected((s) => { const n = new Set(s); e.target.checked ? n.add(c.id) : n.delete(c.id); return n; })}
+                      />
+                    </td>
+                    <td className="font-medium">{c.name}</td>
+                    <td className="text-slate-500 dark:text-slate-400">
+                      {c.taxId ? `${c.taxType ?? ""} ${c.taxId}`.trim() : "—"}
+                    </td>
+                    <td className="text-slate-500 dark:text-slate-400">{c.phone ?? "—"}</td>
+                    <td className="text-slate-500 dark:text-slate-400">{c.email ?? "—"}</td>
+                    <td className="text-slate-500 dark:text-slate-400">{c.city ?? "—"}</td>
+                    <td>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button type="button" onClick={() => openHistory(c)} className="text-xs text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded px-2 py-1">Historial</button>
+                        <button type="button" onClick={() => openEdit(c)} className="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded px-2 py-1">{t("customers.edit")}</button>
+                        <button type="button" onClick={() => handleDelete(c)} className="text-xs text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded px-2 py-1">{t("customers.delete")}</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* Historial de compras */}
