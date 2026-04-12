@@ -13,6 +13,13 @@ type UserMe = {
     subscriptionStatus: string | null;
     currentPeriodEnd: string | null;
     stripeCustomerId: string | null;
+    legalName?: string | null;
+    taxId?: string | null;
+    address?: string | null;
+    city?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    currency?: string | null;
   };
 };
 
@@ -25,6 +32,10 @@ type AuthContextValue = {
   canViewReports: boolean;
   canManageTransfers: boolean;
   company: UserMe["company"];
+  /** Check a specific permission key for the current user */
+  hasPermission: (key: string) => boolean;
+  /** Set of effective permission keys (loaded after login) */
+  permissions: Set<string>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -34,9 +45,54 @@ function goToLogin() {
   window.location.href = "/login";
 }
 
+// Default permissions per role (mirrors backend ROLE_DEFAULTS — used before API responds)
+const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
+  OWNER: [
+    "PRODUCTS_WRITE", "PRODUCTS_DELETE", "INVENTORY_WRITE",
+    "SALES_VOID", "SALES_HISTORY", "TRANSFERS_APPROVE",
+    "EMPLOYEES_VIEW", "EMPLOYEES_WRITE",
+    "ACCOUNTING_VIEW", "ACCOUNTING_WRITE",
+    "REPORTS_VIEW", "USERS_MANAGE", "SETTINGS_MANAGE", "AUDIT_VIEW",
+    "CUSTOMERS_WRITE", "SUPPLIERS_WRITE", "DOCUMENTS_WRITE", "PURCHASES_MANAGE",
+  ],
+  MANAGER: [
+    "PRODUCTS_WRITE", "PRODUCTS_DELETE", "INVENTORY_WRITE",
+    "SALES_VOID", "SALES_HISTORY", "TRANSFERS_APPROVE",
+    "EMPLOYEES_VIEW", "ACCOUNTING_VIEW", "REPORTS_VIEW",
+    "CUSTOMERS_WRITE", "SUPPLIERS_WRITE", "DOCUMENTS_WRITE", "PURCHASES_MANAGE",
+  ],
+  SELLER: ["SALES_HISTORY", "CUSTOMERS_WRITE", "DOCUMENTS_WRITE"],
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserMe | null>(null);
   const [loading, setLoading] = useState(true);
+  const [permissions, setPermissions] = useState<Set<string>>(new Set());
+
+  const loadPermissions = useCallback(async (userId: number, role: string, token: string) => {
+    // OWNER has all permissions — no need to fetch
+    if (role === "OWNER") {
+      setPermissions(new Set(ROLE_DEFAULT_PERMISSIONS["OWNER"]));
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE_URL}/permissions/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const granted = (data.permissions as { permission: string; effective: boolean }[])
+          .filter((p) => p.effective)
+          .map((p) => p.permission);
+        setPermissions(new Set(granted));
+      } else {
+        // Fallback to role defaults if fetch fails
+        setPermissions(new Set(ROLE_DEFAULT_PERMISSIONS[role] ?? []));
+      }
+    } catch {
+      setPermissions(new Set(ROLE_DEFAULT_PERMISSIONS[role] ?? []));
+    }
+  }, []);
 
   const refetch = useCallback(async () => {
     const token = getAccessToken();
@@ -57,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await res.json();
         if (data?.auth && data?.user) {
           setUser({ auth: data.auth, user: data.user, company: data.company });
+          await loadPermissions(data.auth.userId, data.auth.role, token);
         } else {
           setUser(null);
           goToLogin();
@@ -74,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadPermissions]);
 
   useEffect(() => {
     refetch();
@@ -83,8 +140,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const role = user?.auth?.role ?? "";
   const canManageUsers = role === "OWNER" || role === "MANAGER";
   const canManageBranches = role === "OWNER" || role === "MANAGER";
-  const canViewReports = role === "OWNER" || role === "MANAGER";
-  const canManageTransfers = role === "OWNER" || role === "MANAGER";
+  const canViewReports = permissions.has("REPORTS_VIEW");
+  const canManageTransfers = permissions.has("TRANSFERS_APPROVE");
+
+  const hasPermission = useCallback((key: string) => permissions.has(key), [permissions]);
 
   if (loading) {
     return (
@@ -102,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, refetch, canManageUsers, canManageBranches, canViewReports, canManageTransfers, company: user?.company }}>
+    <AuthContext.Provider value={{ user, loading, refetch, canManageUsers, canManageBranches, canViewReports, canManageTransfers, company: user?.company, hasPermission, permissions }}>
       {children}
     </AuthContext.Provider>
   );

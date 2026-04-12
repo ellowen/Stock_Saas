@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback } from "react";
-import { useTranslation } from "react-i18next";
 import { authHeaders } from "../../lib/api";
 import { useToast } from "../../contexts/ToastContext";
 import { PageHeader } from "../../components/ui/PageHeader";
@@ -93,7 +92,7 @@ function AccountModal({
   accounts: Account[];
   onSaved: () => void;
 }) {
-  const { addToast } = useToast();
+  const { showToast } = useToast();
   const [form, setForm] = useState({
     code: "",
     name: "",
@@ -144,11 +143,11 @@ function AccountModal({
         }
       );
       if (!res.ok) throw new Error((await res.json()).message);
-      addToast({ type: "success", message: editing ? "Cuenta actualizada" : "Cuenta creada" });
+      showToast(editing ? "Cuenta actualizada" : "Cuenta creada", "success");
       onSaved();
       onClose();
     } catch (err: any) {
-      addToast({ type: "error", message: err.message });
+      showToast(err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -288,7 +287,7 @@ function PlanDeContasTab({
   loading: boolean;
   onRefresh: () => void;
 }) {
-  const { addToast } = useToast();
+  const { showToast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
   const [seeding, setSeeding] = useState(false);
@@ -298,10 +297,10 @@ function PlanDeContasTab({
     try {
       const res = await fetch("/api/accounts-chart/seed", { method: "POST", headers: authHeaders() });
       if (!res.ok) throw new Error((await res.json()).message);
-      addToast({ type: "success", message: "Plan de cuentas base generado" });
+      showToast("Plan de cuentas base generado", "success");
       onRefresh();
     } catch (err: any) {
-      addToast({ type: "error", message: err.message });
+      showToast(err.message, "error");
     } finally {
       setSeeding(false);
     }
@@ -434,7 +433,7 @@ function JournalModal({
   accounts: Account[];
   onSaved: () => void;
 }) {
-  const { addToast } = useToast();
+  const { showToast } = useToast();
   const emptyLine = () => ({ accountId: "", debit: "", credit: "", description: "" });
   const [form, setForm] = useState({ date: new Date().toISOString().slice(0, 10), description: "", reference: "" });
   const [lines, setLines] = useState([emptyLine(), emptyLine()]);
@@ -463,7 +462,7 @@ function JournalModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!balanced) {
-      addToast({ type: "error", message: `El asiento no balancea: Debe ${fmt(sumDebit)} / Haber ${fmt(sumCredit)}` });
+      showToast(`El asiento no balancea: Debe ${fmt(sumDebit)} / Haber ${fmt(sumCredit)}`, "error");
       return;
     }
     setSaving(true);
@@ -488,11 +487,11 @@ function JournalModal({
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error((await res.json()).message);
-      addToast({ type: "success", message: "Asiento creado" });
+      showToast("Asiento creado", "success");
       onSaved();
       onClose();
     } catch (err: any) {
-      addToast({ type: "error", message: err.message });
+      showToast(err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -650,7 +649,7 @@ function JournalDetailModal({
 }
 
 function LibroDiarioTab({ accounts }: { accounts: Account[] }) {
-  const { addToast } = useToast();
+  const { showToast } = useToast();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ from: "", to: "", status: "" });
@@ -677,11 +676,11 @@ function LibroDiarioTab({ accounts }: { accounts: Account[] }) {
     try {
       const res = await fetch(`/api/journal/${id}/post`, { method: "POST", headers: authHeaders() });
       if (!res.ok) throw new Error((await res.json()).message);
-      addToast({ type: "success", message: "Asiento confirmado" });
+      showToast("Asiento confirmado", "success");
       setDetail(null);
       load();
     } catch (err: any) {
-      addToast({ type: "error", message: err.message });
+      showToast(err.message, "error");
     }
   };
 
@@ -690,11 +689,11 @@ function LibroDiarioTab({ accounts }: { accounts: Account[] }) {
     try {
       const res = await fetch(`/api/journal/${id}/void`, { method: "POST", headers: authHeaders() });
       if (!res.ok) throw new Error((await res.json()).message);
-      addToast({ type: "success", message: "Contra-asiento creado" });
+      showToast("Contra-asiento creado", "success");
       setDetail(null);
       load();
     } catch (err: any) {
-      addToast({ type: "error", message: err.message });
+      showToast(err.message, "error");
     }
   };
 
@@ -703,11 +702,11 @@ function LibroDiarioTab({ accounts }: { accounts: Account[] }) {
     try {
       const res = await fetch(`/api/journal/${id}`, { method: "DELETE", headers: authHeaders() });
       if (!res.ok) throw new Error((await res.json()).message);
-      addToast({ type: "success", message: "Asiento eliminado" });
+      showToast("Asiento eliminado", "success");
       setDetail(null);
       load();
     } catch (err: any) {
-      addToast({ type: "error", message: err.message });
+      showToast(err.message, "error");
     }
   };
 
@@ -826,7 +825,6 @@ interface IVAComprasRow {
 }
 
 function LibroIVATab() {
-  const { addToast } = useToast();
   const [subTab, setSubTab] = useState<"ventas" | "compras">("ventas");
   const [filters, setFilters] = useState({ from: "", to: "" });
 
@@ -838,6 +836,9 @@ function LibroIVATab() {
   // Compras state
   const [comprasRows, setComprasRows] = useState<IVAComprasRow[]>([]);
   const [loadingC, setLoadingC] = useState(false);
+
+  // IVA Balance state
+  const [ivaBalance, setIvaBalance] = useState<{ ivaDF: number; ivaCF: number; saldo: number; hasAccountingData: boolean } | null>(null);
 
   const buildParams = () => {
     const p = new URLSearchParams();
@@ -873,8 +874,17 @@ function LibroIVATab() {
     }
   }, [filters]);
 
+  const loadBalance = useCallback(async () => {
+    const p = buildParams();
+    try {
+      const res = await fetch(`/api/iva-book/balance?${p}`, { headers: authHeaders() });
+      if (res.ok) setIvaBalance(await res.json());
+    } catch { /* silent */ }
+  }, [filters]);
+
   useEffect(() => { loadVentas(); }, [loadVentas]);
   useEffect(() => { loadCompras(); }, [loadCompras]);
+  useEffect(() => { loadBalance(); }, [loadBalance]);
 
   const exportCSV = (type: "ventas" | "compras") => {
     const params = buildParams();
@@ -907,6 +917,29 @@ function LibroIVATab() {
             onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))} />
         </div>
       </div>
+
+      {/* IVA Balance summary */}
+      {ivaBalance && ivaBalance.hasAccountingData && (
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="rounded-card border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">IVA Debito Fiscal</p>
+            <p className="text-lg font-semibold mt-1 text-danger">{fmt(ivaBalance.ivaDF)}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Generado por ventas</p>
+          </div>
+          <div className="rounded-card border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">IVA Credito Fiscal</p>
+            <p className="text-lg font-semibold mt-1 text-success">{fmt(ivaBalance.ivaCF)}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Generado por compras</p>
+          </div>
+          <div className={`rounded-card border p-4 ${ivaBalance.saldo >= 0 ? "border-danger/40 bg-danger/5" : "border-success/40 bg-success/5"}`}>
+            <p className="text-xs text-muted-foreground">Saldo IVA del Periodo</p>
+            <p className={`text-lg font-bold mt-1 ${ivaBalance.saldo >= 0 ? "text-danger" : "text-success"}`}>
+              {ivaBalance.saldo >= 0 ? "A pagar" : "A favor"}: {fmt(Math.abs(ivaBalance.saldo))}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">DF - CF</p>
+          </div>
+        </div>
+      )}
 
       {/* Sub-tabs */}
       <div className="flex gap-4 border-b border-border mb-4">
@@ -1084,9 +1117,340 @@ function LibroIVATab() {
   );
 }
 
+// ─── Reportes Tab ────────────────────────────────────────────────────────────
+
+function ReportesTab({ accounts }: { accounts: Account[] }) {
+  const { showToast } = useToast();
+  const firstOfMonth = new Date().toISOString().slice(0, 8) + "01";
+  const lastOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
+    .toISOString()
+    .slice(0, 10);
+
+  const [report, setReport] = useState<"trial" | "ledger" | "income">("trial");
+  const [from, setFrom] = useState(firstOfMonth);
+  const [to, setTo] = useState(lastOfMonth);
+  const [selectedAccountId, setSelectedAccountId] = useState<number | "">("");
+  const [loading, setLoading] = useState(false);
+
+  // ── Trial Balance state ──
+  type TrialRow = { id: number; code: string; name: string; type: string; sumDebit: number; sumCredit: number; saldoDeudor: number; saldoAcreedor: number };
+  const [trialRows, setTrialRows] = useState<TrialRow[]>([]);
+  const [trialTotals, setTrialTotals] = useState<{ sumDebit: number; sumCredit: number; saldoDeudor: number; saldoAcreedor: number } | null>(null);
+
+  // ── Ledger state ──
+  type LedgerRow = { journalEntryId: number; date: string; description: string; reference: string | null; debit: number; credit: number; balance: number };
+  const [ledgerData, setLedgerData] = useState<{ account: { code: string; name: string }; rows: LedgerRow[]; totalDebit: number; totalCredit: number; finalBalance: number } | null>(null);
+
+  // ── Income state ──
+  type IncomeItem = { id: number; code: string; name: string; amount: number };
+  const [incomeData, setIncomeData] = useState<{ revenue: IncomeItem[]; expense: IncomeItem[]; totalRevenue: number; totalExpense: number; result: number } | null>(null);
+
+  const leafAccounts = accounts.filter((a) => !a.isParent);
+
+  async function fetchTrialBalance() {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      const res = await fetch(`/api/accounting-reports/trial-balance?${params}`, { headers: authHeaders() });
+      if (!res.ok) throw new Error("Error al cargar balance");
+      const data = await res.json();
+      setTrialRows(data.rows);
+      setTrialTotals(data.totals);
+    } catch {
+      showToast("Error al cargar balance de sumas y saldos", "error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchLedger() {
+    if (!selectedAccountId) return;
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      const res = await fetch(`/api/accounting-reports/ledger/${selectedAccountId}?${params}`, { headers: authHeaders() });
+      if (!res.ok) throw new Error("Error al cargar libro mayor");
+      setLedgerData(await res.json());
+    } catch {
+      showToast("Error al cargar libro mayor", "error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchIncomeStatement() {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      const res = await fetch(`/api/accounting-reports/income-statement?${params}`, { headers: authHeaders() });
+      if (!res.ok) throw new Error("Error al cargar estado de resultados");
+      setIncomeData(await res.json());
+    } catch {
+      showToast("Error al cargar estado de resultados", "error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleGenerate() {
+    if (report === "trial") fetchTrialBalance();
+    else if (report === "ledger") fetchLedger();
+    else fetchIncomeStatement();
+  }
+
+  function exportCSV() {
+    const params = new URLSearchParams();
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    params.set("export", "csv");
+
+    let url = "";
+    if (report === "trial") url = `/api/accounting-reports/trial-balance?${params}`;
+    else if (report === "ledger" && selectedAccountId) url = `/api/accounting-reports/ledger/${selectedAccountId}?${params}`;
+    else if (report === "income") url = `/api/accounting-reports/income-statement?${params}`;
+    else return;
+
+    window.open(url, "_blank");
+  }
+
+  const reportOptions = [
+    { value: "trial", label: "Balance de Sumas y Saldos" },
+    { value: "ledger", label: "Libro Mayor" },
+    { value: "income", label: "Estado de Resultados" },
+  ] as const;
+
+  return (
+    <div className="space-y-6">
+      {/* Filters */}
+      <div className="card p-4 flex flex-wrap gap-4 items-end">
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-muted-foreground">Reporte</label>
+          <select
+            className="input text-sm"
+            value={report}
+            onChange={(e) => setReport(e.target.value as any)}
+          >
+            {reportOptions.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <FormField label="Desde" className="w-40">
+          <input type="date" className="input text-sm" value={from} onChange={(e) => setFrom(e.target.value)} />
+        </FormField>
+        <FormField label="Hasta" className="w-40">
+          <input type="date" className="input text-sm" value={to} onChange={(e) => setTo(e.target.value)} />
+        </FormField>
+
+        {report === "ledger" && (
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-muted-foreground">Cuenta</label>
+            <select
+              className="input text-sm min-w-56"
+              value={selectedAccountId}
+              onChange={(e) => setSelectedAccountId(e.target.value ? Number(e.target.value) : "")}
+            >
+              <option value="">Seleccionar cuenta...</option>
+              {leafAccounts.map((a) => (
+                <option key={a.id} value={a.id}>{a.code} — {a.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button onClick={handleGenerate} disabled={loading || (report === "ledger" && !selectedAccountId)}>
+            {loading ? "Cargando..." : "Generar"}
+          </Button>
+          <Button variant="secondary" onClick={exportCSV}>
+            Exportar CSV
+          </Button>
+        </div>
+      </div>
+
+      {/* Balance de Sumas y Saldos */}
+      {report === "trial" && trialRows.length > 0 && trialTotals && (
+        <div className="card overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-left p-3 font-medium">Codigo</th>
+                <th className="text-left p-3 font-medium">Cuenta</th>
+                <th className="text-left p-3 font-medium">Tipo</th>
+                <th className="text-right p-3 font-medium">Sum. Debe</th>
+                <th className="text-right p-3 font-medium">Sum. Haber</th>
+                <th className="text-right p-3 font-medium">Saldo Deudor</th>
+                <th className="text-right p-3 font-medium">Saldo Acreedor</th>
+              </tr>
+            </thead>
+            <tbody>
+              {trialRows.filter((r) => r.sumDebit > 0 || r.sumCredit > 0).map((r) => (
+                <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30">
+                  <td className="p-3 font-mono text-muted-foreground">{r.code}</td>
+                  <td className="p-3">{r.name}</td>
+                  <td className="p-3"><Badge variant={TYPE_VARIANT[r.type] ?? "neutral"}>{TYPE_LABELS[r.type] ?? r.type}</Badge></td>
+                  <td className="p-3 text-right font-mono">{fmt(r.sumDebit)}</td>
+                  <td className="p-3 text-right font-mono">{fmt(r.sumCredit)}</td>
+                  <td className="p-3 text-right font-mono">{r.saldoDeudor > 0 ? fmt(r.saldoDeudor) : "-"}</td>
+                  <td className="p-3 text-right font-mono">{r.saldoAcreedor > 0 ? fmt(r.saldoAcreedor) : "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-muted/50 font-semibold border-t-2 border-border">
+                <td colSpan={3} className="p-3">TOTALES</td>
+                <td className="p-3 text-right font-mono">{fmt(trialTotals.sumDebit)}</td>
+                <td className="p-3 text-right font-mono">{fmt(trialTotals.sumCredit)}</td>
+                <td className="p-3 text-right font-mono">{fmt(trialTotals.saldoDeudor)}</td>
+                <td className="p-3 text-right font-mono">{fmt(trialTotals.saldoAcreedor)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+
+      {/* Libro Mayor */}
+      {report === "ledger" && ledgerData && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <h3 className="font-semibold text-lg">{ledgerData.account.code} — {ledgerData.account.name}</h3>
+          </div>
+          <div className="card overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left p-3 font-medium">Fecha</th>
+                  <th className="text-left p-3 font-medium">Descripcion</th>
+                  <th className="text-left p-3 font-medium">Ref.</th>
+                  <th className="text-right p-3 font-medium">Debe</th>
+                  <th className="text-right p-3 font-medium">Haber</th>
+                  <th className="text-right p-3 font-medium">Saldo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ledgerData.rows.length === 0 ? (
+                  <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Sin movimientos en el período</td></tr>
+                ) : ledgerData.rows.map((r, i) => (
+                  <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
+                    <td className="p-3 whitespace-nowrap">{new Date(r.date).toLocaleDateString("es-AR")}</td>
+                    <td className="p-3 max-w-xs truncate">{r.description}</td>
+                    <td className="p-3 text-muted-foreground">{r.reference ?? "-"}</td>
+                    <td className="p-3 text-right font-mono">{r.debit > 0 ? fmt(r.debit) : "-"}</td>
+                    <td className="p-3 text-right font-mono">{r.credit > 0 ? fmt(r.credit) : "-"}</td>
+                    <td className={`p-3 text-right font-mono font-medium ${r.balance < 0 ? "text-danger" : ""}`}>{fmt(r.balance)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-muted/50 font-semibold border-t-2 border-border">
+                  <td colSpan={3} className="p-3">TOTALES</td>
+                  <td className="p-3 text-right font-mono">{fmt(ledgerData.totalDebit)}</td>
+                  <td className="p-3 text-right font-mono">{fmt(ledgerData.totalCredit)}</td>
+                  <td className={`p-3 text-right font-mono ${ledgerData.finalBalance < 0 ? "text-danger" : "text-success"}`}>
+                    {fmt(ledgerData.finalBalance)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Estado de Resultados */}
+      {report === "income" && incomeData && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Ingresos */}
+          <div className="card">
+            <div className="p-4 border-b border-border">
+              <h3 className="font-semibold text-success">Ingresos</h3>
+            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left p-3 font-medium">Cuenta</th>
+                  <th className="text-right p-3 font-medium">Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                {incomeData.revenue.map((r) => (
+                  <tr key={r.id} className="border-b border-border/50">
+                    <td className="p-3">{r.code} — {r.name}</td>
+                    <td className="p-3 text-right font-mono">{fmt(r.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-success/10 font-semibold border-t-2 border-border">
+                  <td className="p-3">Total Ingresos</td>
+                  <td className="p-3 text-right font-mono text-success">{fmt(incomeData.totalRevenue)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          {/* Egresos */}
+          <div className="card">
+            <div className="p-4 border-b border-border">
+              <h3 className="font-semibold text-danger">Egresos</h3>
+            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left p-3 font-medium">Cuenta</th>
+                  <th className="text-right p-3 font-medium">Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                {incomeData.expense.map((r) => (
+                  <tr key={r.id} className="border-b border-border/50">
+                    <td className="p-3">{r.code} — {r.name}</td>
+                    <td className="p-3 text-right font-mono">{fmt(r.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-danger/10 font-semibold border-t-2 border-border">
+                  <td className="p-3">Total Egresos</td>
+                  <td className="p-3 text-right font-mono text-danger">{fmt(incomeData.totalExpense)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          {/* Resultado */}
+          <div className="lg:col-span-2 card p-6 flex items-center justify-between">
+            <span className="text-lg font-semibold">Resultado del Periodo</span>
+            <span className={`text-2xl font-bold ${incomeData.result >= 0 ? "text-success" : "text-danger"}`}>
+              {incomeData.result >= 0 ? "Ganancia" : "Perdida"}: $ {fmt(Math.abs(incomeData.result))}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Empty states */}
+      {report === "trial" && trialRows.length === 0 && !loading && (
+        <div className="card p-12 text-center text-muted-foreground">Generá el reporte para ver el balance de sumas y saldos.</div>
+      )}
+      {report === "ledger" && !ledgerData && !loading && (
+        <div className="card p-12 text-center text-muted-foreground">Seleccioná una cuenta y generá el reporte para ver el libro mayor.</div>
+      )}
+      {report === "income" && !incomeData && !loading && (
+        <div className="card p-12 text-center text-muted-foreground">Generá el reporte para ver el estado de resultados.</div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-type Tab = "plan" | "diario" | "iva";
+type Tab = "plan" | "diario" | "iva" | "reportes";
 
 export default function AccountingPage() {
   const [tab, setTab] = useState<Tab>("plan");
@@ -1114,11 +1478,12 @@ export default function AccountingPage() {
     { key: "plan", label: "Plan de Cuentas" },
     { key: "diario", label: "Libro Diario" },
     { key: "iva", label: "Libro IVA" },
+    { key: "reportes", label: "Reportes" },
   ];
 
   return (
     <div className="p-6 space-y-6">
-      <PageHeader title="Contabilidad" subtitle="Plan de cuentas FACPCE · Libro diario · Libro IVA" />
+      <PageHeader title="Contabilidad" subtitle="Plan de cuentas FACPCE · Libro diario · Libro IVA · Reportes" />
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border">
@@ -1149,6 +1514,7 @@ export default function AccountingPage() {
 
       {tab === "diario" && <LibroDiarioTab accounts={allAccounts} />}
       {tab === "iva" && <LibroIVATab />}
+      {tab === "reportes" && <ReportesTab accounts={allAccounts} />}
     </div>
   );
 }

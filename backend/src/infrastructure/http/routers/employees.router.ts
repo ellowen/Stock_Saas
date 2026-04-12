@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middleware/auth";
+import { requirePermission } from "../middleware/requirePermission";
 import { EmployeeService } from "../../../application/employees/employee.service";
 
 const router = Router();
@@ -7,14 +8,14 @@ const service = new EmployeeService();
 
 router.use(authMiddleware);
 
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", requirePermission("EMPLOYEES_VIEW"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const includeInactive = req.query["includeInactive"] === "true";
   const employees = await service.list(companyId, includeInactive);
   res.json(employees);
 });
 
-router.get("/:id", async (req: Request, res: Response) => {
+router.get("/:id", requirePermission("EMPLOYEES_VIEW"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
@@ -26,7 +27,7 @@ router.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requirePermission("EMPLOYEES_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const {
     branchId, firstName, lastName, cuil, email, phone, address,
@@ -55,7 +56,7 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
-router.put("/:id", async (req: Request, res: Response) => {
+router.put("/:id", requirePermission("EMPLOYEES_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
@@ -72,7 +73,7 @@ router.put("/:id", async (req: Request, res: Response) => {
   }
 });
 
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requirePermission("EMPLOYEES_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });

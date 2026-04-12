@@ -138,24 +138,91 @@ Convertir GIRO de un sistema de stock para ropa en una plataforma **universal de
 
 ---
 
-### FASE 5 — Roles, permisos y multi-empresa
+### FASE 5 — Empleados, Sueldos y Contabilidad Argentina
+> *Objetivo: administración de RRHH y contabilidad completa para cualquier negocio argentino*
+
+#### 5.1 ABM de Empleados
+- Datos del empleado: nombre, CUIL, cargo, categoría de convenio, fecha de ingreso, tipo de contrato (tiempo completo / parcial / plazo fijo / período de prueba)
+- CBU para transferencias, obra social, sindicato
+- Estado: Activo / Inactivo / En licencia
+- Historial de cambios de sueldo
+- Relación con sucursal
+
+#### 5.2 Liquidación de sueldos (Argentina)
+- Cálculo automático de deducciones del empleado:
+  - Jubilación ANSES: 11%
+  - Obra social: 3%
+  - INSSJP (PAMI): 3%
+  - Sindicato: configurable (2-3%)
+- Cálculo de aportes patronales (costo empresa):
+  - Jubilación patronal: 16%
+  - INSSJP patronal: 2%
+  - Obra social patronal: 6%
+  - ART: configurable
+- Conceptos adicionales: horas extras (50%/100%), adicional por antigüedad (1% por año), presentismo
+- Porcentajes configurables en Settings (pueden cambiar por decreto)
+- Liquidación masiva: calcular todos los empleados del mes en un click
+
+#### 5.3 SAC (Aguinaldo), anticipos y liquidación final
+- SAC: 50% del mejor sueldo del semestre → pago en junio y diciembre
+- Registro de anticipos de sueldo (descuentan del próximo recibo)
+- Liquidación final: sueldo proporcional + vacaciones no gozadas + SAC proporcional + indemnización (si aplica)
+- Fórmula indemnización: 1 mes por año trabajado (mínimo 2 meses)
+
+#### 5.4 Plan de cuentas (normas FACPCE)
+- Plan de cuentas estándar argentino con jerarquía:
+  ```
+  1. Activo (Caja, Banco, Mercaderías, IVA CF, Deudores)
+  2. Pasivo (Proveedores, IVA DF, Sueldos a pagar, Cargas sociales)
+  3. Patrimonio neto (Capital, Resultados acumulados)
+  4. Ingresos (Ventas, Otros ingresos)
+  5. Egresos (CMV, Sueldos, Cargas sociales, Alquiler, Servicios)
+  ```
+- Se genera automáticamente al crear la empresa
+- Personalizable: agregar/editar/desactivar cuentas
+
+#### 5.5 Asientos contables (Libro Diario)
+- Asientos manuales: el usuario carga débitos y créditos (valida partida doble)
+- Asientos automáticos generados por:
+  - Cada **venta**: Caja/Banco (D) — Ventas (H) — IVA Débito Fiscal (H)
+  - Cada **compra recibida**: Mercaderías (D) — IVA CF (D) — Proveedores (H)
+  - Cada **pago de sueldo**: Sueldos (D) — Sueldos a pagar (H) — Cargas sociales (H)
+- Estado: Borrador → Confirmado (al confirmar, actualiza saldos de cuentas)
+- Toggle en Settings para activar/desactivar generación automática
+
+#### 5.6 Libro IVA (Ventas y Compras)
+- Registro legal para presentación ante AFIP
+- Libro IVA Ventas: fecha, comprobante, cliente (CUIT), neto gravado, IVA 21%, IVA 10.5%, exento, total
+- Libro IVA Compras: fecha, proveedor (CUIT), neto, IVA Crédito Fiscal, total
+- Balance IVA del período: Débito Fiscal - Crédito Fiscal = saldo a pagar/a favor
+- Exportar a CSV (compatible con AFIP / Contaplus / Tango)
+
+#### 5.7 Reportes contables
+- **Balance de Sumas y Saldos**: todas las cuentas con débitos, créditos y saldo del período
+- **Libro Mayor**: movimientos detallados por cuenta con saldo progresivo
+- **Estado de Resultados**: Ingresos vs Egresos → resultado del período (ganancia/pérdida)
+- Todos exportables a CSV e imprimibles
+
+---
+
+### FASE 6 — Roles, permisos y auditoría
 > *Objetivo: control granular de acceso*
 
-#### 5.1 Sistema de permisos granular
+#### 6.1 Sistema de permisos granular
 - Tabla `Permission` con todas las acciones posibles del sistema
 - Tabla `RolePermission` (roleId, permissionId)
 - Roles personalizables por empresa (además de OWNER/MANAGER/SELLER)
 - UI de configuración de permisos (matriz de roles x permisos)
-- Límites por plan (FREE: 1 sucursal, 3 usuarios; PRO: 5 sucursales, ilimitado usuarios; ENTERPRISE: sin límite)
+- Límites por plan (FREE: 1 sucursal, 3 usuarios; PRO: 5 sucursales, usuarios ilimitados; ENTERPRISE: sin límite)
 
-#### 5.2 Logs de auditoría
+#### 6.2 Logs de auditoría
 - Tabla `AuditLog` (userId, action, entity, entityId, before, after, ip, timestamp)
 - Registrar: login, cambio de contraseña, eliminar producto, modificar precio, cambiar rol
 - UI de audit trail filtrable por usuario, acción y fecha
 
 ---
 
-### FASE 6 — Facturación y monetización
+### FASE 7 — Facturación y monetización
 > *Objetivo: cobrar por el uso del software*
 
 - Integración **Stripe** (tarjeta de crédito internacional)
@@ -169,28 +236,34 @@ Convertir GIRO de un sistema de stock para ropa en una plataforma **universal de
 ## Resumen de cambios en la DB
 
 ```
-NUEVAS TABLAS:
-+ Attribute           (atributos flexibles por empresa)
-+ ProductVariantAttribute (valores de atributos por variante)
-+ Customer            (clientes)
-+ Supplier            (proveedores)
-+ Document            (remitos, facturas, presupuestos, etc.)
-+ DocumentItem        (ítems de documentos)
-+ TaxConfig           (configuración de impuestos)
-+ PurchaseOrder       (órdenes de compra)
-+ PurchaseOrderItem
-+ Batch               (lotes y vencimientos, opcional)
-+ Location            (ubicaciones en sucursal, opcional)
-+ AuditLog            (auditoría de acciones)
-+ Permission          (permisos del sistema)
-+ RolePermission      (roles con permisos)
+TABLAS YA IMPLEMENTADAS (Fases 1-4):
++ Attribute, ProductVariantAttribute
++ Customer, Supplier
++ Document, DocumentItem, TaxConfig
++ PurchaseOrder, PurchaseOrderItem
++ StockCount, StockCountItem
++ Batch
++ SaleReturn, SaleReturnItem
++ AccountReceivable, ARPayment
 
-MODIFICACIONES:
-~ ProductVariant      (eliminar size, color → reemplazar con Attribute)
-~ Company             (agregar industryType, taxId, address, logo)
-~ Branch              (agregar timezone, currency)
-~ Sale                (agregar customerId, documentId, discount, tax)
-~ User                (agregar customRoleId)
+FASE 5 — nuevas tablas:
++ Employee              (datos laborales del empleado)
++ Payroll               (liquidación mensual de sueldo)
++ PayrollAdvance        (anticipos de sueldo)
++ Account               (plan de cuentas: Activo, Pasivo, PN, Ingresos, Egresos)
++ JournalEntry          (asientos contables — Libro Diario)
++ JournalLine           (líneas de cada asiento — débito/crédito)
+
+FASE 5 — modificaciones:
+~ Company               (agregar artRate, unionRate para % aportes configurables)
+~ Inventory             (location, lastAlertAt — ya en fases anteriores)
+
+FASE 6 — nuevas tablas:
++ AuditLog
++ Permission
++ RolePermission
+
+FASE 7 — sin tablas nuevas (integración externa Stripe/MP)
 ```
 
 ---
@@ -205,18 +278,19 @@ MODIFICACIONES:
 | Auth | JWT | ✅ Sí |
 | PDF | jsPDF + html2canvas | ✅ Sí |
 | Email | Nodemailer | ✅ Sí |
-| Pagos | — | ➕ Stripe + MercadoPago |
-| WebSockets | — | ➕ Socket.io (para stock en tiempo real) |
+| Pagos | — | ➕ Stripe + MercadoPago (Fase 7) |
+| WebSockets | — | ➕ Socket.io (stock en tiempo real, futuro) |
 
 ---
 
-## Estimación por fase
+## Estado de avance
 
-| Fase | Descripción | Complejidad |
-|------|-------------|-------------|
-| 1 | Base genérica + UI nueva | Alta |
-| 2 | Documentos imprimibles | Alta |
-| 3 | Stock completo | Media |
-| 4 | POS avanzado | Media |
-| 5 | Roles y auditoría | Media |
-| 6 | Facturación/monetización | Alta |
+| Fase | Descripción | Estado | Complejidad |
+|------|-------------|--------|-------------|
+| 1 | Base genérica + UI nueva | ✅ Completa | Alta |
+| 2 | Documentos imprimibles | ✅ Completa | Alta |
+| 3 | Stock completo | ✅ Completa | Media |
+| 4 | POS avanzado | ✅ Completa | Media |
+| 5 | Empleados + Contabilidad Argentina | 🔄 En curso | Alta |
+| 6 | Roles, permisos y auditoría | ⬜ Pendiente | Media |
+| 7 | Facturación/monetización | ⬜ Pendiente | Alta |

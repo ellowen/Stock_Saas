@@ -1,11 +1,14 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middleware/auth";
+import { requirePermission } from "../middleware/requirePermission";
 import { PayrollService } from "../../../application/payroll/payroll.service";
+import { autoJournal } from "../../../application/accounting/auto-journal.service";
 
 const router = Router();
 const service = new PayrollService();
 
 router.use(authMiddleware);
+router.use(requirePermission("EMPLOYEES_VIEW"));
 
 // GET /payrolls?period=&employeeId=&status=
 router.get("/", async (req: Request, res: Response) => {
@@ -115,10 +118,26 @@ router.post("/:id/confirm", async (req: Request, res: Response) => {
 // POST /payrolls/:id/pay
 router.post("/:id/pay", async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
+  const userId = req.auth!.userId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
   try {
     const p = await service.markPaid(id, companyId);
+    // Fire-and-forget auto journal for paid payroll
+    const { prisma } = await import("../../../config/database/prisma");
+    prisma.employee.findUnique({ where: { id: p.employeeId }, select: { firstName: true, lastName: true } })
+      .then((emp) => autoJournal.onPayrollPaid({
+        companyId,
+        createdBy: userId,
+        payrollId: id,
+        grossTotal: Number(p.grossTotal),
+        netSalary: Number(p.netSalary),
+        totalDeductions: Number(p.totalDeductions),
+        patronalTotal: Number(p.patronalTotal),
+        employeeName: emp ? `${emp.firstName} ${emp.lastName}` : `#${p.employeeId}`,
+        period: p.period,
+      }))
+      .catch(console.error);
     res.json(p);
   } catch (err: any) {
     res.status(400).json({ message: err.message });

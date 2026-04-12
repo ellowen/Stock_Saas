@@ -64,8 +64,8 @@ export function ReportsPage() {
       ];
       type DocWithTable = jsPDF & { autoTable: (opts: Record<string, unknown>) => jsPDF };
       const doc = new jsPDF({ unit: "mm", format: "a4" }) as DocWithTable;
-      const pageW = doc.getPageWidth();
-      const pageH = doc.getPageHeight();
+      const pageW = (doc as any).getPageWidth?.() ?? doc.internal.pageSize.width;
+      const pageH = (doc as any).getPageHeight?.() ?? doc.internal.pageSize.height;
       const margin = 15;
       const maxW = pageW - margin * 2;
       const maxH = pageH - margin * 2 - 20;

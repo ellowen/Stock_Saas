@@ -26,7 +26,6 @@ interface DocListItem {
 
 interface Branch { id: number; name: string; code: string }
 interface Customer { id: number; name: string; taxId?: string; taxType?: string; address?: string; city?: string; email?: string; phone?: string }
-interface TaxConfig { id: number; name: string; rate: number | string }
 
 interface ItemRow {
   variantId?: number;
@@ -63,7 +62,7 @@ const EMPTY_ITEM: ItemRow = { description: "", quantity: "1", unitPrice: "0", di
 
 export default function DocumentsPage() {
   const { t } = useTranslation();
-  const { addToast } = useToast();
+  const { showToast } = useToast();
   const { company } = useAuth();
   const [tab, setTab] = useState<"list" | "new">("list");
 
@@ -82,7 +81,6 @@ export default function DocumentsPage() {
   const [docType, setDocType] = useState<DocType>("INVOICE");
   const [branches, setBranches] = useState<Branch[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [taxConfigs, setTaxConfigs] = useState<TaxConfig[]>([]);
   const [branchId, setBranchId] = useState<number | "">("");
   const [customerId, setCustomerId] = useState<number | "">("");
   const [dueDate, setDueDate] = useState("");
@@ -107,11 +105,11 @@ export default function DocumentsPage() {
       if (!res.ok) throw new Error();
       setDocs(await res.json());
     } catch {
-      addToast(t("documents.errorLoad"), "error");
+      showToast(t("documents.errorLoad"), "error");
     } finally {
       setLoading(false);
     }
-  }, [filterType, filterStatus, filterFrom, filterTo, t, addToast]);
+  }, [filterType, filterStatus, filterFrom, filterTo, t, showToast]);
 
   useEffect(() => { loadDocs(); }, [loadDocs]);
 
@@ -121,11 +119,9 @@ export default function DocumentsPage() {
     Promise.all([
       fetch(`${API}/branches`, { headers }).then((r) => r.json()),
       fetch(`${API}/customers`, { headers }).then((r) => r.json()),
-      fetch(`${API}/tax-configs`, { headers }).then((r) => r.json()),
-    ]).then(([b, c, tc]) => {
+    ]).then(([b, c]) => {
       setBranches(Array.isArray(b) ? b : []);
       setCustomers(Array.isArray(c) ? c : []);
-      setTaxConfigs(Array.isArray(tc) ? tc : []);
     }).catch(() => {});
   }, []);
 
@@ -151,8 +147,8 @@ export default function DocumentsPage() {
   const total = subtotal; // taxes handled server-side
 
   async function handleSubmit() {
-    if (!branchId) { addToast(t("documents.branchRequired"), "error"); return; }
-    if (items.length === 0 || !items[0].description.trim()) { addToast(t("documents.itemsRequired"), "error"); return; }
+    if (!branchId) { showToast(t("documents.branchRequired"), "error"); return; }
+    if (items.length === 0 || !items[0].description.trim()) { showToast(t("documents.itemsRequired"), "error"); return; }
     setSubmitting(true);
     try {
       const res = await fetch(`${API}/documents`, {
@@ -179,7 +175,7 @@ export default function DocumentsPage() {
         throw new Error(err.message);
       }
       const created = await res.json();
-      addToast(t("documents.created"), "success");
+      showToast(t("documents.created"), "success");
       setTab("list");
       loadDocs();
 
@@ -220,7 +216,7 @@ export default function DocumentsPage() {
         },
       });
     } catch (e: any) {
-      addToast(e.message ?? t("documents.saveError"), "error");
+      showToast(e.message ?? t("documents.saveError"), "error");
     } finally {
       setSubmitting(false);
     }
@@ -234,10 +230,10 @@ export default function DocumentsPage() {
         headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
       });
       if (!res.ok) throw new Error();
-      addToast(t("documents.cancelled"), "success");
+      showToast(t("documents.cancelled"), "success");
       loadDocs();
     } catch {
-      addToast(t("documents.cancelError"), "error");
+      showToast(t("documents.cancelError"), "error");
     }
   }
 
@@ -249,10 +245,10 @@ export default function DocumentsPage() {
         headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
       });
       if (!res.ok) throw new Error();
-      addToast(t("documents.converted"), "success");
+      showToast(t("documents.converted"), "success");
       loadDocs();
     } catch {
-      addToast(t("documents.convertError"), "error");
+      showToast(t("documents.convertError"), "error");
     }
   }
 
@@ -299,7 +295,7 @@ export default function DocumentsPage() {
         },
       });
     } catch {
-      addToast(t("documents.errorLoad"), "error");
+      showToast(t("documents.errorLoad"), "error");
     }
   }
 

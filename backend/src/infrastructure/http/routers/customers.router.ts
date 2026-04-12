@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middleware/auth";
 import { CustomerService } from "../../../application/customers/customer.service";
+import { prisma } from "../../../config/database/prisma";
 
 const router = Router();
 const service = new CustomerService();
@@ -38,6 +39,32 @@ router.put("/:id", async (req: Request, res: Response) => {
   } catch (err: any) {
     res.status(400).json({ message: err.message });
   }
+});
+
+// GET /customers/:id/sales — purchase history for a customer
+router.get("/:id/sales", async (req: Request, res: Response) => {
+  const companyId = req.auth!.companyId;
+  const id = parseInt(req.params["id"] as string);
+  if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
+
+  const sales = await prisma.sale.findMany({
+    where: { companyId, customerId: id, status: { notIn: ["CANCELLED"] } },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    select: {
+      id: true, totalAmount: true, totalItems: true, paymentMethod: true,
+      status: true, createdAt: true,
+      items: {
+        select: {
+          quantity: true, unitPrice: true, totalPrice: true,
+          variant: { select: { sku: true, size: true, color: true, product: { select: { name: true } } } },
+        },
+      },
+    },
+  });
+
+  const totalSpent = sales.reduce((s, sale) => s + Number(sale.totalAmount), 0);
+  return res.json({ totalSpent, count: sales.length, sales });
 });
 
 router.delete("/:id", async (req: Request, res: Response) => {

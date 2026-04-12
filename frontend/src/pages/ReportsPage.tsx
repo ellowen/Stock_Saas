@@ -45,8 +45,8 @@ async function exportChartsToPdf(
   chartRefs: { ref: React.RefObject<HTMLElement | null>; title: string }[]
 ): Promise<void> {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const pageW = doc.getPageWidth();
-  const pageH = doc.getPageHeight();
+  const pageW = (doc as any).getPageWidth?.() ?? doc.internal.pageSize.width;
+  const pageH = (doc as any).getPageHeight?.() ?? doc.internal.pageSize.height;
   const margin = 15;
   const maxW = pageW - margin * 2;
   const maxH = pageH - margin * 2 - 20;
@@ -790,7 +790,7 @@ export function ReportsPage() {
                       <XAxis dataKey="fecha" tick={{ fontSize: 11 }} stroke="#94a3b8" />
                       <YAxis tick={{ fontSize: 11 }} stroke="#94a3b8" tickFormatter={(v) => `$${v}`} />
                       <RechartsTooltip
-                        formatter={(value: number) => [`$${Number(value).toFixed(2)}`, "Ingresos"]}
+                        formatter={(value: number | undefined) => [`$${Number(value ?? 0).toFixed(2)}`, "Ingresos"]}
                         labelFormatter={(label) => label}
                       />
                       <Area type="monotone" dataKey="ingresos" stroke="#6366f1" strokeWidth={2} fill="url(#colorIngresos)" name="Ingresos" />
@@ -824,7 +824,7 @@ export function ReportsPage() {
                             <Cell key={i} fill={chartPayment[i].fill} />
                           ))}
                         </Pie>
-                        <RechartsTooltip formatter={(value: number) => [`$${Number(value).toFixed(2)}`, "Total"]} />
+                        <RechartsTooltip formatter={(value: number | undefined) => [`$${Number(value ?? 0).toFixed(2)}`, "Total"]} />
                         <Legend />
                       </PieChart>
                     </ResponsiveContainer>
@@ -864,7 +864,7 @@ export function ReportsPage() {
                           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                           <XAxis dataKey="category" angle={-25} textAnchor="end" height={60} tick={{ fontSize: 10 }} />
                           <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${v}`} />
-                          <RechartsTooltip formatter={(v: number) => [`$${Number(v).toFixed(2)}`, "Ingresos"]} />
+                          <RechartsTooltip formatter={(v: number | undefined) => [`$${Number(v ?? 0).toFixed(2)}`, "Ingresos"]} />
                           <Bar dataKey="revenue" name="Ingresos" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>

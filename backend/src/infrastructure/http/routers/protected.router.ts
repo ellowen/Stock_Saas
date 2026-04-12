@@ -37,7 +37,7 @@ router.put("/company", authMiddleware, async (req: Request, res: Response) => {
     return res.status(403).json({ message: "Solo el dueño puede editar la empresa" });
   }
   const companyId = req.auth!.companyId;
-  const { name, legalName, taxId, address, city, phone, email, currency, industryType, lowStockAlerts, salesReportFreq } = req.body;
+  const { name, legalName, taxId, address, city, phone, email, currency, industryType, lowStockAlerts, salesReportFreq, artRate, unionRate, accountingEnabled } = req.body;
   if (!name?.trim()) return res.status(400).json({ message: "El nombre es requerido" });
   const updated = await prisma.company.update({
     where: { id: companyId },
@@ -53,8 +53,11 @@ router.put("/company", authMiddleware, async (req: Request, res: Response) => {
       ...(industryType !== undefined && { industryType }),
       ...(lowStockAlerts !== undefined && { lowStockAlerts: Boolean(lowStockAlerts) }),
       ...(salesReportFreq !== undefined && { salesReportFreq }),
+      ...(artRate !== undefined && { artRate: Number(artRate) }),
+      ...(unionRate !== undefined && { unionRate: Number(unionRate) }),
+      ...(accountingEnabled !== undefined && { accountingEnabled: Boolean(accountingEnabled) }),
     },
-    select: { id: true, name: true, legalName: true, taxId: true, address: true, city: true, phone: true, email: true, currency: true, industryType: true, lowStockAlerts: true, salesReportFreq: true },
+    select: { id: true, name: true, legalName: true, taxId: true, address: true, city: true, phone: true, email: true, currency: true, industryType: true, lowStockAlerts: true, salesReportFreq: true, artRate: true, unionRate: true, accountingEnabled: true },
   });
   return res.json(updated);
 });

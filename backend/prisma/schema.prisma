@@ -27,6 +27,9 @@ model Company {
   industryType       String?     @default("GENERIC") @map("industry_type")
   lowStockAlerts     Boolean     @default(false) @map("low_stock_alerts")
   salesReportFreq    String?     @default("NONE") @map("sales_report_freq")
+  artRate            Float       @default(0.025) @map("art_rate")       // ART patronal (configurable)
+  unionRate          Float       @default(0.02)  @map("union_rate")     // Cuota sindical empleado
+  accountingEnabled  Boolean     @default(false) @map("accounting_enabled") // activa asientos automaticos
   plan               CompanyPlan @default(FREE)
   isActive           Boolean     @default(true) @map("is_active")
   trialEndsAt        DateTime?   @map("trial_ends_at")
@@ -135,6 +138,7 @@ model User {
   journalEntries         JournalEntry[]
   auditLogs              AuditLog[]
   pushSubscriptions      PushSubscription[]
+  userPermissions        UserPermission[]
 
   @@map("users")
 }
@@ -953,4 +957,40 @@ model AuditLog {
   @@index([companyId, createdAt(sort: Desc)])
   @@index([companyId, entity, entityId])
   @@map("audit_logs")
+}
+
+// ── Permisos granulares ───────────────────────────────────────────────────────
+
+enum PermissionKey {
+  PRODUCTS_WRITE
+  PRODUCTS_DELETE
+  INVENTORY_WRITE
+  SALES_VOID
+  SALES_HISTORY
+  TRANSFERS_APPROVE
+  EMPLOYEES_VIEW
+  EMPLOYEES_WRITE
+  ACCOUNTING_VIEW
+  ACCOUNTING_WRITE
+  REPORTS_VIEW
+  USERS_MANAGE
+  SETTINGS_MANAGE
+  AUDIT_VIEW
+  CUSTOMERS_WRITE
+  SUPPLIERS_WRITE
+  DOCUMENTS_WRITE
+  PURCHASES_MANAGE
+}
+
+model UserPermission {
+  id         Int           @id @default(autoincrement())
+  userId     Int           @map("user_id")
+  permission PermissionKey
+  granted    Boolean       @default(true) // true=GRANT, false=DENY override
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permission])
+  @@map("user_permissions")
 }

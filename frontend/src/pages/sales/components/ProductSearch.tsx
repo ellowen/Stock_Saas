@@ -13,7 +13,7 @@ type Props = {
   suggestionHighlightIndex: number;
   onHighlightChange: (idx: number) => void;
   onAddVariant: (variantId: number) => void;
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
 };
 
 export function ProductSearch({
@@ -60,8 +60,8 @@ export function ProductSearch({
     if (!searchTerm || suggestions.length === 0) {
       onHighlightChange(-1);
     } else {
-      onHighlightChange((prev: number) =>
-        prev < 0 || prev >= suggestions.length ? 0 : prev
+      onHighlightChange(
+        suggestionHighlightIndex < 0 || suggestionHighlightIndex >= suggestions.length ? 0 : suggestionHighlightIndex
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

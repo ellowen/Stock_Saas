@@ -74,7 +74,7 @@ export type AttributeValue = {
   value: string;
 };
 
-export type InventoryTabId = "productos" | "stock" | "historial" | "conteo";
+export type InventoryTabId = "productos" | "stock" | "historial" | "conteo" | "reposicion";
 
 export type MovementRow = {
   id: number;

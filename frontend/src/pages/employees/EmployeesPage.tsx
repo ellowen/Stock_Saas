@@ -65,7 +65,7 @@ function authHeaders() {
 
 export default function EmployeesPage() {
   const { t } = useTranslation();
-  const { addToast } = useToast();
+  const { showToast } = useToast();
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,11 +87,11 @@ export default function EmployeesPage() {
       if (!res.ok) throw new Error();
       setEmployees(await res.json());
     } catch {
-      addToast(t("employees.loading"), "error");
+      showToast(t("employees.loading"), "error");
     } finally {
       setLoading(false);
     }
-  }, [filter, addToast, t]);
+  }, [filter, showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -138,7 +138,7 @@ export default function EmployeesPage() {
 
   const handleSave = async () => {
     if (!form.firstName.trim() || !form.lastName.trim() || !form.hireDate || !form.grossSalary) {
-      addToast("Completá los campos obligatorios", "error");
+      showToast("Completá los campos obligatorios", "error");
       return;
     }
     setSaving(true);
@@ -155,11 +155,11 @@ export default function EmployeesPage() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message ?? "Error");
       }
-      addToast(t("employees.saveSuccess"), "success");
+      showToast(t("employees.saveSuccess"), "success");
       setModalOpen(false);
       load();
     } catch (err: any) {
-      addToast(err.message ?? "Error al guardar", "error");
+      showToast(err.message ?? "Error al guardar", "error");
     } finally {
       setSaving(false);
     }
@@ -172,11 +172,11 @@ export default function EmployeesPage() {
         headers: authHeaders(),
       });
       if (!res.ok) throw new Error();
-      addToast(t("employees.deactivateSuccess"), "success");
+      showToast(t("employees.deactivateSuccess"), "success");
       setConfirmDeactivate(null);
       load();
     } catch {
-      addToast("Error al dar de baja", "error");
+      showToast("Error al dar de baja", "error");
     }
   };
 
@@ -292,7 +292,7 @@ export default function EmployeesPage() {
 
       {/* Modal crear/editar */}
       <Modal
-        isOpen={modalOpen}
+        open={modalOpen}
         onClose={() => setModalOpen(false)}
         title={editing ? t("employees.edit") : t("employees.new")}
         size="lg"
@@ -384,7 +384,7 @@ export default function EmployeesPage() {
 
       {/* Confirm deactivate */}
       <Modal
-        isOpen={!!confirmDeactivate}
+        open={!!confirmDeactivate}
         onClose={() => setConfirmDeactivate(null)}
         title={t("employees.deactivate")}
         size="sm"

@@ -1,11 +1,13 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middleware/auth";
+import { requirePermission } from "../middleware/requirePermission";
 import { JournalService } from "../../../application/accounting/journal.service";
 
 const router = Router();
 const service = new JournalService();
 
 router.use(authMiddleware);
+router.use(requirePermission("ACCOUNTING_VIEW"));
 
 // GET /journal?from=&to=&status=&sourceType=
 router.get("/", async (req: Request, res: Response) => {

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { useToast } from "../../contexts/ToastContext";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { Button } from "../../components/ui/Button";
@@ -91,8 +90,7 @@ function currentPeriod() {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PayrollPage() {
-  const { t } = useTranslation();
-  const { addToast } = useToast();
+  const { showToast } = useToast();
 
   const [period, setPeriod] = useState(currentPeriod());
   const [periods, setPeriods] = useState<string[]>([]);
@@ -148,11 +146,11 @@ export default function PayrollPage() {
       if (!res.ok) throw new Error();
       setPayrolls(await res.json());
     } catch {
-      addToast("Error al cargar liquidaciones", "error");
+      showToast("Error al cargar liquidaciones", "error");
     } finally {
       setLoading(false);
     }
-  }, [addToast]);
+  }, [showToast]);
 
   const loadPeriods = useCallback(async () => {
     try {
@@ -179,7 +177,7 @@ export default function PayrollPage() {
   useEffect(() => { loadPeriods(); loadEmployees(); loadAdvances(); }, [loadPeriods, loadEmployees, loadAdvances]);
 
   const handleSaveAdvance = async () => {
-    if (!advForm.employeeId || !advForm.amount) { addToast("Completá empleado y monto", "error"); return; }
+    if (!advForm.employeeId || !advForm.amount) { showToast("Completá empleado y monto", "error"); return; }
     setAdvSaving(true);
     try {
       const res = await fetch(`${API}/payrolls/advances`, {
@@ -187,11 +185,11 @@ export default function PayrollPage() {
         body: JSON.stringify({ employeeId: Number(advForm.employeeId), amount: Number(advForm.amount), date: advForm.date, notes: advForm.notes || undefined }),
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
-      addToast("Anticipo registrado", "success");
+      showToast("Anticipo registrado", "success");
       setAdvanceOpen(false);
       setAdvForm({ employeeId: "", amount: "", date: new Date().toISOString().slice(0, 10), notes: "" });
       loadAdvances();
-    } catch (err: any) { addToast(err.message ?? "Error", "error"); }
+    } catch (err: any) { showToast(err.message ?? "Error", "error"); }
     finally { setAdvSaving(false); }
   };
 
@@ -199,13 +197,13 @@ export default function PayrollPage() {
     try {
       const res = await fetch(`${API}/payrolls/advances/${id}`, { method: "DELETE", headers: authHeaders() });
       if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
-      addToast("Anticipo eliminado", "success");
+      showToast("Anticipo eliminado", "success");
       loadAdvances();
-    } catch (err: any) { addToast(err.message ?? "Error", "error"); }
+    } catch (err: any) { showToast(err.message ?? "Error", "error"); }
   };
 
   const handleFinalPreview = async () => {
-    if (!finalForm.employeeId || !finalForm.period) { addToast("Completá los campos requeridos", "error"); return; }
+    if (!finalForm.employeeId || !finalForm.period) { showToast("Completá los campos requeridos", "error"); return; }
     setFinalPreviewing(true);
     try {
       const res = await fetch(`${API}/payrolls/final-preview`, {
@@ -221,7 +219,7 @@ export default function PayrollPage() {
       const data = await res.json();
       const emp = employees.find((e) => e.id === Number(finalForm.employeeId));
       setFinalPreview({ ...data, employee: emp ?? { id: Number(finalForm.employeeId), firstName: "", lastName: "", cuil: null, position: null, grossSalary: "0", cbu: null } });
-    } catch (err: any) { addToast(err.message ?? "Error", "error"); }
+    } catch (err: any) { showToast(err.message ?? "Error", "error"); }
     finally { setFinalPreviewing(false); }
   };
 
@@ -239,16 +237,16 @@ export default function PayrollPage() {
         }),
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
-      addToast("Liquidación final guardada", "success");
+      showToast("Liquidación final guardada", "success");
       setFinalOpen(false); setFinalPreview(null);
       loadPayrolls(period); loadPeriods();
-    } catch (err: any) { addToast(err.message ?? "Error", "error"); }
+    } catch (err: any) { showToast(err.message ?? "Error", "error"); }
     finally { setFinalSaving(false); }
   };
 
   const handlePreview = async () => {
     if (!newForm.employeeId || !newForm.period) {
-      addToast("Seleccioná empleado y período", "error");
+      showToast("Seleccioná empleado y período", "error");
       return;
     }
     setPreviewing(true);
@@ -274,7 +272,7 @@ export default function PayrollPage() {
       const emp = employees.find((e) => e.id === Number(newForm.employeeId));
       setPreview({ ...data, employee: emp ?? { id: Number(newForm.employeeId), firstName: "", lastName: "", cuil: null, position: null, grossSalary: "0", cbu: null } });
     } catch (err: any) {
-      addToast(err.message ?? "Error al calcular", "error");
+      showToast(err.message ?? "Error al calcular", "error");
     } finally {
       setPreviewing(false);
     }
@@ -300,14 +298,14 @@ export default function PayrollPage() {
         }),
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
-      addToast("Liquidación creada", "success");
+      showToast("Liquidación creada", "success");
       setNewOpen(false);
       setPreview(null);
       setNewForm({ employeeId: "", period: currentPeriod(), periodType: "MONTHLY", extraHours: "", bonus: "", otherEarnings: "", sindicatoRate: "", artRate: "", notes: "" });
       loadPayrolls(period);
       loadPeriods();
     } catch (err: any) {
-      addToast(err.message ?? "Error al guardar", "error");
+      showToast(err.message ?? "Error al guardar", "error");
     } finally {
       setSaving(false);
     }
@@ -329,12 +327,12 @@ export default function PayrollPage() {
       const results: { name: string; status: string; reason?: string }[] = await res.json();
       const created = results.filter((r) => r.status === "created").length;
       const skipped = results.filter((r) => r.status === "skipped").length;
-      addToast(`${created} creadas, ${skipped} ya existían`, "success");
+      showToast(`${created} creadas, ${skipped} ya existían`, "success");
       setBulkOpen(false);
       loadPayrolls(period);
       loadPeriods();
     } catch {
-      addToast("Error al calcular en masa", "error");
+      showToast("Error al calcular en masa", "error");
     } finally {
       setBulkSaving(false);
     }
@@ -347,10 +345,10 @@ export default function PayrollPage() {
       const res = await fetch(url, { method, headers: authHeaders() });
       if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
       const msgs = { confirm: "Liquidación confirmada", pay: "Marcada como pagada", delete: "Liquidación eliminada" };
-      addToast(msgs[action], "success");
+      showToast(msgs[action], "success");
       loadPayrolls(period);
     } catch (err: any) {
-      addToast(err.message ?? "Error", "error");
+      showToast(err.message ?? "Error", "error");
     }
   };
 
@@ -360,7 +358,7 @@ export default function PayrollPage() {
       if (!res.ok) throw new Error();
       setReceipt(await res.json());
     } catch {
-      addToast("Error al cargar recibo", "error");
+      showToast("Error al cargar recibo", "error");
     }
   };
 
@@ -554,7 +552,7 @@ export default function PayrollPage() {
       )}
 
       {/* ── Modal Nueva Liquidación ────────────────────────────────────────── */}
-      <Modal isOpen={newOpen} onClose={() => { setNewOpen(false); setPreview(null); }} title="Nueva liquidación" size="lg">
+      <Modal open={newOpen} onClose={() => { setNewOpen(false); setPreview(null); }} title="Nueva liquidación" size="lg">
         {!preview ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -610,7 +608,7 @@ export default function PayrollPage() {
       </Modal>
 
       {/* ── Modal Calcular Todos ───────────────────────────────────────────── */}
-      <Modal isOpen={bulkOpen} onClose={() => setBulkOpen(false)} title="Calcular todos los empleados" size="sm">
+      <Modal open={bulkOpen} onClose={() => setBulkOpen(false)} title="Calcular todos los empleados" size="sm">
         <div className="space-y-4">
           <FormField label="Período *">
             <input type="month" value={bulkPeriod} onChange={(e) => setBulkPeriod(e.target.value)} className="input-minimal" />
@@ -634,12 +632,12 @@ export default function PayrollPage() {
       </Modal>
 
       {/* ── Modal Recibo ──────────────────────────────────────────────────── */}
-      <Modal isOpen={!!receipt} onClose={() => setReceipt(null)} title="Recibo de sueldo" size="lg">
+      <Modal open={!!receipt} onClose={() => setReceipt(null)} title="Recibo de sueldo" size="lg">
         {receipt && <PayrollReceipt payroll={receipt} readOnly onClose={() => setReceipt(null)} />}
       </Modal>
 
       {/* ── Modal Anticipo ────────────────────────────────────────────────── */}
-      <Modal isOpen={advanceOpen} onClose={() => setAdvanceOpen(false)} title="Registrar anticipo de sueldo" size="sm">
+      <Modal open={advanceOpen} onClose={() => setAdvanceOpen(false)} title="Registrar anticipo de sueldo" size="sm">
         <div className="space-y-4">
           <FormField label="Empleado *">
             <select value={advForm.employeeId} onChange={(e) => setAdvForm((p) => ({ ...p, employeeId: e.target.value }))} className="input-minimal">
@@ -664,7 +662,7 @@ export default function PayrollPage() {
       </Modal>
 
       {/* ── Modal Liquidación Final ───────────────────────────────────────── */}
-      <Modal isOpen={finalOpen} onClose={() => { setFinalOpen(false); setFinalPreview(null); }} title="Liquidación final" size="lg">
+      <Modal open={finalOpen} onClose={() => { setFinalOpen(false); setFinalPreview(null); }} title="Liquidación final" size="lg">
         {!finalPreview ? (
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -741,7 +739,7 @@ function PayrollReceipt({
   const handlePrint = () => window.print();
 
   return (
-    <div className="space-y-4 text-sm">
+    <div className="print-receipt-zone space-y-4 text-sm">
       {/* Encabezado */}
       <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 grid grid-cols-2 gap-2">
         <div>

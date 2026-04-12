@@ -89,7 +89,7 @@ export function TopProducts({ topProducts, salesByCategory }: Props) {
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="category" angle={-25} textAnchor="end" height={60} tick={{ fontSize: 10 }} />
                     <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${v}`} />
-                    <RechartsTooltip formatter={(v: number) => [`$${Number(v).toFixed(2)}`, t("reports.revenue")]} />
+                    <RechartsTooltip formatter={(v: number | undefined) => [`$${Number(v ?? 0).toFixed(2)}`, t("reports.revenue")]} />
                     <Bar dataKey="revenue" name={t("reports.revenue")} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>

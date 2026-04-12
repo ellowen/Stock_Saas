@@ -44,7 +44,7 @@ export function ProductsTab({
   exportPdfLoading,
   categories,
   brands,
-  onOpenCreate,
+  onOpenCreate: _onOpenCreate,
   onOpenEdit,
   onOpenDelete,
 }: Props) {

@@ -12,7 +12,7 @@ export type UseProductsOptions = {
 
 export function useProducts({ onMutated }: UseProductsOptions = {}) {
   const [result, setResult] = useState<ProductsPaginated | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");

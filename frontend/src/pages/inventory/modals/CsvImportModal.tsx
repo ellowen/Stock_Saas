@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { API_BASE_URL, authHeaders } from "../../../lib/api";
+import { API_BASE_URL } from "../../../lib/api";
 import { useToast } from "../../../contexts/ToastContext";
 
 type ImportResult = {

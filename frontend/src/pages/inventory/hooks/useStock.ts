@@ -21,7 +21,7 @@ export type UseStockOptions = {
 
 export function useStock({ onMutated }: UseStockOptions = {}) {
   const [result, setResult] = useState<InventoryPaginated | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [branchId, setBranchId] = useState<string>("");

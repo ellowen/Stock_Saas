@@ -9,6 +9,21 @@ import { IconPlus } from "../components/Icons";
 import { TableSortHeader, sortByColumn } from "../components/TableSortHeader";
 import { ConfirmModal } from "../components/ConfirmModal";
 
+// ── Permission types ──────────────────────────────────────────────────────────
+
+interface PermissionMeta {
+  permission: string;
+  label: string;
+  defaultGranted: boolean;
+  effective: boolean;
+  isOverridden: boolean;
+}
+
+interface PermissionGroup {
+  label: string;
+  keys: string[];
+}
+
 const ROLES: { value: string; labelKey: string }[] = [
   { value: "OWNER", labelKey: "users.owner" },
   { value: "MANAGER", labelKey: "users.manager" },
@@ -58,6 +73,14 @@ export function UsersPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Permissions modal
+  const [permUser, setPermUser] = useState<User | null>(null);
+  const [permMeta, setPermMeta] = useState<{ permissions: PermissionMeta[]; groups: PermissionGroup[] } | null>(null);
+  const [permGrants, setPermGrants] = useState<Set<string>>(new Set());
+  const [permLoading, setPermLoading] = useState(false);
+  const [permSaving, setPermSaving] = useState(false);
+
   const { showToast } = useToast();
 
   const handleSort = (key: string) => {
@@ -210,6 +233,68 @@ export function UsersPage() {
     }
   };
 
+  const openPermissions = async (u: User) => {
+    if (u.role === "OWNER") return; // OWNER has all permissions, nothing to configure
+    setPermUser(u);
+    setPermLoading(true);
+    try {
+      const [permRes, metaRes] = await Promise.all([
+        authFetch(`${API_BASE_URL}/permissions/users/${u.id}`, { headers: authHeaders() }),
+        authFetch(`${API_BASE_URL}/permissions/meta`, { headers: authHeaders() }),
+      ]);
+      if (!permRes.ok || !metaRes.ok) throw new Error("Error al cargar permisos");
+      const permData = await permRes.json();
+      const metaData = await metaRes.json();
+      setPermMeta({ permissions: permData.permissions, groups: metaData.groups });
+      setPermGrants(new Set(permData.permissions.filter((p: PermissionMeta) => p.effective).map((p: PermissionMeta) => p.permission)));
+    } catch {
+      showToast("Error al cargar permisos", "error");
+      setPermUser(null);
+    } finally {
+      setPermLoading(false);
+    }
+  };
+
+  const savePermissions = async () => {
+    if (!permUser) return;
+    setPermSaving(true);
+    try {
+      const res = await authFetch(`${API_BASE_URL}/permissions/users/${permUser.id}`, {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify({ grants: Array.from(permGrants) }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { message?: string }).message || "Error");
+      }
+      showToast("Permisos actualizados correctamente.");
+      setPermUser(null);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Error", "error");
+    } finally {
+      setPermSaving(false);
+    }
+  };
+
+  const resetPermissions = async () => {
+    if (!permUser) return;
+    setPermSaving(true);
+    try {
+      const res = await authFetch(`${API_BASE_URL}/permissions/users/${permUser.id}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error("Error al resetear");
+      showToast("Permisos reseteados al rol base.");
+      setPermUser(null);
+    } catch {
+      showToast("Error al resetear permisos", "error");
+    } finally {
+      setPermSaving(false);
+    }
+  };
+
   if (loading) return <p className="text-sm text-slate-500">{t("users.loading")}</p>;
   if (error) return <p className="text-sm text-red-400/90">{error}</p>;
 
@@ -255,6 +340,15 @@ export function UsersPage() {
                     >
                       {t("branches.edit")}
                     </button>
+                    {u.role !== "OWNER" && (
+                      <button
+                        type="button"
+                        onClick={() => openPermissions(u)}
+                        className="text-sm text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 font-medium"
+                      >
+                        Permisos
+                      </button>
+                    )}
                     {u.isActive && (
                       <button
                         type="button"
@@ -408,6 +502,90 @@ export function UsersPage() {
         onConfirm={handleDeleteUser}
         onCancel={() => setUserToDelete(null)}
       />
+
+      {/* Permissions modal */}
+      {permUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white dark:bg-card dark:border-border shadow-xl p-6 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-semibold text-lg">Permisos — {permUser.fullName}</h3>
+                <p className="text-sm text-muted-foreground">
+                  Rol base: <strong>{permUser.role}</strong>. Los permisos marcados difieren del rol se guardan como overrides.
+                </p>
+              </div>
+              <button type="button" onClick={() => setPermUser(null)} className="text-muted-foreground hover:text-foreground text-xl leading-none">&times;</button>
+            </div>
+
+            {permLoading ? (
+              <p className="text-sm text-muted-foreground py-8 text-center">Cargando permisos...</p>
+            ) : permMeta ? (
+              <>
+                <div className="space-y-4">
+                  {permMeta.groups.map((group) => {
+                    const groupPerms = permMeta.permissions.filter((p) => group.keys.includes(p.permission));
+                    if (groupPerms.length === 0) return null;
+                    return (
+                      <div key={group.label} className="border border-border rounded-lg overflow-hidden">
+                        <div className="px-4 py-2 bg-muted/40 text-sm font-medium">{group.label}</div>
+                        <div className="divide-y divide-border">
+                          {groupPerms.map((perm) => (
+                            <label key={perm.permission} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted/20">
+                              <input
+                                type="checkbox"
+                                className="rounded border-slate-300 text-primary"
+                                checked={permGrants.has(perm.permission)}
+                                onChange={(e) => {
+                                  const next = new Set(permGrants);
+                                  if (e.target.checked) next.add(perm.permission);
+                                  else next.delete(perm.permission);
+                                  setPermGrants(next);
+                                }}
+                              />
+                              <span className="text-sm flex-1">{perm.label}</span>
+                              {perm.isOverridden && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+                                  override
+                                </span>
+                              )}
+                              {!perm.isOverridden && perm.defaultGranted && (
+                                <span className="text-xs text-muted-foreground">rol</span>
+                              )}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={resetPermissions}
+                    disabled={permSaving}
+                    className="btn-secondary text-sm"
+                  >
+                    Resetear al rol
+                  </button>
+                  <div className="flex-1" />
+                  <button type="button" onClick={() => setPermUser(null)} className="btn-secondary text-sm">
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={savePermissions}
+                    disabled={permSaving}
+                    className="btn-primary text-sm"
+                  >
+                    {permSaving ? "Guardando..." : "Guardar permisos"}
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

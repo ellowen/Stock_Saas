@@ -188,7 +188,14 @@ export class PayrollService {
     });
   }
 
-  async bulkCreate(companyId: number, period: string, artRate = 0, sindicatoRate = 0) {
+  async bulkCreate(companyId: number, period: string, artRate?: number, sindicatoRate?: number) {
+    // Use company-configured rates if not passed explicitly
+    if (artRate === undefined || sindicatoRate === undefined) {
+      const company = await prisma.company.findUnique({ where: { id: companyId }, select: { artRate: true, unionRate: true } });
+      artRate = artRate ?? (company?.artRate ?? 0);
+      sindicatoRate = sindicatoRate ?? (company?.unionRate ?? 0);
+    }
+
     const employees = await prisma.employee.findMany({
       where: { companyId, status: "ACTIVE" },
     });

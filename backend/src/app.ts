@@ -26,7 +26,9 @@ import { payrollsRouter } from "./infrastructure/http/routers/payrolls.router";
 import { accountsChartRouter } from "./infrastructure/http/routers/accounts-chart.router";
 import { journalRouter } from "./infrastructure/http/routers/journal.router";
 import { ivaBookRouter } from "./infrastructure/http/routers/iva-book.router";
+import { accountingReportsRouter } from "./infrastructure/http/routers/accounting-reports.router";
 import { auditRouter } from "./infrastructure/http/routers/audit.router";
+import { permissionsRouter } from "./infrastructure/http/routers/permissions.router";
 import { checkSubscription } from "./infrastructure/http/middleware/checkSubscription";
 import { pushRouter } from "./infrastructure/http/routers/push.router";
 import { billingRouter } from "./infrastructure/http/routers/billing.router";
@@ -75,7 +77,9 @@ export const createApp = (): Application => {
   app.use("/accounts-chart", accountsChartRouter);
   app.use("/journal", journalRouter);
   app.use("/iva-book", ivaBookRouter);
+  app.use("/accounting-reports", accountingReportsRouter);
   app.use("/audit-logs", auditRouter);
+  app.use("/permissions", permissionsRouter);
   app.use("/push", pushRouter);
   app.use("/billing", billingRouter);
 

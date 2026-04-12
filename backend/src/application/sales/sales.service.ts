@@ -1,6 +1,7 @@
 import { InventoryMovementType, PaymentMethod, Prisma } from "@prisma/client";
 import { prisma } from "../../config/database/prisma";
 import { NotificationsService } from "../notifications/notifications.service";
+import { autoJournal } from "../accounting/auto-journal.service";
 
 const notificationsService = new NotificationsService();
 
@@ -192,8 +193,15 @@ export class SalesService {
         },
       });
     }).then((result) => {
-      // Fire-and-forget: check low stock alerts after sale completes
+      // Fire-and-forget post-sale side effects
       notificationsService.checkAndNotifyLowStock(companyId).catch(console.error);
+      autoJournal.onSaleCreated({
+        companyId,
+        createdBy: userId,
+        saleId: result!.id,
+        totalAmount: Number(result!.totalAmount),
+        paymentMethod: input.paymentMethod,
+      }).catch(console.error);
       return result;
     });
   }

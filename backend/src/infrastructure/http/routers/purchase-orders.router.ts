@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { PurchaseOrderStatus } from "@prisma/client";
 import { authMiddleware } from "../middleware/auth";
 import { PurchaseOrderService } from "../../../application/purchase-orders/purchase-order.service";
+import { autoJournal } from "../../../application/accounting/auto-journal.service";
 
 const router = Router();
 const service = new PurchaseOrderService();
@@ -73,6 +74,13 @@ router.post("/:id/receive", async (req: Request, res: Response) => {
   }
   try {
     const order = await service.receive(id, companyId, userId, items);
+    // Fire-and-forget auto journal for received purchase
+    autoJournal.onPurchaseReceived({
+      companyId,
+      createdBy: userId,
+      purchaseOrderId: id,
+      total: Number((order as any).total ?? 0),
+    }).catch(console.error);
     res.json(order);
   } catch (err: any) {
     res.status(400).json({ message: err.message });

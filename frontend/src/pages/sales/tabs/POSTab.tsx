@@ -46,7 +46,7 @@ export function POSTab({
 }: Props) {
   const { t } = useTranslation();
   const { company } = useAuth();
-  const { addToast } = useToast();
+  const { showToast } = useToast();
   const { cart, addToCart, updateCartQty, updateCartDiscount, removeFromCart, clearCart } = useCart();
   const [globalDiscount, setGlobalDiscount] = useState("");
 
@@ -331,9 +331,9 @@ export function POSTab({
         },
       });
     } catch (e: any) {
-      addToast(e.message ?? t("documents.saveError"), "error");
+      showToast(e.message ?? t("documents.saveError"), "error");
     }
-  }, [branchId, lastSaleItems, branches, company, t, addToast, selectedCustomer]);
+  }, [branchId, lastSaleItems, branches, company, t, showToast, selectedCustomer]);
 
   return (
     <div className="flex flex-col gap-8 max-w-2xl rounded-2xl p-6 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-600">

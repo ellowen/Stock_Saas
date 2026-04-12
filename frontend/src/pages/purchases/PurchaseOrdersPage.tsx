@@ -63,7 +63,7 @@ const EMPTY_ITEM: ItemRow = { description: "", quantity: "1", unitPrice: "0" };
 
 export default function PurchaseOrdersPage() {
   const { t } = useTranslation();
-  const { addToast } = useToast();
+  const { showToast } = useToast();
   const [tab, setTab] = useState<"list" | "new">("list");
 
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
@@ -85,6 +85,18 @@ export default function PurchaseOrdersPage() {
   const [receiveOrder, setReceiveOrder] = useState<PODetail | null>(null);
   const [receivedQtys, setReceivedQtys] = useState<Record<number, string>>({});
   const [receiving, setReceiving] = useState(false);
+  // Print modal
+  const [printOrder, setPrintOrder] = useState<PODetail | null>(null);
+
+  async function openPrint(id: number) {
+    try {
+      const res = await fetch(`${API}/purchase-orders/${id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+      });
+      if (!res.ok) throw new Error();
+      setPrintOrder(await res.json());
+    } catch { showToast("Error al cargar OC", "error"); }
+  }
 
   const authHeader = () => ({
     "Content-Type": "application/json",
@@ -103,11 +115,11 @@ export default function PurchaseOrdersPage() {
       if (!res.ok) throw new Error();
       setOrders(await res.json());
     } catch {
-      addToast(t("purchases.errorLoad"), "error");
+      showToast(t("purchases.errorLoad"), "error");
     } finally {
       setLoading(false);
     }
-  }, [filterStatus, filterSupplier, t, addToast]);
+  }, [filterStatus, filterSupplier, t, showToast]);
 
   useEffect(() => { loadOrders(); }, [loadOrders]);
 
@@ -132,8 +144,8 @@ export default function PurchaseOrdersPage() {
   const total = items.reduce((s, item) => s + parseFloat(item.unitPrice || "0") * parseFloat(item.quantity || "0"), 0);
 
   async function handleSubmit() {
-    if (!branchId || !supplierId) { addToast(t("purchases.suppBranchRequired"), "error"); return; }
-    if (!items[0].description.trim()) { addToast(t("purchases.itemsRequired"), "error"); return; }
+    if (!branchId || !supplierId) { showToast(t("purchases.suppBranchRequired"), "error"); return; }
+    if (!items[0].description.trim()) { showToast(t("purchases.itemsRequired"), "error"); return; }
     setSubmitting(true);
     try {
       const res = await fetch(`${API}/purchase-orders`, {
@@ -153,13 +165,13 @@ export default function PurchaseOrdersPage() {
         }),
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
-      addToast(t("purchases.created"), "success");
+      showToast(t("purchases.created"), "success");
       setTab("list");
       loadOrders();
       setItems([{ ...EMPTY_ITEM }]);
       setBranchId(""); setSupplierId(""); setExpectedAt(""); setFormNotes("");
     } catch (e: any) {
-      addToast(e.message ?? t("purchases.saveError"), "error");
+      showToast(e.message ?? t("purchases.saveError"), "error");
     } finally {
       setSubmitting(false);
     }
@@ -180,7 +192,7 @@ export default function PurchaseOrdersPage() {
       });
       setReceivedQtys(qtys);
     } catch {
-      addToast(t("purchases.errorLoad"), "error");
+      showToast(t("purchases.errorLoad"), "error");
     }
   }
 
@@ -199,11 +211,11 @@ export default function PurchaseOrdersPage() {
         }),
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
-      addToast(t("purchases.received"), "success");
+      showToast(t("purchases.received"), "success");
       setReceiveOrder(null);
       loadOrders();
     } catch (e: any) {
-      addToast(e.message ?? t("purchases.receiveError"), "error");
+      showToast(e.message ?? t("purchases.receiveError"), "error");
     } finally {
       setReceiving(false);
     }
@@ -216,10 +228,10 @@ export default function PurchaseOrdersPage() {
         method: "POST",
         headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
       });
-      addToast(t("purchases.cancelled"), "success");
+      showToast(t("purchases.cancelled"), "success");
       loadOrders();
     } catch {
-      addToast(t("purchases.cancelError"), "error");
+      showToast(t("purchases.cancelError"), "error");
     }
   }
 
@@ -309,6 +321,10 @@ export default function PurchaseOrdersPage() {
                       </td>
                       <td>
                         <div className="flex gap-2 flex-wrap">
+                          <button type="button" onClick={() => openPrint(order.id)}
+                            className="text-xs text-primary-600 dark:text-primary-400 hover:underline py-1 px-2">
+                            Imprimir
+                          </button>
                           {(order.status === "DRAFT" || order.status === "SENT" || order.status === "PARTIALLY_RECEIVED") && (
                             <button
                               type="button"
@@ -448,6 +464,95 @@ export default function PurchaseOrdersPage() {
               <button type="button" onClick={handleReceive} disabled={receiving} className="btn-primary py-2 px-4 text-sm">
                 {receiving ? t("purchases.receiving") : t("purchases.confirmReceive")}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Print modal */}
+      {printOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-xl flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-700 shrink-0 no-print">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Orden de Compra OC-{String(printOrder.number).padStart(6, "0")}
+              </h2>
+              <div className="flex gap-2">
+                <button onClick={() => window.print()} className="btn-primary text-sm py-1.5 px-4">Imprimir</button>
+                <button onClick={() => setPrintOrder(null)} className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            </div>
+            <div className="overflow-y-auto p-6 print-receipt-zone">
+              <div className="space-y-5 text-sm">
+                {/* Header */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Proveedor</p>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">{printOrder.supplier?.name ?? "—"}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">OC N.</p>
+                    <p className="font-mono font-bold text-gray-900 dark:text-gray-100">OC-{String(printOrder.number).padStart(6, "0")}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{new Date(printOrder.date).toLocaleDateString("es-AR")}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Sucursal destino</p>
+                    <p className="text-gray-700 dark:text-gray-300">{printOrder.branch?.name ?? "—"}</p>
+                  </div>
+                  {printOrder.expectedAt && (
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Entrega estimada</p>
+                      <p className="text-gray-700 dark:text-gray-300">{new Date(printOrder.expectedAt).toLocaleDateString("es-AR")}</p>
+                    </div>
+                  )}
+                </div>
+                {/* Items table */}
+                <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <table className="min-w-full text-sm divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-800">
+                      <tr>
+                        {["Descripcion", "Cant.", "Precio unit.", "Subtotal"].map((h) => (
+                          <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                      {printOrder.items?.map((item) => (
+                        <tr key={item.id}>
+                          <td className="px-4 py-2 text-gray-900 dark:text-gray-100">{item.description}</td>
+                          <td className="px-4 py-2 font-mono text-gray-700 dark:text-gray-300">{Number(item.quantity)}</td>
+                          <td className="px-4 py-2 font-mono text-gray-700 dark:text-gray-300">${Number(item.unitPrice).toFixed(2)}</td>
+                          <td className="px-4 py-2 font-mono font-medium text-gray-900 dark:text-gray-100">
+                            ${(Number(item.quantity) * Number(item.unitPrice)).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-gray-50 dark:bg-gray-800">
+                      <tr>
+                        <td colSpan={3} className="px-4 py-2 text-right font-semibold text-gray-700 dark:text-gray-300">Total:</td>
+                        <td className="px-4 py-2 font-mono font-bold text-gray-900 dark:text-gray-100">
+                          ${Number(printOrder.total).toFixed(2)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                {printOrder.notes && (
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Notas</p>
+                    <p className="text-gray-700 dark:text-gray-300">{printOrder.notes}</p>
+                  </div>
+                )}
+                {/* Signature lines */}
+                <div className="grid grid-cols-2 gap-8 pt-8">
+                  <div className="border-t border-gray-400 pt-2 text-center text-xs text-gray-400">Firma proveedor</div>
+                  <div className="border-t border-gray-400 pt-2 text-center text-xs text-gray-400">Firma recepcion</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

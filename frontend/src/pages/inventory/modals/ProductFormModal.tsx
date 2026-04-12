@@ -17,7 +17,7 @@ type Props = {
 export function ProductFormModal({
   editProduct,
   categories,
-  brands,
+  brands: _brands,
   onClose,
   onSuccess,
 }: Props) {

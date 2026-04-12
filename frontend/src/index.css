@@ -58,16 +58,20 @@
     visibility: hidden;
   }
   .print-labels-zone,
-  .print-labels-zone * {
+  .print-labels-zone *,
+  .print-receipt-zone,
+  .print-receipt-zone * {
     visibility: visible;
   }
-  .print-labels-zone {
+  .print-labels-zone,
+  .print-receipt-zone {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
-    padding: 0;
+    padding: 16px;
     background: white;
+    color: black;
   }
   .no-print {
     display: none !important;

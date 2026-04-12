@@ -16,6 +16,7 @@ import { ProductsTab } from "./tabs/ProductsTab";
 import { StockTab } from "./tabs/StockTab";
 import { MovementsTab } from "./tabs/MovementsTab";
 import { StockCountTab } from "./tabs/StockCountTab";
+import { ReorderTab } from "./tabs/ReorderTab";
 
 import { ProductFormModal } from "./modals/ProductFormModal";
 import { StockEditModal } from "./modals/StockEditModal";
@@ -190,6 +191,7 @@ export function InventoryPage() {
               ["stock", t("inventory.tabStock")],
               ["historial", t("inventory.tabMovements")],
               ["conteo", t("inventory.tabCount")],
+              ["reposicion", "Reposicion"],
             ] as [InventoryTabId, string][]
           ).map(([id, label]) => (
             <button
@@ -243,6 +245,10 @@ export function InventoryPage() {
           branches={branches}
           onStockChanged={() => stock.load(stock.page)}
         />
+      )}
+
+      {activeTab === "reposicion" && (
+        <ReorderTab branches={branches} />
       )}
 
       {/* Modals */}

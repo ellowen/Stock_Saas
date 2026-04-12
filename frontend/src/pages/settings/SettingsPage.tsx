@@ -35,7 +35,7 @@ const INDUSTRY_TYPES = [
   { key: "AUTOMOTIVE", label: "Automotriz / Repuestos" },
 ];
 
-type Tab = "company" | "attributes" | "billing" | "printer";
+type Tab = "company" | "attributes" | "billing" | "printer" | "payroll";
 
 function parseOptions(options: string | null): string[] {
   if (!options) return [];
@@ -61,6 +61,9 @@ export function SettingsPage() {
     industryType: "GENERIC",
     lowStockAlerts: false,
     salesReportFreq: "NONE" as "NONE" | "DAILY" | "WEEKLY",
+    artRate: 2.5,       // percentage
+    unionRate: 2.0,     // percentage
+    accountingEnabled: false,
   });
   const [companyLoading, setCompanyLoading] = useState(false);
   const [companyFetched, setCompanyFetched] = useState(false);
@@ -98,6 +101,9 @@ export function SettingsPage() {
             industryType: data.industryType ?? "GENERIC",
             lowStockAlerts: data.lowStockAlerts ?? false,
             salesReportFreq: data.salesReportFreq ?? "NONE",
+            artRate: (data.artRate ?? 0.025) * 100,
+            unionRate: (data.unionRate ?? 0.02) * 100,
+            accountingEnabled: data.accountingEnabled ?? false,
           });
           setCompanyFetched(true);
         }
@@ -137,7 +143,11 @@ export function SettingsPage() {
       const res = await authFetch(`${API_BASE_URL}/protected/company`, {
         method: "PUT",
         headers: authHeaders(),
-        body: JSON.stringify(companyForm),
+        body: JSON.stringify({
+          ...companyForm,
+          artRate: companyForm.artRate / 100,   // UI shows %, backend stores decimal
+          unionRate: companyForm.unionRate / 100,
+        }),
       });
       if (!res.ok) throw new Error("Error al guardar");
       showToast("Empresa actualizada correctamente.");
@@ -250,6 +260,7 @@ export function SettingsPage() {
     { key: "attributes", label: t("settings.tabAttributes") },
     { key: "billing", label: t("settings.tabBilling") },
     { key: "printer", label: t("settings.tabPrinter") },
+    { key: "payroll", label: "Sueldos" },
   ];
 
   return (
@@ -566,6 +577,87 @@ export function SettingsPage() {
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {tab === "payroll" && (
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 space-y-6 max-w-lg">
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Configuracion de Sueldos</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Porcentajes de aportes y contribuciones patronales. Se usan en el calculo automatico de liquidaciones.
+          </p>
+
+          <div className="space-y-4">
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 space-y-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Aportes del empleado (fijos por ley)</p>
+              <div className="grid grid-cols-3 gap-3 text-sm">
+                <div><p className="text-slate-500">Jubilacion</p><p className="font-semibold">11%</p></div>
+                <div><p className="text-slate-500">Obra Social</p><p className="font-semibold">3%</p></div>
+                <div><p className="text-slate-500">INSSJP/PAMI</p><p className="font-semibold">3%</p></div>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 space-y-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Contribuciones patronales (fijas por ley)</p>
+              <div className="grid grid-cols-3 gap-3 text-sm">
+                <div><p className="text-slate-500">Jubilacion</p><p className="font-semibold">16%</p></div>
+                <div><p className="text-slate-500">INSSJP/PAMI</p><p className="font-semibold">2%</p></div>
+                <div><p className="text-slate-500">Obra Social</p><p className="font-semibold">6%</p></div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Tasas configurables</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">ART patronal (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    className="input-minimal w-full"
+                    value={companyForm.artRate}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, artRate: parseFloat(e.target.value) || 0 }))}
+                  />
+                  <p className="text-xs text-slate-400 mt-1">Tipicamente 2-4%</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cuota sindical (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    className="input-minimal w-full"
+                    value={companyForm.unionRate}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, unionRate: parseFloat(e.target.value) || 0 }))}
+                  />
+                  <p className="text-xs text-slate-400 mt-1">Tipicamente 2-3%</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <input
+                type="checkbox"
+                id="accounting-enabled"
+                checked={companyForm.accountingEnabled}
+                onChange={(e) => setCompanyForm((f) => ({ ...f, accountingEnabled: e.target.checked }))}
+                className="rounded border-slate-300"
+              />
+              <div>
+                <label htmlFor="accounting-enabled" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Asientos contables automaticos
+                </label>
+                <p className="text-xs text-slate-400">Al activar, cada venta y compra genera un asiento en el Libro Diario automaticamente.</p>
+              </div>
+            </div>
+          </div>
+
+          <Button onClick={saveCompany} loading={companyLoading}>
+            Guardar configuracion
+          </Button>
         </div>
       )}
 

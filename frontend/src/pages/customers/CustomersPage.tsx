@@ -3,6 +3,18 @@ import { useTranslation } from "react-i18next";
 import { useToast } from "../../contexts/ToastContext";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { SearchInput } from "../../components/ui/SearchInput";
+import { useSortable } from "../../hooks/useSortable";
+
+function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
+  return (
+    <svg className={`w-3.5 h-3.5 ml-1 inline-block transition-opacity ${active ? "opacity-100" : "opacity-30 group-hover:opacity-60"}`}
+      fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {active && dir === "desc"
+        ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />}
+    </svg>
+  );
+}
 
 const API = "/api";
 
@@ -30,16 +42,42 @@ const EMPTY_FORM = {
   notes: "",
 };
 
+interface SaleHistory {
+  id: number;
+  totalAmount: string;
+  totalItems: number;
+  paymentMethod: string;
+  status: string;
+  createdAt: string;
+  items: { quantity: number; unitPrice: string; totalPrice: string; variant: { sku: string | null; size: string; color: string; product: { name: string } } }[];
+}
+
 export default function CustomersPage() {
   const { t } = useTranslation();
-  const { addToast } = useToast();
+  const { showToast } = useToast();
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const { sorted: sortedCustomers, sortKey, sortDir, toggle } = useSortable(customers, "name");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
+  const [historyCustomer, setHistoryCustomer] = useState<Customer | null>(null);
+  const [history, setHistory] = useState<{ totalSpent: number; count: number; sales: SaleHistory[] } | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const openHistory = async (c: Customer) => {
+    setHistoryCustomer(c);
+    setHistory(null);
+    setHistoryLoading(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const res = await fetch(`${API}/customers/${c.id}/sales`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) setHistory(await res.json());
+    } catch { /* ignore */ }
+    finally { setHistoryLoading(false); }
+  };
 
   const load = useCallback(async (q?: string) => {
     setLoading(true);
@@ -50,11 +88,11 @@ export default function CustomersPage() {
       if (!res.ok) throw new Error();
       setCustomers(await res.json());
     } catch {
-      addToast(t("customers.errorLoad"), "error");
+      showToast(t("customers.errorLoad"), "error");
     } finally {
       setLoading(false);
     }
-  }, [t, addToast]);
+  }, [t, showToast]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -86,7 +124,7 @@ export default function CustomersPage() {
 
   async function handleSave() {
     if (!form.name.trim()) {
-      addToast(t("customers.nameRequired"), "error");
+      showToast(t("customers.nameRequired"), "error");
       return;
     }
     setSaving(true);
@@ -113,11 +151,11 @@ export default function CustomersPage() {
         const err = await res.json();
         throw new Error(err.message);
       }
-      addToast(editing ? t("customers.updated") : t("customers.created"), "success");
+      showToast(editing ? t("customers.updated") : t("customers.created"), "success");
       setModalOpen(false);
       load(search || undefined);
     } catch (e: any) {
-      addToast(e.message ?? t("customers.saveError"), "error");
+      showToast(e.message ?? t("customers.saveError"), "error");
     } finally {
       setSaving(false);
     }
@@ -131,10 +169,10 @@ export default function CustomersPage() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      addToast(t("customers.deleted"), "success");
+      showToast(t("customers.deleted"), "success");
       load(search || undefined);
     } catch {
-      addToast(t("customers.deleteError"), "error");
+      showToast(t("customers.deleteError"), "error");
     }
   }
 
@@ -143,7 +181,7 @@ export default function CustomersPage() {
       <PageHeader
         title={t("customers.title")}
         subtitle={t("customers.subtitle")}
-        action={{ label: t("customers.new"), onClick: openCreate }}
+        actions={<button type="button" onClick={openCreate} className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">{t("customers.new")}</button>}
       />
 
       <SearchInput
@@ -153,27 +191,47 @@ export default function CustomersPage() {
       />
 
       {loading ? (
-        <p className="text-slate-500 dark:text-slate-400">{t("customers.loading")}</p>
+        <div className="space-y-2">
+          {[1,2,3].map((i) => <div key={i} className="h-12 rounded-lg bg-gray-100 dark:bg-gray-700/40 animate-pulse" />)}
+        </div>
       ) : customers.length === 0 ? (
-        <div className="text-center py-16 text-slate-400 dark:text-slate-500">
-          <p className="text-lg">{t("customers.empty")}</p>
-          <p className="text-sm mt-1">{t("customers.emptyHint")}</p>
+        <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 py-16 text-center">
+          <svg className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <p className="text-gray-500 dark:text-gray-400 font-medium">{t("customers.empty")}</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 mb-4">{t("customers.emptyHint")}</p>
+          <button type="button" onClick={openCreate}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            {t("customers.new")}
+          </button>
         </div>
       ) : (
         <div className="table-modern">
           <table>
             <thead>
               <tr>
-                <th>{t("customers.colName")}</th>
-                <th>{t("customers.colTaxId")}</th>
-                <th>{t("customers.colPhone")}</th>
-                <th>{t("customers.colEmail")}</th>
-                <th>{t("customers.colCity")}</th>
+                {([
+                  ["name", t("customers.colName")],
+                  ["taxId", t("customers.colTaxId")],
+                  ["phone", t("customers.colPhone")],
+                  ["email", t("customers.colEmail")],
+                  ["city", t("customers.colCity")],
+                ] as [keyof Customer, string][]).map(([col, label]) => (
+                  <th key={col}>
+                    <button type="button" onClick={() => toggle(col)}
+                      className="group inline-flex items-center text-left font-semibold hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                      {label}
+                      <SortIcon active={sortKey === col} dir={sortDir} />
+                    </button>
+                  </th>
+                ))}
                 <th>{t("customers.colActions")}</th>
               </tr>
             </thead>
             <tbody>
-              {customers.map((c) => (
+              {sortedCustomers.map((c) => (
                 <tr key={c.id}>
                   <td className="font-medium">{c.name}</td>
                   <td className="text-slate-500 dark:text-slate-400">
@@ -184,6 +242,13 @@ export default function CustomersPage() {
                   <td className="text-slate-500 dark:text-slate-400">{c.city ?? "—"}</td>
                   <td>
                     <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openHistory(c)}
+                        className="text-xs text-primary-600 dark:text-primary-400 hover:underline py-1 px-2"
+                      >
+                        Historial
+                      </button>
                       <button
                         type="button"
                         onClick={() => openEdit(c)}
@@ -204,6 +269,68 @@ export default function CustomersPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Historial de compras */}
+      {historyCustomer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-xl flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-700 shrink-0">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{historyCustomer.name}</h2>
+                {history && (
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                    {history.count} compra{history.count !== 1 ? "s" : ""} &mdash; Total gastado: <strong>${Number(history.totalSpent).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</strong>
+                  </p>
+                )}
+              </div>
+              <button onClick={() => setHistoryCustomer(null)} className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto p-4 space-y-3">
+              {historyLoading ? (
+                <p className="text-sm text-slate-400 text-center py-8">Cargando historial...</p>
+              ) : !history || history.sales.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-8">Este cliente no tiene compras registradas.</p>
+              ) : (
+                history.sales.map((sale) => (
+                  <div key={sale.id} className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div className="bg-slate-50 dark:bg-slate-700/40 px-4 py-2.5 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-slate-800 dark:text-slate-200">Venta #{sale.id}</span>
+                        <span className="text-xs text-slate-500">{new Date(sale.createdAt).toLocaleDateString("es-AR")}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          sale.status === "COMPLETED" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                          sale.status === "REFUNDED"  ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
+                          "bg-slate-100 text-slate-500"
+                        }`}>{sale.status}</span>
+                      </div>
+                      <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">
+                        ${Number(sale.totalAmount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                      {sale.items.map((item, i) => (
+                        <div key={i} className="px-4 py-2 flex justify-between text-sm">
+                          <span className="text-slate-700 dark:text-slate-300">
+                            {item.quantity}x {item.variant.product.name}
+                            {(item.variant.size || item.variant.color) && (
+                              <span className="text-slate-400 ml-1">({[item.variant.size, item.variant.color].filter(Boolean).join(" / ")})</span>
+                            )}
+                          </span>
+                          <span className="font-mono text-slate-500 dark:text-slate-400">
+                            ${Number(item.totalPrice).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       )}
 

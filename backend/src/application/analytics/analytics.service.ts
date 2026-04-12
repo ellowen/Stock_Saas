@@ -122,18 +122,37 @@ export class AnalyticsService {
   async dashboard(companyId: number) {
     const today = new Date();
     const todayStr = today.toISOString().slice(0, 10);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
     const sevenDaysAgo = new Date(today);
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
     const fromStr = sevenDaysAgo.toISOString().slice(0, 10);
 
+    // Week boundaries for trend comparison
+    const thisWeekStart = new Date(today);
+    thisWeekStart.setDate(thisWeekStart.getDate() - today.getDay());
+    const lastWeekStart = new Date(thisWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+    const lastWeekEnd = new Date(thisWeekStart);
+    lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
+
+    const currentPeriod = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+
     const [
       overviewToday,
+      overviewYesterday,
       fullOverview,
       branchesCount,
       lowStockCount,
       salesLast7,
+      recentSales,
+      payrollStats,
     ] = await Promise.all([
       this.overview(companyId, { from: todayStr, to: todayStr }),
+      this.overview(companyId, { from: yesterdayStr, to: yesterdayStr }),
       this.overview(companyId),
       prisma.branch.count({ where: { companyId, isActive: true } }),
       (async () => {
@@ -150,13 +169,35 @@ export class AnalyticsService {
       prisma.sale.findMany({
         where: {
           companyId,
-          createdAt: {
-            gte: startOfDay(fromStr),
-            lte: endOfDay(todayStr),
-          },
+          createdAt: { gte: startOfDay(fromStr), lte: endOfDay(todayStr) },
         },
         select: { createdAt: true, totalAmount: true },
       }),
+      prisma.sale.findMany({
+        where: { companyId, status: { notIn: ["CANCELLED"] } },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+        select: {
+          id: true,
+          totalAmount: true,
+          totalItems: true,
+          paymentMethod: true,
+          createdAt: true,
+          customer: { select: { name: true } },
+        },
+      }),
+      (async () => {
+        const [confirmed, periodRows] = await Promise.all([
+          prisma.payroll.count({ where: { companyId, status: "CONFIRMED" } }),
+          prisma.payroll.findMany({
+            where: { companyId, period: currentPeriod },
+            select: { netSalary: true, status: true },
+          }),
+        ]);
+        const totalNet = periodRows.reduce((s, r) => s + Number(r.netSalary), 0);
+        const paidNet = periodRows.filter((r) => r.status === "PAID").reduce((s, r) => s + Number(r.netSalary), 0);
+        return { pendingConfirmed: confirmed, periodCount: periodRows.length, totalNetThisMonth: totalNet, paidNetThisMonth: paidNet };
+      })(),
     ]);
 
     const byDay = new Map<string, { totalAmount: number; count: number }>();
@@ -177,13 +218,30 @@ export class AnalyticsService {
       .map(([date, data]) => ({ date, ...data }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
+    // Trend helpers: pct change (null if no base)
+    const pct = (curr: number, prev: number) =>
+      prev === 0 ? null : Math.round(((curr - prev) / prev) * 100);
+
     return {
       salesToday: overviewToday.totalSales,
       revenueToday: overviewToday.totalRevenue,
+      salesYesterday: overviewYesterday.totalSales,
+      revenueYesterday: overviewYesterday.totalRevenue,
+      salesTrend: pct(overviewToday.totalSales, overviewYesterday.totalSales),
+      revenueTrend: pct(Number(overviewToday.totalRevenue), Number(overviewYesterday.totalRevenue)),
       totalStockUnits: fullOverview.totalStockUnits,
       branchesCount,
       lowStockAlerts: lowStockCount,
       salesByDayLast7: salesByDay,
+      recentSales: recentSales.map((s) => ({
+        id: s.id,
+        totalAmount: Number(s.totalAmount),
+        totalItems: s.totalItems,
+        paymentMethod: s.paymentMethod,
+        createdAt: s.createdAt,
+        customerName: s.customer?.name ?? null,
+      })),
+      payroll: payrollStats,
     };
   }
 

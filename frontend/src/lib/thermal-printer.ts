@@ -1,5 +1,12 @@
 import type { ReceiptPrintData } from "../pages/sales/types";
 
+// SerialPort is a Web API not yet in standard TS lib — declare minimal interface
+declare class SerialPort {
+  open(options: { baudRate: number }): Promise<void>;
+  close(): Promise<void>;
+  writable: WritableStream<Uint8Array> | null;
+}
+
 const ESC = 0x1b;
 const GS = 0x1d;
 const LF = 0x0a;

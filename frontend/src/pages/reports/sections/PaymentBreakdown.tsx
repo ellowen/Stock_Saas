@@ -70,7 +70,7 @@ export function PaymentBreakdown({ data }: Props) {
                 <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: $${Number(value).toFixed(0)}`}>
                   {chartData.map((_, i) => <Cell key={i} fill={chartData[i].fill} />)}
                 </Pie>
-                <RechartsTooltip formatter={(value: number) => [`$${Number(value).toFixed(2)}`, t("reports.colTotal")]} />
+                <RechartsTooltip formatter={(value: number | undefined) => [`$${Number(value ?? 0).toFixed(2)}`, t("reports.colTotal")]} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>

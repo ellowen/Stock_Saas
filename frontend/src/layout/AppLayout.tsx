@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { type ReactElement, useEffect, useRef, useState } from "react";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { setAccessToken } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
@@ -34,26 +34,26 @@ import { useTheme } from "../contexts/ThemeContext";
 const navItems: {
   path: string;
   labelKey: string;
-  Icon: () => JSX.Element;
-  permission?: "reports" | "transfers" | "branches" | "users";
+  Icon: () => ReactElement;
+  permission?: string;
 }[] = [
   { path: "/app/dashboard",  labelKey: "home",      Icon: IconHome },
   { path: "/app/inventory",  labelKey: "inventory", Icon: IconPackage },
   { path: "/app/sales",      labelKey: "sales",     Icon: IconShoppingCart },
-  { path: "/app/transfers",  labelKey: "transfers", Icon: IconTransfer,    permission: "transfers" },
-  { path: "/app/documents",  labelKey: "documents", Icon: IconDocument,    permission: "reports" },
-  { path: "/app/customers",  labelKey: "customers", Icon: IconUserCircle,  permission: "reports" },
-  { path: "/app/suppliers",  labelKey: "suppliers", Icon: IconTruck,       permission: "reports" },
-  { path: "/app/purchases",  labelKey: "purchases", Icon: IconClipboardList, permission: "reports" },
-  { path: "/app/accounts",   labelKey: "accounts",  Icon: IconCurrency,      permission: "reports" },
-  { path: "/app/employees",  labelKey: "employees",  Icon: IconBriefcase,  permission: "reports" },
-  { path: "/app/payroll",    labelKey: "payroll",    Icon: IconCash,         permission: "reports" },
-  { path: "/app/accounting", labelKey: "accounting", Icon: IconBook,         permission: "reports" },
-  { path: "/app/reports",    labelKey: "reports",   Icon: IconChart,       permission: "reports" },
-  { path: "/app/branches",   labelKey: "branches",  Icon: IconBuilding,    permission: "branches" },
-  { path: "/app/users",      labelKey: "users",     Icon: IconUsers,       permission: "users" },
-  { path: "/app/plan",       labelKey: "plan",      Icon: IconCurrency },
-  { path: "/app/audit",     labelKey: "audit",     Icon: IconShield,    permission: "users" },
+  { path: "/app/transfers",  labelKey: "transfers", Icon: IconTransfer,    permission: "TRANSFERS_APPROVE" },
+  { path: "/app/documents",  labelKey: "documents", Icon: IconDocument,    permission: "DOCUMENTS_WRITE" },
+  { path: "/app/customers",  labelKey: "customers", Icon: IconUserCircle,  permission: "CUSTOMERS_WRITE" },
+  { path: "/app/suppliers",  labelKey: "suppliers", Icon: IconTruck,       permission: "SUPPLIERS_WRITE" },
+  { path: "/app/purchases",  labelKey: "purchases", Icon: IconClipboardList, permission: "PURCHASES_MANAGE" },
+  { path: "/app/accounts",   labelKey: "accounts",  Icon: IconCurrency,    permission: "SALES_HISTORY" },
+  { path: "/app/employees",  labelKey: "employees",  Icon: IconBriefcase,  permission: "EMPLOYEES_VIEW" },
+  { path: "/app/payroll",    labelKey: "payroll",    Icon: IconCash,       permission: "EMPLOYEES_VIEW" },
+  { path: "/app/accounting", labelKey: "accounting", Icon: IconBook,       permission: "ACCOUNTING_VIEW" },
+  { path: "/app/reports",    labelKey: "reports",   Icon: IconChart,       permission: "REPORTS_VIEW" },
+  { path: "/app/branches",   labelKey: "branches",  Icon: IconBuilding,    permission: "SETTINGS_MANAGE" },
+  { path: "/app/users",      labelKey: "users",     Icon: IconUsers,       permission: "USERS_MANAGE" },
+  { path: "/app/plan",       labelKey: "plan",      Icon: IconCurrency,    permission: "SETTINGS_MANAGE" },
+  { path: "/app/audit",     labelKey: "audit",     Icon: IconShield,      permission: "AUDIT_VIEW" },
 ];
 
 const PLAN_LABELS: Record<string, string> = {
@@ -61,6 +61,212 @@ const PLAN_LABELS: Record<string, string> = {
   PRO: "Pro",
   ENTERPRISE: "Enterprise",
 };
+
+// ─── Notification Bell ────────────────────────────────────────────────────────
+
+interface AlertItem {
+  type: string;
+  count: number;
+  label: string;
+  link: string;
+}
+
+function NotificationBell() {
+  const navigate = useNavigate();
+  const [total, setTotal] = useState(0);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const fetch_ = async () => {
+      const token = localStorage.getItem("accessToken");
+      const res = await fetch("/analytics/alerts", { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) { const d = await res.json(); setTotal(d.total); setAlerts(d.alerts); }
+    };
+    fetch_();
+    const id = setInterval(fetch_, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const ALERT_ICONS: Record<string, string> = {
+    low_stock: "📦",
+    payroll: "💰",
+    expiry: "⚠️",
+    receivable: "💳",
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+        aria-label="Notificaciones"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+        {total > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+            {total > 9 ? "9+" : total}
+          </span>
+        )}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-72 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-xl z-50 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Notificaciones</p>
+          </div>
+          {alerts.length === 0 ? (
+            <p className="px-4 py-6 text-sm text-gray-400 text-center">Sin alertas pendientes</p>
+          ) : (
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+              {alerts.map((a) => (
+                <button key={a.type} onClick={() => { navigate(a.link); setOpen(false); }}
+                  className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left transition-colors">
+                  <span className="text-lg shrink-0 mt-0.5">{ALERT_ICONS[a.type] ?? "•"}</span>
+                  <div>
+                    <p className="text-sm text-gray-800 dark:text-gray-200">{a.label}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Global Search ────────────────────────────────────────────────────────────
+type SearchResult = {
+  products: { id: number; name: string; category: string | null; brand: string | null }[];
+  customers: { id: number; name: string; email: string | null; phone: string | null }[];
+  sales: { id: number; totalAmount: string; createdAt: string; customer: { name: string } | null }[];
+};
+
+function GlobalSearch() {
+  const navigate = useNavigate();
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  const [results, setResults] = useState<SearchResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounce.current) clearTimeout(debounce.current);
+    if (q.trim().length < 2) { setResults(null); setOpen(false); return; }
+    debounce.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`/analytics/search?q=${encodeURIComponent(q.trim())}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) { setResults(await res.json()); setOpen(true); }
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+  }, [q]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const go = (path: string) => {
+    navigate(path);
+    setQ("");
+    setOpen(false);
+    setResults(null);
+  };
+
+  const total = results ? results.products.length + results.customers.length + results.sales.length : 0;
+
+  return (
+    <div ref={ref} className="relative hidden sm:block">
+      <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-3 py-1.5 w-48 focus-within:w-64 transition-all">
+        <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+        </svg>
+        <input
+          type="text"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Buscar..."
+          className="bg-transparent text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 outline-none w-full"
+        />
+        {loading && <span className="w-3 h-3 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin shrink-0" />}
+      </div>
+      {open && results && total > 0 && (
+        <div className="absolute top-full left-0 mt-1 w-80 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-xl z-50 overflow-hidden">
+          {results.products.length > 0 && (
+            <div>
+              <p className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50 dark:bg-gray-700/50">Productos</p>
+              {results.products.map((p) => (
+                <button key={p.id} onClick={() => go("/app/inventory")}
+                  className="w-full flex flex-col px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-left">
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{p.name}</span>
+                  {(p.category || p.brand) && <span className="text-xs text-gray-400">{[p.brand, p.category].filter(Boolean).join(" - ")}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+          {results.customers.length > 0 && (
+            <div>
+              <p className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50 dark:bg-gray-700/50">Clientes</p>
+              {results.customers.map((c) => (
+                <button key={c.id} onClick={() => go("/app/customers")}
+                  className="w-full flex flex-col px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-left">
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{c.name}</span>
+                  {(c.email || c.phone) && <span className="text-xs text-gray-400">{c.email ?? c.phone}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+          {results.sales.length > 0 && (
+            <div>
+              <p className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50 dark:bg-gray-700/50">Ventas</p>
+              {results.sales.map((s) => (
+                <button key={s.id} onClick={() => go("/app/sales")}
+                  className="w-full flex flex-col px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-left">
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    Venta #{s.id} — ${Number(s.totalAmount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {s.customer?.name ?? "Sin cliente"} - {new Date(s.createdAt).toLocaleDateString("es-AR")}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+          {total === 0 && (
+            <p className="px-3 py-3 text-sm text-gray-400">Sin resultados para "{q}"</p>
+          )}
+        </div>
+      )}
+      {open && results && total === 0 && !loading && (
+        <div className="absolute top-full left-0 mt-1 w-64 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-xl z-50 px-3 py-3">
+          <p className="text-sm text-gray-400">Sin resultados para "{q}"</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function NavItem({
   to,
@@ -71,7 +277,7 @@ function NavItem({
 }: {
   to: string;
   label: string;
-  Icon: () => JSX.Element;
+  Icon: () => ReactElement;
   collapsed: boolean;
   onNavigate?: () => void;
 }) {
@@ -101,10 +307,9 @@ function NavItem({
 }
 
 export function AppLayout() {
-  const location = useLocation();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const { canManageBranches, canManageUsers, canViewReports, canManageTransfers, company, user } = useAuth();
+  const { company, user, hasPermission } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen]       = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -124,15 +329,8 @@ export function AppLayout() {
 
   const closeSidebar = () => setSidebarOpen(false);
 
-  const permissionMap = {
-    reports:   canViewReports,
-    transfers: canManageTransfers,
-    branches:  canManageBranches,
-    users:     canManageUsers,
-  };
-
   const visibleNavItems = navItems.filter(
-    (item) => !item.permission || permissionMap[item.permission]
+    (item) => !item.permission || hasPermission(item.permission)
   );
 
   return (
@@ -270,7 +468,7 @@ export function AppLayout() {
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Header */}
         <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 shadow-sm">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             {/* Hamburger — solo móvil */}
             <button
               type="button"
@@ -282,10 +480,11 @@ export function AppLayout() {
             </button>
             {/* Nombre empresa */}
             {company && (
-              <span className="text-sm font-semibold text-gray-800 dark:text-gray-100 hidden sm:block">
+              <span className="text-sm font-semibold text-gray-800 dark:text-gray-100 hidden lg:block truncate max-w-[140px]">
                 {company.name}
               </span>
             )}
+            <GlobalSearch />
           </div>
 
           <div className="flex items-center gap-1">
@@ -317,6 +516,9 @@ export function AppLayout() {
                 {lng.toUpperCase()}
               </button>
             ))}
+
+            {/* Campana de alertas */}
+            <NotificationBell />
 
             {/* Tema */}
             <Tooltip content={theme === "dark" ? "Tema claro" : "Tema oscuro"} side="bottom">
