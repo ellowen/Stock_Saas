@@ -203,25 +203,25 @@ export default function SuppliersPage() {
             </thead>
             <tbody>
               {sortedSuppliers.map((s) => (
-                <tr key={s.id}>
+                <tr key={s.id} className="group">
                   <td className="font-medium">{s.name}</td>
                   <td className="text-slate-500 dark:text-slate-400">{s.taxId ?? "—"}</td>
                   <td className="text-slate-500 dark:text-slate-400">{s.phone ?? "—"}</td>
                   <td className="text-slate-500 dark:text-slate-400">{s.email ?? "—"}</td>
                   <td className="text-slate-500 dark:text-slate-400">{s.city ?? "—"}</td>
                   <td>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         type="button"
                         onClick={() => openEdit(s)}
-                        className="text-xs btn-secondary py-1 px-3"
+                        className="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded px-2 py-1"
                       >
                         {t("suppliers.edit")}
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(s)}
-                        className="text-xs text-red-600 hover:text-red-700 dark:text-red-400 py-1 px-2"
+                        className="text-xs text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded px-2 py-1"
                       >
                         {t("suppliers.delete")}
                       </button>

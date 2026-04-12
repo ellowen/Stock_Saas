@@ -2,6 +2,18 @@ import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../contexts/ToastContext";
 import { PageHeader } from "../../components/ui/PageHeader";
+import { useSortable } from "../../hooks/useSortable";
+
+function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
+  return (
+    <svg className={`w-3 h-3 ml-1 inline-block transition-opacity ${active ? "opacity-100" : "opacity-30 group-hover:opacity-60"}`}
+      fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {active && dir === "desc"
+        ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />}
+    </svg>
+  );
+}
 
 const API = "/api";
 
@@ -67,6 +79,7 @@ export default function PurchaseOrdersPage() {
   const [tab, setTab] = useState<"list" | "new">("list");
 
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+  const { sorted: sortedOrders, sortKey, sortDir, toggle } = useSortable(orders, "number", "desc");
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<POStatus | "">("");
   const [filterSupplier, setFilterSupplier] = useState<number | "">("");
@@ -283,53 +296,70 @@ export default function PurchaseOrdersPage() {
           </div>
 
           {loading ? (
-            <p className="text-slate-500 dark:text-slate-400">{t("purchases.loading")}</p>
+            <div className="space-y-2">
+              {[1,2,3].map((i) => <div key={i} className="h-12 rounded-lg bg-gray-100 dark:bg-gray-700/40 animate-pulse" />)}
+            </div>
           ) : orders.length === 0 ? (
-            <div className="text-center py-16 text-slate-400 dark:text-slate-500">
-              <p>{t("purchases.empty")}</p>
+            <div className="rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 py-16 text-center">
+              <p className="text-slate-500 dark:text-slate-400 font-medium">{t("purchases.empty")}</p>
+              <button type="button" onClick={() => setTab("new")}
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                {t("purchases.tabNew")}
+              </button>
             </div>
           ) : (
             <div className="table-modern">
               <table>
                 <thead>
                   <tr>
-                    <th>{t("purchases.colNumber")}</th>
+                    {([
+                      ["number", t("purchases.colNumber")],
+                      ["status", t("purchases.colStatus")],
+                      ["date", t("purchases.colDate")],
+                      ["total", t("purchases.colTotal")],
+                    ] as [keyof PurchaseOrder, string][]).map(([col, label]) => (
+                      <th key={col}>
+                        <button type="button" onClick={() => toggle(col)}
+                          className="group inline-flex items-center text-left font-semibold hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                          {label}
+                          <SortIcon active={sortKey === col} dir={sortDir} />
+                        </button>
+                      </th>
+                    ))}
                     <th>{t("purchases.colSupplier")}</th>
                     <th>{t("purchases.colBranch")}</th>
-                    <th>{t("purchases.colDate")}</th>
                     <th>{t("purchases.colExpected")}</th>
-                    <th>{t("purchases.colTotal")}</th>
-                    <th>{t("purchases.colStatus")}</th>
                     <th>{t("purchases.colActions")}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((order) => (
-                    <tr key={order.id}>
+                  {sortedOrders.map((order) => (
+                    <tr key={order.id} className="group">
                       <td className="font-mono text-sm">OC-{String(order.number).padStart(6, "0")}</td>
-                      <td>{order.supplier?.name ?? "—"}</td>
-                      <td className="text-slate-500 dark:text-slate-400">{order.branch?.name ?? "—"}</td>
-                      <td className="text-slate-500 dark:text-slate-400">{new Date(order.date).toLocaleDateString("es-AR")}</td>
-                      <td className="text-slate-500 dark:text-slate-400">
-                        {order.expectedAt ? new Date(order.expectedAt).toLocaleDateString("es-AR") : "—"}
-                      </td>
-                      <td className="font-medium">${Number(order.total).toFixed(2)}</td>
                       <td>
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[order.status]}`}>
                           {STATUS_LABELS[order.status]}
                         </span>
                       </td>
+                      <td className="text-slate-500 dark:text-slate-400">{new Date(order.date).toLocaleDateString("es-AR")}</td>
+                      <td className="font-medium">${Number(order.total).toFixed(2)}</td>
+                      <td>{order.supplier?.name ?? "—"}</td>
+                      <td className="text-slate-500 dark:text-slate-400">{order.branch?.name ?? "—"}</td>
+                      <td className="text-slate-500 dark:text-slate-400">
+                        {order.expectedAt ? new Date(order.expectedAt).toLocaleDateString("es-AR") : "—"}
+                      </td>
                       <td>
-                        <div className="flex gap-2 flex-wrap">
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button type="button" onClick={() => openPrint(order.id)}
-                            className="text-xs text-primary-600 dark:text-primary-400 hover:underline py-1 px-2">
+                            className="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded px-2 py-1">
                             Imprimir
                           </button>
                           {(order.status === "DRAFT" || order.status === "SENT" || order.status === "PARTIALLY_RECEIVED") && (
                             <button
                               type="button"
                               onClick={() => openReceive(order.id)}
-                              className="text-xs btn-primary py-1 px-3"
+                              className="text-xs text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded px-2 py-1"
                             >
                               {t("purchases.actionReceive")}
                             </button>
@@ -338,7 +368,7 @@ export default function PurchaseOrdersPage() {
                             <button
                               type="button"
                               onClick={() => handleCancel(order.id)}
-                              className="text-xs text-red-600 hover:text-red-700 dark:text-red-400 py-1 px-2"
+                              className="text-xs text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded px-2 py-1"
                             >
                               {t("purchases.actionCancel")}
                             </button>

@@ -8,6 +8,18 @@ import { Modal } from "../../components/ui/Modal";
 import { FormField } from "../../components/ui/FormField";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { IconPlus, IconBriefcase } from "../../components/Icons";
+import { useSortable } from "../../hooks/useSortable";
+
+function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
+  return (
+    <svg className={`w-3 h-3 ml-1 inline-block transition-opacity ${active ? "opacity-100" : "opacity-30 group-hover:opacity-60"}`}
+      fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {active && dir === "desc"
+        ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />}
+    </svg>
+  );
+}
 
 const API = "/api";
 
@@ -70,6 +82,7 @@ export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"active" | "all" | "inactive">("active");
+  const { sorted: sortedEmployees, sortKey, sortDir, toggle } = useSortable(employees, "lastName");
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
@@ -95,7 +108,7 @@ export default function EmployeesPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = employees.filter((e) => {
+  const filtered = sortedEmployees.filter((e) => {
     if (filter === "active" && e.status !== "ACTIVE") return false;
     if (filter === "inactive" && e.status === "ACTIVE") return false;
     const q = search.toLowerCase();
@@ -225,7 +238,9 @@ export default function EmployeesPage() {
 
       {/* Tabla */}
       {loading ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t("employees.loading")}</p>
+        <div className="space-y-2">
+          {[1,2,3,4].map((i) => <div key={i} className="h-14 rounded-lg bg-gray-100 dark:bg-gray-700/40 animate-pulse" />)}
+        </div>
       ) : filtered.length === 0 ? (
         <EmptyState icon={<IconBriefcase />} title={t("employees.empty")} />
       ) : (
@@ -233,14 +248,28 @@ export default function EmployeesPage() {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                {["Empleado", "Cargo / Sucursal", "Contrato", "Sueldo bruto", "Ingreso", "Estado", ""].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>
+                {([
+                  ["lastName", "Empleado"],
+                  ["position", "Cargo / Sucursal"],
+                  ["contractType", "Contrato"],
+                  ["grossSalary", "Sueldo bruto"],
+                  ["hireDate", "Ingreso"],
+                  ["status", "Estado"],
+                ] as [keyof Employee, string][]).map(([col, label]) => (
+                  <th key={col} className="px-4 py-3 text-left">
+                    <button type="button" onClick={() => toggle(col)}
+                      className="group inline-flex items-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                      {label}
+                      <SortIcon active={sortKey === col} dir={sortDir} />
+                    </button>
+                  </th>
                 ))}
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
               {filtered.map((emp) => (
-                <tr key={emp.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <tr key={emp.id} className="group hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   <td className="px-4 py-3">
                     <div className="font-medium text-gray-900 dark:text-gray-100">
                       {emp.lastName}, {emp.firstName}
@@ -266,17 +295,17 @@ export default function EmployeesPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-2 justify-end">
+                    <div className="flex gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => openEdit(emp)}
-                        className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+                        className="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded px-2 py-1"
                       >
                         Editar
                       </button>
                       {emp.status === "ACTIVE" && (
                         <button
                           onClick={() => setConfirmDeactivate(emp)}
-                          className="text-xs text-red-500 hover:underline"
+                          className="text-xs text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded px-2 py-1"
                         >
                           {t("employees.deactivate")}
                         </button>
