@@ -1,8 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
+import { getAccessToken } from "../../lib/api";
+import { formatCurrency, formatDate } from "../../lib/format";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../contexts/ToastContext";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { SearchInput } from "../../components/ui/SearchInput";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
+import { Select } from "../../components/ui/Select";
+import { FormField } from "../../components/ui/FormField";
 import { useSortable } from "../../hooks/useSortable";
 
 function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
@@ -64,8 +69,10 @@ export default function CustomersPage() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [formTouched, setFormTouched] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [confirmData, setConfirmData] = useState<{ open: boolean; message: string; onConfirm: () => void }>({ open: false, message: "", onConfirm: () => {} });
   const [historyCustomer, setHistoryCustomer] = useState<Customer | null>(null);
   const [history, setHistory] = useState<{ totalSpent: number; count: number; sales: SaleHistory[] } | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -75,7 +82,7 @@ export default function CustomersPage() {
     setHistory(null);
     setHistoryLoading(true);
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       const res = await fetch(`${API}/customers/${c.id}/sales`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setHistory(await res.json());
     } catch { /* ignore */ }
@@ -85,7 +92,7 @@ export default function CustomersPage() {
   const load = useCallback(async (q?: string) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       const url = `${API}/customers${q ? `?search=${encodeURIComponent(q)}` : ""}`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error();
@@ -108,11 +115,13 @@ export default function CustomersPage() {
     setEditing(null);
     setForm({ ...EMPTY_FORM });
     setFormTouched(false);
+    setFormErrors({});
     setModalOpen(true);
   }
 
   function openEdit(c: Customer) {
     setFormTouched(false);
+    setFormErrors({});
     setEditing(c);
     setForm({
       name: c.name,
@@ -128,13 +137,15 @@ export default function CustomersPage() {
   }
 
   async function handleSave() {
-    if (!form.name.trim()) {
-      showToast(t("customers.nameRequired"), "error");
-      return;
-    }
+    const errors: Record<string, string> = {};
+    if (!form.name.trim()) errors.name = "El nombre es requerido";
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.email = "Email inválido";
+    setFormErrors(errors);
+    setFormTouched(true);
+    if (Object.keys(errors).length > 0) return;
     setSaving(true);
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       const body = {
         name: form.name.trim(),
         taxId: form.taxId || undefined,
@@ -166,10 +177,17 @@ export default function CustomersPage() {
     }
   }
 
-  async function handleDelete(c: Customer) {
-    if (!confirm(t("customers.deleteConfirm", { name: c.name }))) return;
+  function handleDelete(c: Customer) {
+    setConfirmData({
+      open: true,
+      message: t("customers.deleteConfirm", { name: c.name }),
+      onConfirm: () => _doDelete(c),
+    });
+  }
+
+  async function _doDelete(c: Customer) {
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       await fetch(`${API}/customers/${c.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
@@ -182,10 +200,17 @@ export default function CustomersPage() {
     }
   }
 
-  async function handleBulkDelete() {
-    if (!confirm(`Eliminar ${selected.size} cliente${selected.size !== 1 ? "s" : ""}?`)) return;
+  function handleBulkDelete() {
+    setConfirmData({
+      open: true,
+      message: `Eliminar ${selected.size} cliente${selected.size !== 1 ? "s" : ""}?`,
+      onConfirm: () => _doBulkDelete(),
+    });
+  }
+
+  async function _doBulkDelete() {
     setBulkDeleting(true);
-    const token = localStorage.getItem("accessToken");
+    const token = getAccessToken();
     let errors = 0;
     for (const id of selected) {
       try {
@@ -334,7 +359,7 @@ export default function CustomersPage() {
                 <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{historyCustomer.name}</h2>
                 {history && (
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                    {history.count} compra{history.count !== 1 ? "s" : ""} &mdash; Total gastado: <strong>${Number(history.totalSpent).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</strong>
+                    {history.count} compra{history.count !== 1 ? "s" : ""} &mdash; Total gastado: <strong>{formatCurrency(history.totalSpent)}</strong>
                   </p>
                 )}
               </div>
@@ -353,7 +378,7 @@ export default function CustomersPage() {
                     <div className="bg-slate-50 dark:bg-slate-700/40 px-4 py-2.5 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-medium text-slate-800 dark:text-slate-200">Venta #{sale.id}</span>
-                        <span className="text-xs text-slate-500">{new Date(sale.createdAt).toLocaleDateString("es-AR")}</span>
+                        <span className="text-xs text-slate-500">{formatDate(sale.createdAt)}</span>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                           sale.status === "COMPLETED" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
                           sale.status === "REFUNDED"  ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
@@ -361,7 +386,7 @@ export default function CustomersPage() {
                         }`}>{sale.status}</span>
                       </div>
                       <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">
-                        ${Number(sale.totalAmount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                        {formatCurrency(sale.totalAmount)}
                       </span>
                     </div>
                     <div className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -374,7 +399,7 @@ export default function CustomersPage() {
                             )}
                           </span>
                           <span className="font-mono text-slate-500 dark:text-slate-400">
-                            ${Number(item.totalPrice).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                            {formatCurrency(item.totalPrice)}
                           </span>
                         </div>
                       ))}
@@ -396,36 +421,32 @@ export default function CustomersPage() {
             </h2>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {t("customers.fieldName")} *
-                </label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => { setForm({ ...form, name: e.target.value }); setFormTouched(true); }}
-                  onBlur={() => setFormTouched(true)}
-                  className={`input-minimal w-full ${formTouched && !form.name.trim() ? "border-red-400 dark:border-red-500 focus:ring-red-400" : ""}`}
-                  autoFocus
-                />
-                {formTouched && !form.name.trim() && (
-                  <p className="text-xs text-red-500 mt-1">{t("customers.nameRequired")}</p>
-                )}
+                <FormField label={`${t("customers.fieldName")} *`} error={formTouched ? formErrors.name : undefined}>
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={(e) => { setForm({ ...form, name: e.target.value }); setFormTouched(true); }}
+                    onBlur={() => setFormTouched(true)}
+                    className={`input-minimal w-full ${formTouched && formErrors.name ? "border-red-400 dark:border-red-500 focus:ring-red-400" : ""}`}
+                    autoFocus
+                  />
+                </FormField>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {t("customers.fieldTaxType")}
                 </label>
-                <select
+                <Select
+                  options={[
+                    { value: "CUIT", label: "CUIT" },
+                    { value: "DNI", label: "DNI" },
+                    { value: "RUC", label: "RUC" },
+                    { value: "NIT", label: "NIT" },
+                    { value: "", label: "Otro" },
+                  ]}
                   value={form.taxType}
                   onChange={(e) => setForm({ ...form, taxType: e.target.value })}
-                  className="input-minimal w-full"
-                >
-                  <option value="CUIT">CUIT</option>
-                  <option value="DNI">DNI</option>
-                  <option value="RUC">RUC</option>
-                  <option value="NIT">NIT</option>
-                  <option value="">Otro</option>
-                </select>
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -451,15 +472,14 @@ export default function CustomersPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {t("customers.fieldEmail")}
-                </label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="input-minimal w-full"
-                />
+                <FormField label={t("customers.fieldEmail")} error={formTouched ? formErrors.email : undefined}>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    className={`input-minimal w-full ${formTouched && formErrors.email ? "border-red-400 dark:border-red-500 focus:ring-red-400" : ""}`}
+                  />
+                </FormField>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -498,7 +518,7 @@ export default function CustomersPage() {
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setModalOpen(false)}
+                onClick={() => { setModalOpen(false); setFormErrors({}); }}
                 className="btn-secondary py-2 px-4 text-sm"
               >
                 {t("customers.cancel")}
@@ -515,6 +535,16 @@ export default function CustomersPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={confirmData.open}
+        title={t("customers.deleteTitle", { defaultValue: "Eliminar cliente" })}
+        message={confirmData.message}
+        confirmLabel={t("common.delete", { defaultValue: "Eliminar" })}
+        variant="danger"
+        onConfirm={confirmData.onConfirm}
+        onClose={() => setConfirmData((p) => ({ ...p, open: false }))}
+      />
     </div>
   );
 }

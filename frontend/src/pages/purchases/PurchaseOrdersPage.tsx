@@ -1,7 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
+import { getAccessToken } from "../../lib/api";
+import { formatCurrency, formatDate } from "../../lib/format";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../contexts/ToastContext";
 import { PageHeader } from "../../components/ui/PageHeader";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { useSortable } from "../../hooks/useSortable";
 
 function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
@@ -82,6 +85,7 @@ export default function PurchaseOrdersPage() {
   const { sorted: sortedOrders, sortKey, sortDir, toggle } = useSortable(orders, "number", "desc");
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<POStatus | "">("");
+  const [confirmData, setConfirmData] = useState<{ open: boolean; message: string; onConfirm: () => void }>({ open: false, message: "", onConfirm: () => {} });
   const [filterSupplier, setFilterSupplier] = useState<number | "">("");
 
   // New order form
@@ -127,7 +131,7 @@ export default function PurchaseOrdersPage() {
   async function openPrint(id: number) {
     try {
       const res = await fetch(`${API}/purchase-orders/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+        headers: { Authorization: `Bearer ${getAccessToken()}` },
       });
       if (!res.ok) throw new Error();
       setPrintOrder(await res.json());
@@ -136,7 +140,7 @@ export default function PurchaseOrdersPage() {
 
   const authHeader = () => ({
     "Content-Type": "application/json",
-    Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+    Authorization: `Bearer ${getAccessToken()}`,
   });
 
   const loadOrders = useCallback(async () => {
@@ -146,7 +150,7 @@ export default function PurchaseOrdersPage() {
       if (filterStatus) params.set("status", filterStatus);
       if (filterSupplier) params.set("supplierId", String(filterSupplier));
       const res = await fetch(`${API}/purchase-orders?${params}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+        headers: { Authorization: `Bearer ${getAccessToken()}` },
       });
       if (!res.ok) throw new Error();
       setOrders(await res.json());
@@ -160,7 +164,7 @@ export default function PurchaseOrdersPage() {
   useEffect(() => { loadOrders(); }, [loadOrders]);
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
+    const token = getAccessToken();
     const h = { Authorization: `Bearer ${token}` };
     Promise.all([
       fetch(`${API}/branches`, { headers: h }).then((r) => r.json()),
@@ -215,7 +219,7 @@ export default function PurchaseOrdersPage() {
   async function openReceive(id: number) {
     try {
       const res = await fetch(`${API}/purchase-orders/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+        headers: { Authorization: `Bearer ${getAccessToken()}` },
       });
       if (!res.ok) throw new Error();
       const order: PODetail = await res.json();
@@ -256,12 +260,19 @@ export default function PurchaseOrdersPage() {
     }
   }
 
-  async function handleCancel(id: number) {
-    if (!confirm(t("purchases.cancelConfirm"))) return;
+  function handleCancel(id: number) {
+    setConfirmData({
+      open: true,
+      message: t("purchases.cancelConfirm"),
+      onConfirm: () => _doCancel(id),
+    });
+  }
+
+  async function _doCancel(id: number) {
     try {
       await fetch(`${API}/purchase-orders/${id}/cancel`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+        headers: { Authorization: `Bearer ${getAccessToken()}` },
       });
       showToast(t("purchases.cancelled"), "success");
       loadOrders();
@@ -367,12 +378,12 @@ export default function PurchaseOrdersPage() {
                           {STATUS_LABELS[order.status]}
                         </span>
                       </td>
-                      <td className="text-slate-500 dark:text-slate-400">{new Date(order.date).toLocaleDateString("es-AR")}</td>
-                      <td className="font-medium">${Number(order.total).toFixed(2)}</td>
+                      <td className="text-slate-500 dark:text-slate-400">{formatDate(order.date)}</td>
+                      <td className="font-mono text-right">{formatCurrency(order.total)}</td>
                       <td>{order.supplier?.name ?? "—"}</td>
                       <td className="text-slate-500 dark:text-slate-400">{order.branch?.name ?? "—"}</td>
                       <td className="text-slate-500 dark:text-slate-400">
-                        {order.expectedAt ? new Date(order.expectedAt).toLocaleDateString("es-AR") : "—"}
+                        {order.expectedAt ? formatDate(order.expectedAt) : "—"}
                       </td>
                       <td>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -475,7 +486,7 @@ export default function PurchaseOrdersPage() {
             <div className="w-44 text-sm space-y-1">
               <div className="flex justify-between border-t border-slate-200 dark:border-slate-600 pt-1">
                 <span className="font-semibold">{t("purchases.total")}</span>
-                <span className="font-bold text-indigo-600 dark:text-indigo-400">${total.toFixed(2)}</span>
+                <span className="font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(total)}</span>
               </div>
             </div>
           </div>
@@ -556,7 +567,7 @@ export default function PurchaseOrdersPage() {
                   <div className="text-right">
                     <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">OC N.</p>
                     <p className="font-mono font-bold text-gray-900 dark:text-gray-100">OC-{String(printOrder.number).padStart(6, "0")}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{new Date(printOrder.date).toLocaleDateString("es-AR")}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{formatDate(printOrder.date)}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -567,7 +578,7 @@ export default function PurchaseOrdersPage() {
                   {printOrder.expectedAt && (
                     <div>
                       <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Entrega estimada</p>
-                      <p className="text-gray-700 dark:text-gray-300">{new Date(printOrder.expectedAt).toLocaleDateString("es-AR")}</p>
+                      <p className="text-gray-700 dark:text-gray-300">{formatDate(printOrder.expectedAt)}</p>
                     </div>
                   )}
                 </div>
@@ -586,9 +597,9 @@ export default function PurchaseOrdersPage() {
                         <tr key={item.id}>
                           <td className="px-4 py-2 text-gray-900 dark:text-gray-100">{item.description}</td>
                           <td className="px-4 py-2 font-mono text-gray-700 dark:text-gray-300">{Number(item.quantity)}</td>
-                          <td className="px-4 py-2 font-mono text-gray-700 dark:text-gray-300">${Number(item.unitPrice).toFixed(2)}</td>
+                          <td className="px-4 py-2 font-mono text-gray-700 dark:text-gray-300">{formatCurrency(item.unitPrice)}</td>
                           <td className="px-4 py-2 font-mono font-medium text-gray-900 dark:text-gray-100">
-                            ${(Number(item.quantity) * Number(item.unitPrice)).toFixed(2)}
+                            {formatCurrency(Number(item.quantity) * Number(item.unitPrice))}
                           </td>
                         </tr>
                       ))}
@@ -597,7 +608,7 @@ export default function PurchaseOrdersPage() {
                       <tr>
                         <td colSpan={3} className="px-4 py-2 text-right font-semibold text-gray-700 dark:text-gray-300">Total:</td>
                         <td className="px-4 py-2 font-mono font-bold text-gray-900 dark:text-gray-100">
-                          ${Number(printOrder.total).toFixed(2)}
+                          {formatCurrency(printOrder.total)}
                         </td>
                       </tr>
                     </tfoot>
@@ -619,6 +630,16 @@ export default function PurchaseOrdersPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={confirmData.open}
+        title={t("purchases.cancelTitle", { defaultValue: "Cancelar orden" })}
+        message={confirmData.message}
+        confirmLabel={t("common.cancel", { defaultValue: "Cancelar orden" })}
+        variant="warning"
+        onConfirm={confirmData.onConfirm}
+        onClose={() => setConfirmData((p) => ({ ...p, open: false }))}
+      />
     </div>
   );
 }

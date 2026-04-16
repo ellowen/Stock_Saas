@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { formatCurrency } from "../../../lib/format";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   ResponsiveContainer, Tooltip as RechartsTooltip,
@@ -60,7 +61,7 @@ export function SalesByDay({ data }: Props) {
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis dataKey="fecha" tick={{ fontSize: 11 }} stroke="#94a3b8" />
             <YAxis tick={{ fontSize: 11 }} stroke="#94a3b8" tickFormatter={(v) => `$${v}`} />
-            <RechartsTooltip formatter={(value: number | undefined) => [`$${Number(value ?? 0).toFixed(2)}`, t("reports.revenue")]} />
+            <RechartsTooltip formatter={(value: number | undefined) => [formatCurrency(value), t("reports.revenue")]} />
             <Area type="monotone" dataKey="ingresos" stroke="#6366f1" strokeWidth={2} fill="url(#colorIngresos)" name={t("reports.revenue")} />
           </AreaChart>
         </ResponsiveContainer>

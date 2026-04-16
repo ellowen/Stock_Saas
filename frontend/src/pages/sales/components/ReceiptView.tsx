@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { formatCurrency } from "../../../lib/format";
 import { openReceiptPrint, downloadReceiptHtml } from "../types";
 import type { ReceiptPrintData } from "../types";
 
@@ -55,13 +56,13 @@ export function ReceiptView({ receipt, lastSaleReceipt, successMessage, onGenera
               <div className="flex justify-between">
                 <span className="text-slate-500 dark:text-slate-400">{t("sales.receiptTotal")}</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
-                  ${receipt.total.toFixed(2)}
+                  {formatCurrency(receipt.total)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500 dark:text-slate-400">{t("sales.receiptPaid")}</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
-                  ${receipt.paid.toFixed(2)}
+                  {formatCurrency(receipt.paid)}
                 </span>
               </div>
               {receipt.change > 0 && (
@@ -70,7 +71,7 @@ export function ReceiptView({ receipt, lastSaleReceipt, successMessage, onGenera
                     {t("sales.receiptChange")}
                   </span>
                   <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                    ${receipt.change.toFixed(2)}
+                    {formatCurrency(receipt.change)}
                   </span>
                 </div>
               )}

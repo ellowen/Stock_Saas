@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { formatCurrency } from "../../../lib/format";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   ResponsiveContainer, Tooltip as RechartsTooltip, Legend,
@@ -62,7 +63,7 @@ export function PeriodComparison({ from, to, detail, previousPeriod }: Props) {
           </p>
           <ul className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-300">
             <li><strong>{detail.summary.totalSales}</strong> {t("reports.salesCount")}<Pct v={pctVentas} /></li>
-            <li><strong>${Number(detail.summary.totalRevenue).toFixed(2)}</strong> {t("reports.revenueLabel")}<Pct v={pctIngresos} /></li>
+            <li><strong>{formatCurrency(detail.summary.totalRevenue)}</strong> {t("reports.revenueLabel")}<Pct v={pctIngresos} /></li>
             <li><strong>{detail.summary.totalItemsSold}</strong> {t("reports.itemsSoldLabel")}<Pct v={pctItems} /></li>
           </ul>
         </div>
@@ -73,7 +74,7 @@ export function PeriodComparison({ from, to, detail, previousPeriod }: Props) {
           </p>
           <ul className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-300">
             <li><strong>{prev.totalSales}</strong> {t("reports.salesCount")}</li>
-            <li><strong>${Number(prev.totalRevenue).toFixed(2)}</strong> {t("reports.revenueLabel")}</li>
+            <li><strong>{formatCurrency(prev.totalRevenue)}</strong> {t("reports.revenueLabel")}</li>
             <li><strong>{prev.totalItemsSold}</strong> {t("reports.itemsSoldLabel")}</li>
           </ul>
         </div>

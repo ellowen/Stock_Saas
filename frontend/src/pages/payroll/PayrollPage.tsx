@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { getAccessToken } from "../../lib/api";
+import { formatCurrency, formatDate } from "../../lib/format";
 import { useToast } from "../../contexts/ToastContext";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { Button } from "../../components/ui/Button";
@@ -6,6 +8,7 @@ import { Badge } from "../../components/ui/Badge";
 import { Modal } from "../../components/ui/Modal";
 import { FormField } from "../../components/ui/FormField";
 import { EmptyState } from "../../components/ui/EmptyState";
+import { Select } from "../../components/ui/Select";
 import { IconBriefcase, IconPlus } from "../../components/Icons";
 
 const API = "/api";
@@ -61,12 +64,8 @@ interface Payroll {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function authHeaders() {
-  const token = localStorage.getItem("accessToken");
+  const token = getAccessToken();
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
-}
-
-function $ (n: string | number) {
-  return `$${Number(n).toLocaleString("es-AR", { minimumFractionDigits: 2 })}`;
 }
 
 const STATUS_VARIANT: Record<string, "neutral" | "warning" | "success"> = {
@@ -428,9 +427,9 @@ export default function PayrollPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
             { label: "Empleados", value: payrolls.length.toString() },
-            { label: "Bruto total", value: $(totalGross) },
-            { label: "Neto total", value: $(totalNet) },
-            { label: "Costo empresa", value: $(totalGross + totalPatronal) },
+            { label: "Bruto total", value: formatCurrency(totalGross) },
+            { label: "Neto total", value: formatCurrency(totalNet) },
+            { label: "Costo empresa", value: formatCurrency(totalGross + totalPatronal) },
           ].map(({ label, value }) => (
             <div key={label} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</p>
@@ -469,11 +468,11 @@ export default function PayrollPage() {
                     {p.employee.cuil && <div className="text-xs text-gray-400">CUIL: {p.employee.cuil}</div>}
                   </td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{p.employee.position ?? "—"}</td>
-                  <td className="px-4 py-3 font-mono text-gray-900 dark:text-gray-100">{$(p.grossTotal)}</td>
-                  <td className="px-4 py-3 font-mono text-red-600 dark:text-red-400">-{$(p.totalDeductions)}</td>
-                  <td className="px-4 py-3 font-mono font-semibold text-green-700 dark:text-green-400">{$(p.netSalary)}</td>
+                  <td className="px-4 py-3 font-mono text-gray-900 dark:text-gray-100">{formatCurrency(p.grossTotal)}</td>
+                  <td className="px-4 py-3 font-mono text-red-600 dark:text-red-400">-{formatCurrency(p.totalDeductions)}</td>
+                  <td className="px-4 py-3 font-mono font-semibold text-green-700 dark:text-green-400">{formatCurrency(p.netSalary)}</td>
                   <td className="px-4 py-3 font-mono text-gray-600 dark:text-gray-300">
-                    {$(Number(p.grossTotal) + Number(p.patronalTotal))}
+                    {formatCurrency(Number(p.grossTotal) + Number(p.patronalTotal))}
                   </td>
                   <td className="px-4 py-3">
                     <Badge variant={STATUS_VARIANT[p.status]}>{STATUS_LABEL[p.status]}</Badge>
@@ -491,7 +490,7 @@ export default function PayrollPage() {
                         <button onClick={() => handleAction(p.id, "pay")} className="text-xs text-green-600 hover:underline">Marcar pagado</button>
                       )}
                       {p.paidAt && (
-                        <span className="text-xs text-gray-400">{new Date(p.paidAt).toLocaleDateString("es-AR")}</span>
+                        <span className="text-xs text-gray-400">{formatDate(p.paidAt)}</span>
                       )}
                     </div>
                   </td>
@@ -529,8 +528,8 @@ export default function PayrollPage() {
                       <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
                         {adv.employee.lastName}, {adv.employee.firstName}
                       </td>
-                      <td className="px-4 py-3 text-gray-500">{new Date(adv.date).toLocaleDateString("es-AR")}</td>
-                      <td className="px-4 py-3 font-mono text-gray-900 dark:text-gray-100">${Number(adv.amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</td>
+                      <td className="px-4 py-3 text-gray-500">{formatDate(adv.date)}</td>
+                      <td className="px-4 py-3 font-mono text-gray-900 dark:text-gray-100">{formatCurrency(adv.amount)}</td>
                       <td className="px-4 py-3">
                         {adv.deductedIn
                           ? <Badge variant="success">Descontado en {adv.deductedIn}</Badge>
@@ -640,10 +639,12 @@ export default function PayrollPage() {
       <Modal open={advanceOpen} onClose={() => setAdvanceOpen(false)} title="Registrar anticipo de sueldo" size="sm">
         <div className="space-y-4">
           <FormField label="Empleado *">
-            <select value={advForm.employeeId} onChange={(e) => setAdvForm((p) => ({ ...p, employeeId: e.target.value }))} className="input-minimal">
-              <option value="">Seleccioná un empleado</option>
-              {employees.map((e) => <option key={e.id} value={e.id}>{e.lastName}, {e.firstName}</option>)}
-            </select>
+            <Select
+              options={employees.map((e) => ({ value: String(e.id), label: `${e.lastName}, ${e.firstName}` }))}
+              placeholder="Seleccioná un empleado"
+              value={advForm.employeeId}
+              onChange={(e) => setAdvForm((p) => ({ ...p, employeeId: e.target.value }))}
+            />
           </FormField>
           <FormField label="Monto ($) *">
             <input type="number" min="0" value={advForm.amount} onChange={(e) => setAdvForm((p) => ({ ...p, amount: e.target.value }))} className="input-minimal" />
@@ -667,10 +668,12 @@ export default function PayrollPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label="Empleado *">
-                <select value={finalForm.employeeId} onChange={(e) => setFinalForm((p) => ({ ...p, employeeId: e.target.value }))} className="input-minimal">
-                  <option value="">Seleccioná un empleado</option>
-                  {employees.map((e) => <option key={e.id} value={e.id}>{e.lastName}, {e.firstName}</option>)}
-                </select>
+                <Select
+                  options={employees.map((e) => ({ value: String(e.id), label: `${e.lastName}, ${e.firstName}` }))}
+                  placeholder="Seleccioná un empleado"
+                  value={finalForm.employeeId}
+                  onChange={(e) => setFinalForm((p) => ({ ...p, employeeId: e.target.value }))}
+                />
               </FormField>
               <FormField label="Período de egreso *">
                 <input type="month" value={finalForm.period} onChange={(e) => setFinalForm((p) => ({ ...p, period: e.target.value }))} className="input-minimal" />
@@ -699,11 +702,11 @@ export default function PayrollPage() {
             {finalPreview.breakdown && (
               <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-4 text-sm space-y-1">
                 <p className="font-semibold text-blue-800 dark:text-blue-300 mb-2">Detalle del cálculo</p>
-                <Row label="Sueldo proporcional" value={`$${Number(finalPreview.breakdown.proportionalSalary).toLocaleString("es-AR", { minimumFractionDigits: 2 })}`} />
-                <Row label="SAC proporcional" value={`$${Number(finalPreview.breakdown.sacProportional).toLocaleString("es-AR", { minimumFractionDigits: 2 })}`} />
-                <Row label="Vacaciones no gozadas" value={`$${Number(finalPreview.breakdown.vacNotTaken).toLocaleString("es-AR", { minimumFractionDigits: 2 })}`} />
+                <Row label="Sueldo proporcional" value={formatCurrency(finalPreview.breakdown.proportionalSalary)} />
+                <Row label="SAC proporcional" value={formatCurrency(finalPreview.breakdown.sacProportional)} />
+                <Row label="Vacaciones no gozadas" value={formatCurrency(finalPreview.breakdown.vacNotTaken)} />
                 {Number(finalPreview.breakdown.indemnizacion) > 0 && (
-                  <Row label={`Indemnización (${finalPreview.breakdown.yearsWorked} años)`} value={`$${Number(finalPreview.breakdown.indemnizacion).toLocaleString("es-AR", { minimumFractionDigits: 2 })}`} />
+                  <Row label={`Indemnización (${finalPreview.breakdown.yearsWorked} años)`} value={formatCurrency(finalPreview.breakdown.indemnizacion)} />
                 )}
               </div>
             )}
@@ -733,8 +736,6 @@ function PayrollReceipt({
   onClose?: () => void;
 }) {
   const emp = payroll.employee;
-  const $ = (n: string | number) =>
-    `$${Number(n).toLocaleString("es-AR", { minimumFractionDigits: 2 })}`;
 
   const handlePrint = () => window.print();
 
@@ -761,11 +762,11 @@ function PayrollReceipt({
           Haberes (remuneración bruta)
         </div>
         <div className="divide-y divide-gray-100 dark:divide-gray-700">
-          <Row label="Sueldo básico" value={$(payroll.basicSalary)} />
-          {Number(payroll.extraHours) > 0 && <Row label="Horas extras" value={$(payroll.extraHours)} />}
-          {Number(payroll.bonus) > 0 && <Row label="SAC / Bonificación" value={$(payroll.bonus)} />}
-          {Number(payroll.otherEarnings) > 0 && <Row label="Otros haberes" value={$(payroll.otherEarnings)} />}
-          <Row label="Total bruto" value={$(payroll.grossTotal)} bold />
+          <Row label="Sueldo básico" value={formatCurrency(payroll.basicSalary)} />
+          {Number(payroll.extraHours) > 0 && <Row label="Horas extras" value={formatCurrency(payroll.extraHours)} />}
+          {Number(payroll.bonus) > 0 && <Row label="SAC / Bonificación" value={formatCurrency(payroll.bonus)} />}
+          {Number(payroll.otherEarnings) > 0 && <Row label="Otros haberes" value={formatCurrency(payroll.otherEarnings)} />}
+          <Row label="Total bruto" value={formatCurrency(payroll.grossTotal)} bold />
         </div>
       </div>
 
@@ -775,19 +776,19 @@ function PayrollReceipt({
           Deducciones del empleado
         </div>
         <div className="divide-y divide-gray-100 dark:divide-gray-700">
-          <Row label="Jubilación (11%)" value={`-${$(payroll.deductJubilacion)}`} red />
-          <Row label="Obra social (3%)" value={`-${$(payroll.deductObraSocial)}`} red />
-          <Row label="INSSJP / PAMI (3%)" value={`-${$(payroll.deductInssjp)}`} red />
-          {Number(payroll.deductSindicato) > 0 && <Row label="Sindicato" value={`-${$(payroll.deductSindicato)}`} red />}
-          {Number(payroll.deductOther) > 0 && <Row label="Otras deducciones" value={`-${$(payroll.deductOther)}`} red />}
-          <Row label="Total deducciones" value={`-${$(payroll.totalDeductions)}`} bold red />
+          <Row label="Jubilación (11%)" value={`-${formatCurrency(payroll.deductJubilacion)}`} red />
+          <Row label="Obra social (3%)" value={`-${formatCurrency(payroll.deductObraSocial)}`} red />
+          <Row label="INSSJP / PAMI (3%)" value={`-${formatCurrency(payroll.deductInssjp)}`} red />
+          {Number(payroll.deductSindicato) > 0 && <Row label="Sindicato" value={`-${formatCurrency(payroll.deductSindicato)}`} red />}
+          {Number(payroll.deductOther) > 0 && <Row label="Otras deducciones" value={`-${formatCurrency(payroll.deductOther)}`} red />}
+          <Row label="Total deducciones" value={`-${formatCurrency(payroll.totalDeductions)}`} bold red />
         </div>
       </div>
 
       {/* Neto */}
       <div className="rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-4 py-3 flex justify-between items-center">
         <span className="font-semibold text-green-800 dark:text-green-300 text-base">NETO A COBRAR</span>
-        <span className="font-bold text-green-800 dark:text-green-300 text-xl">{$(payroll.netSalary)}</span>
+        <span className="font-bold text-green-800 dark:text-green-300 text-xl">{formatCurrency(payroll.netSalary)}</span>
       </div>
 
       {/* Aportes patronales */}
@@ -796,14 +797,14 @@ function PayrollReceipt({
           Aportes patronales (costo empresa — informativo)
         </div>
         <div className="divide-y divide-gray-100 dark:divide-gray-700">
-          <Row label="Jubilación patronal (16%)" value={$(payroll.patronalJubilacion)} />
-          <Row label="INSSJP patronal (2%)" value={$(payroll.patronalInssjp)} />
-          <Row label="Obra social patronal (6%)" value={$(payroll.patronalObraSocial)} />
-          {Number(payroll.patronalArt) > 0 && <Row label="ART" value={$(payroll.patronalArt)} />}
-          <Row label="Total aportes patronales" value={$(payroll.patronalTotal)} bold />
+          <Row label="Jubilación patronal (16%)" value={formatCurrency(payroll.patronalJubilacion)} />
+          <Row label="INSSJP patronal (2%)" value={formatCurrency(payroll.patronalInssjp)} />
+          <Row label="Obra social patronal (6%)" value={formatCurrency(payroll.patronalObraSocial)} />
+          {Number(payroll.patronalArt) > 0 && <Row label="ART" value={formatCurrency(payroll.patronalArt)} />}
+          <Row label="Total aportes patronales" value={formatCurrency(payroll.patronalTotal)} bold />
           <Row
             label="Costo total empresa"
-            value={$(Number(payroll.grossTotal) + Number(payroll.patronalTotal))}
+            value={formatCurrency(Number(payroll.grossTotal) + Number(payroll.patronalTotal))}
             bold
           />
         </div>

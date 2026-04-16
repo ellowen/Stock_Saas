@@ -349,8 +349,8 @@ export function AppLayout() {
       <aside
         className={[
           "fixed top-0 left-0 z-50 h-screen flex flex-col",
-          "bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700",
-          "shadow-lg transition-all duration-200 ease-out",
+          "bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700/80",
+          "transition-all duration-200 ease-out",
           "lg:relative lg:z-auto lg:translate-x-0 lg:shrink-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
           sidebarCollapsed ? "w-[64px]" : "w-[240px]",

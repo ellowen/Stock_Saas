@@ -1,4 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
+import { getAccessToken } from "../../lib/api";
+import { formatCurrency, formatDate } from "../../lib/format";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../contexts/ToastContext";
 import { PageHeader } from "../../components/ui/PageHeader";
@@ -7,6 +9,7 @@ import { Badge } from "../../components/ui/Badge";
 import { Modal } from "../../components/ui/Modal";
 import { FormField } from "../../components/ui/FormField";
 import { EmptyState } from "../../components/ui/EmptyState";
+import { Select } from "../../components/ui/Select";
 import { IconPlus, IconBriefcase } from "../../components/Icons";
 import { useSortable } from "../../hooks/useSortable";
 
@@ -71,7 +74,7 @@ const STATUS_VARIANT: Record<string, "success" | "danger" | "warning"> = {
 };
 
 function authHeaders() {
-  const token = localStorage.getItem("accessToken");
+  const token = getAccessToken();
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 }
 
@@ -88,6 +91,7 @@ export default function EmployeesPage() {
   const [editing, setEditing] = useState<Employee | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [confirmDeactivate, setConfirmDeactivate] = useState<Employee | null>(null);
 
   const load = useCallback(async () => {
@@ -123,11 +127,13 @@ export default function EmployeesPage() {
   const openNew = () => {
     setEditing(null);
     setForm({ ...EMPTY_FORM });
+    setFormErrors({});
     setModalOpen(true);
   };
 
   const openEdit = (emp: Employee) => {
     setEditing(emp);
+    setFormErrors({});
     setForm({
       firstName: emp.firstName,
       lastName: emp.lastName,
@@ -150,10 +156,13 @@ export default function EmployeesPage() {
   };
 
   const handleSave = async () => {
-    if (!form.firstName.trim() || !form.lastName.trim() || !form.hireDate || !form.grossSalary) {
-      showToast("Completá los campos obligatorios", "error");
-      return;
-    }
+    const errors: Record<string, string> = {};
+    if (!form.firstName.trim()) errors.firstName = "El nombre es requerido";
+    if (!form.lastName.trim()) errors.lastName = "El apellido es requerido";
+    if (!form.grossSalary || Number(form.grossSalary) <= 0) errors.grossSalary = "El sueldo debe ser mayor a 0";
+    if (!form.hireDate) errors.hireDate = "La fecha de ingreso es requerida";
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
     setSaving(true);
     try {
       const payload = {
@@ -284,10 +293,10 @@ export default function EmployeesPage() {
                     {t(`employees.contract${emp.contractType}`)}
                   </td>
                   <td className="px-4 py-3 font-mono text-gray-900 dark:text-gray-100">
-                    ${Number(emp.grossSalary).toLocaleString("es-AR")}
+                    {formatCurrency(emp.grossSalary)}
                   </td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                    {new Date(emp.hireDate).toLocaleDateString("es-AR")}
+                    {formatDate(emp.hireDate)}
                   </td>
                   <td className="px-4 py-3">
                     <Badge variant={STATUS_VARIANT[emp.status]}>
@@ -322,16 +331,16 @@ export default function EmployeesPage() {
       {/* Modal crear/editar */}
       <Modal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => { setModalOpen(false); setFormErrors({}); }}
         title={editing ? t("employees.edit") : t("employees.new")}
         size="lg"
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField label={`${t("employees.firstName")} *`}>
+          <FormField label={`${t("employees.firstName")} *`} error={formErrors.firstName}>
             <input type="text" value={f("firstName")} onChange={(e) => set("firstName", e.target.value)}
               className="input-minimal" />
           </FormField>
-          <FormField label={`${t("employees.lastName")} *`}>
+          <FormField label={`${t("employees.lastName")} *`} error={formErrors.lastName}>
             <input type="text" value={f("lastName")} onChange={(e) => set("lastName", e.target.value)}
               className="input-minimal" />
           </FormField>
@@ -347,30 +356,28 @@ export default function EmployeesPage() {
             <input type="text" value={f("category")} onChange={(e) => set("category", e.target.value)}
               placeholder="Ej: Operario cat. B" className="input-minimal" />
           </FormField>
-          <FormField label={`${t("employees.grossSalary")} *`}>
+          <FormField label={`${t("employees.grossSalary")} *`} error={formErrors.grossSalary}>
             <input type="number" min="0" value={f("grossSalary")} onChange={(e) => set("grossSalary", e.target.value)}
               className="input-minimal" />
           </FormField>
-          <FormField label={`${t("employees.hireDate")} *`}>
+          <FormField label={`${t("employees.hireDate")} *`} error={formErrors.hireDate}>
             <input type="date" value={f("hireDate")} onChange={(e) => set("hireDate", e.target.value)}
               className="input-minimal" />
           </FormField>
           <FormField label={t("employees.contractType")}>
-            <select value={f("contractType")} onChange={(e) => set("contractType", e.target.value)}
-              className="input-minimal">
-              {["FULL_TIME", "PART_TIME", "TEMPORARY", "TRIAL"].map((c) => (
-                <option key={c} value={c}>{t(`employees.contract${c}`)}</option>
-              ))}
-            </select>
+            <Select
+              options={["FULL_TIME", "PART_TIME", "TEMPORARY", "TRIAL"].map((c) => ({ value: c, label: t(`employees.contract${c}`) }))}
+              value={f("contractType")}
+              onChange={(e) => set("contractType", e.target.value)}
+            />
           </FormField>
           {editing && (
             <FormField label={t("employees.status")}>
-              <select value={f("status")} onChange={(e) => set("status", e.target.value)}
-                className="input-minimal">
-                {["ACTIVE", "INACTIVE", "ON_LEAVE"].map((s) => (
-                  <option key={s} value={s}>{t(`employees.status${s}`)}</option>
-                ))}
-              </select>
+              <Select
+                options={["ACTIVE", "INACTIVE", "ON_LEAVE"].map((s) => ({ value: s, label: t(`employees.status${s}`) }))}
+                value={f("status")}
+                onChange={(e) => set("status", e.target.value)}
+              />
             </FormField>
           )}
           <FormField label={t("employees.email")}>
@@ -404,7 +411,7 @@ export default function EmployeesPage() {
         </div>
 
         <div className="mt-6 flex justify-end gap-3">
-          <Button variant="secondary" onClick={() => setModalOpen(false)}>Cancelar</Button>
+          <Button variant="secondary" onClick={() => { setModalOpen(false); setFormErrors({}); }}>Cancelar</Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "Guardando…" : "Guardar"}
           </Button>

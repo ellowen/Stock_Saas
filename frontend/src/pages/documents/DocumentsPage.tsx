@@ -1,8 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
+import { getAccessToken } from "../../lib/api";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../contexts/ToastContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { PageHeader } from "../../components/ui/PageHeader";
+import { Badge } from "../../components/ui/Badge";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
+import { formatCurrency, formatDate } from "../../lib/format";
 import { DocumentPreviewModal } from "../../components/documents/DocumentPreviewModal";
 import type { DocumentData, CompanyInfo, DocumentItemRow } from "../../components/documents/DocumentTemplate";
 
@@ -51,11 +55,11 @@ const STATUS_LABELS: Record<DocStatus, string> = {
   CANCELLED: "Anulado",
 };
 
-const STATUS_COLORS: Record<DocStatus, string> = {
-  DRAFT: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
-  ISSUED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  ACCEPTED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-  CANCELLED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+const STATUS_VARIANTS: Record<DocStatus, "neutral" | "info" | "success" | "danger"> = {
+  DRAFT: "neutral",
+  ISSUED: "info",
+  ACCEPTED: "success",
+  CANCELLED: "danger",
 };
 
 const EMPTY_ITEM: ItemRow = { description: "", quantity: "1", unitPrice: "0", discount: "0" };
@@ -76,6 +80,7 @@ export default function DocumentsPage() {
 
   // Preview modal
   const [previewDoc, setPreviewDoc] = useState<{ data: DocumentData; company: CompanyInfo } | null>(null);
+  const [confirmData, setConfirmData] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void; variant: "danger" | "warning" | "default" }>({ open: false, title: "", message: "", onConfirm: () => {}, variant: "default" });
 
   // New document form
   const [docType, setDocType] = useState<DocType>("INVOICE");
@@ -90,7 +95,7 @@ export default function DocumentsPage() {
 
   const authHeader = () => ({
     "Content-Type": "application/json",
-    Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+    Authorization: `Bearer ${getAccessToken()}`,
   });
 
   const loadDocs = useCallback(async () => {
@@ -101,7 +106,7 @@ export default function DocumentsPage() {
       if (filterStatus) params.set("status", filterStatus);
       if (filterFrom) params.set("from", filterFrom);
       if (filterTo) params.set("to", filterTo);
-      const res = await fetch(`${API}/documents?${params}`, { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } });
+      const res = await fetch(`${API}/documents?${params}`, { headers: { Authorization: `Bearer ${getAccessToken()}` } });
       if (!res.ok) throw new Error();
       setDocs(await res.json());
     } catch {
@@ -114,7 +119,7 @@ export default function DocumentsPage() {
   useEffect(() => { loadDocs(); }, [loadDocs]);
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
+    const token = getAccessToken();
     const headers = { Authorization: `Bearer ${token}` };
     Promise.all([
       fetch(`${API}/branches`, { headers }).then((r) => r.json()),
@@ -222,12 +227,21 @@ export default function DocumentsPage() {
     }
   }
 
-  async function handleCancel(id: number) {
-    if (!confirm(t("documents.cancelConfirm"))) return;
+  function handleCancel(id: number) {
+    setConfirmData({
+      open: true,
+      title: t("documents.cancelTitle", { defaultValue: "Anular documento" }),
+      message: t("documents.cancelConfirm"),
+      variant: "danger",
+      onConfirm: () => _doCancel(id),
+    });
+  }
+
+  async function _doCancel(id: number) {
     try {
       const res = await fetch(`${API}/documents/${id}/cancel`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+        headers: { Authorization: `Bearer ${getAccessToken()}` },
       });
       if (!res.ok) throw new Error();
       showToast(t("documents.cancelled"), "success");
@@ -237,12 +251,21 @@ export default function DocumentsPage() {
     }
   }
 
-  async function handleConvert(id: number) {
-    if (!confirm(t("documents.convertConfirm"))) return;
+  function handleConvert(id: number) {
+    setConfirmData({
+      open: true,
+      title: t("documents.convertTitle", { defaultValue: "Convertir a factura" }),
+      message: t("documents.convertConfirm"),
+      variant: "default",
+      onConfirm: () => _doConvert(id),
+    });
+  }
+
+  async function _doConvert(id: number) {
     try {
       const res = await fetch(`${API}/documents/${id}/convert-to-invoice`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+        headers: { Authorization: `Bearer ${getAccessToken()}` },
       });
       if (!res.ok) throw new Error();
       showToast(t("documents.converted"), "success");
@@ -255,7 +278,7 @@ export default function DocumentsPage() {
   async function openPreview(id: number) {
     try {
       const res = await fetch(`${API}/documents/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+        headers: { Authorization: `Bearer ${getAccessToken()}` },
       });
       if (!res.ok) throw new Error();
       const d = await res.json();
@@ -376,13 +399,13 @@ export default function DocumentsPage() {
                       <td>{DOC_TYPE_LABELS[doc.type]}</td>
                       <td className="text-slate-500 dark:text-slate-400">{doc.customer?.name ?? "—"}</td>
                       <td className="text-slate-500 dark:text-slate-400">
-                        {new Date(doc.date).toLocaleDateString("es-AR")}
+                        {formatDate(doc.date)}
                       </td>
-                      <td className="font-medium">${Number(doc.total).toFixed(2)}</td>
+                      <td className="font-medium font-mono">{formatCurrency(doc.total)}</td>
                       <td>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[doc.status]}`}>
+                        <Badge variant={STATUS_VARIANTS[doc.status]} size="sm">
                           {STATUS_LABELS[doc.status]}
-                        </span>
+                        </Badge>
                       </td>
                       <td>
                         <div className="flex gap-2 flex-wrap">
@@ -607,6 +630,15 @@ export default function DocumentsPage() {
           onClose={() => setPreviewDoc(null)}
         />
       )}
+
+      <ConfirmModal
+        open={confirmData.open}
+        title={confirmData.title}
+        message={confirmData.message}
+        variant={confirmData.variant}
+        onConfirm={confirmData.onConfirm}
+        onClose={() => setConfirmData((p) => ({ ...p, open: false }))}
+      />
     </div>
   );
 }

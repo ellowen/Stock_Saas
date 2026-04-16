@@ -1,4 +1,5 @@
 /**
+import { getAccessToken } from "../../../lib/api";
  * ReorderTab — Stock forecasting & intelligent reorder suggestions
  *
  * Shows sales velocity, days-to-stockout, urgency tiers, and lets the user
@@ -82,7 +83,7 @@ export function ReorderTab({ branches }: { branches: Branch[] }) {
       if (filterUrgency) params.set("urgency", filterUrgency);
       params.set("days", String(analysisDays));
 
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       const res = await fetch(`/analytics/reorder-suggestions?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -101,7 +102,7 @@ export function ReorderTab({ branches }: { branches: Branch[] }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
+    const token = getAccessToken();
     fetch("/suppliers", { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.ok ? r.json() : [])
       .then((data: Supplier[]) => {
@@ -157,7 +158,7 @@ export function ReorderTab({ branches }: { branches: Branch[] }) {
         unitPrice: 0, // draft — proveedor completa precio
       }));
 
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       const res = await fetch("/analytics/reorder-suggestions/create-po", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },

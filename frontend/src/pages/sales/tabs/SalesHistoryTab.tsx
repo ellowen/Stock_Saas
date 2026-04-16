@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { formatCurrency } from "../../../lib/format";
 import { PAYMENT_LABELS, type Branch, type SaleListItem } from "../types";
 import { ReturnModal } from "../components/ReturnModal";
+import { ConfirmModal } from "../../../components/ui/ConfirmModal";
+import { Badge } from "../../../components/ui/Badge";
 import type { ReturnItemInput } from "../hooks/useSales";
 
 type Props = {
@@ -33,6 +36,7 @@ export function SalesHistoryTab({
   const [historyTo, setHistoryTo] = useState(() => new Date().toISOString().slice(0, 10));
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [returnSale, setReturnSale] = useState<SaleListItem | null>(null);
+  const [confirmData, setConfirmData] = useState<{ open: boolean; message: string; onConfirm: () => void }>({ open: false, message: "", onConfirm: () => {} });
 
   const handleFilter = () => {
     onLoadHistory({
@@ -42,8 +46,15 @@ export function SalesHistoryTab({
     });
   };
 
-  const handleCancel = async (sale: SaleListItem) => {
-    if (!confirm(t("sales.cancelConfirm", { id: sale.id }))) return;
+  const handleCancel = (sale: SaleListItem) => {
+    setConfirmData({
+      open: true,
+      message: t("sales.cancelConfirm", { id: sale.id }),
+      onConfirm: () => _doCancel(sale),
+    });
+  };
+
+  const _doCancel = async (sale: SaleListItem) => {
     setCancellingId(sale.id);
     try {
       await onCancelSale(sale.id);
@@ -53,19 +64,18 @@ export function SalesHistoryTab({
     }
   };
 
-  const statusBadge = (status: string) => {
-    const classes: Record<string, string> = {
-      COMPLETED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-      CANCELLED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-      REFUNDED: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-      PENDING: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
-    };
-    return (
-      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${classes[status] ?? classes.PENDING}`}>
-        {t(`sales.status${status}`, { defaultValue: status })}
-      </span>
-    );
+  const STATUS_VARIANTS: Record<string, "success" | "danger" | "warning" | "neutral"> = {
+    COMPLETED: "success",
+    CANCELLED: "danger",
+    REFUNDED: "warning",
+    PENDING: "neutral",
   };
+
+  const statusBadge = (status: string) => (
+    <Badge variant={STATUS_VARIANTS[status] ?? "neutral"} size="sm">
+      {t(`sales.status${status}`, { defaultValue: status })}
+    </Badge>
+  );
 
   return (
     <div className="space-y-4">
@@ -159,7 +169,7 @@ export function SalesHistoryTab({
                   <td>
                     {s.branch.name} ({s.branch.code})
                   </td>
-                  <td className="font-medium">${Number(s.totalAmount).toFixed(2)}</td>
+                  <td className="font-mono text-right">{formatCurrency(s.totalAmount)}</td>
                   <td>{s.totalItems}</td>
                   <td>{PAYMENT_LABELS[s.paymentMethod] ?? s.paymentMethod}</td>
                   <td>{s.user.fullName}</td>
@@ -203,6 +213,16 @@ export function SalesHistoryTab({
           }}
         />
       )}
+
+      <ConfirmModal
+        open={confirmData.open}
+        title={t("sales.cancelTitle", { defaultValue: "Anular venta" })}
+        message={confirmData.message}
+        confirmLabel={t("sales.cancelConfirmBtn", { defaultValue: "Anular" })}
+        variant="danger"
+        onConfirm={confirmData.onConfirm}
+        onClose={() => setConfirmData((p) => ({ ...p, open: false }))}
+      />
     </div>
   );
 }

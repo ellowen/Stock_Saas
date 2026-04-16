@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { API_BASE_URL, authFetch, authHeaders } from "../../lib/api";
+import { formatCurrency, formatDate } from "../../lib/format";
 import type { PaymentMethod } from "../sales/types";
 
 type ARStatus = "PENDING" | "PARTIAL" | "PAID" | "OVERDUE";
@@ -115,8 +116,6 @@ export function AccountsPage() {
   const pending = accounts.filter((a) => a.status !== "PAID");
   const totalDebt = pending.reduce((s, a) => s + (Number(a.amount) - Number(a.paid)), 0);
 
-  const fmt = (n: number) => `$${n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -127,7 +126,7 @@ export function AccountsPage() {
         {totalDebt > 0 && (
           <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3">
             <p className="text-xs text-amber-600 dark:text-amber-400">{t("accounts.totalPending")}</p>
-            <p className="text-xl font-bold text-amber-700 dark:text-amber-300">${totalDebt.toFixed(2)}</p>
+            <p className="text-xl font-bold text-amber-700 dark:text-amber-300">{formatCurrency(totalDebt)}</p>
           </div>
         )}
       </div>
@@ -161,7 +160,7 @@ export function AccountsPage() {
                 ] as { label: string; key: keyof typeof aging.buckets; color: string }[]).map(({ label, key, color }) => (
                   <div key={key} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</p>
-                    <p className={`text-lg font-bold ${color}`}>{fmt(aging.buckets[key])}</p>
+                    <p className={`text-lg font-bold ${color}`}>{formatCurrency(aging.buckets[key])}</p>
                   </div>
                 ))}
               </div>
@@ -183,11 +182,11 @@ export function AccountsPage() {
                       {aging.rows.map((row) => (
                         <tr key={row.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${row.overdueDays > 90 ? "bg-red-50/50 dark:bg-red-900/10" : row.overdueDays > 30 ? "bg-amber-50/40 dark:bg-amber-900/10" : ""}`}>
                           <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{row.customer.name}</td>
-                          <td className="px-4 py-3 font-mono text-gray-700 dark:text-gray-300">{fmt(row.amount)}</td>
-                          <td className="px-4 py-3 font-mono text-green-600 dark:text-green-400">{fmt(row.paid)}</td>
-                          <td className="px-4 py-3 font-mono font-semibold text-gray-900 dark:text-gray-100">{fmt(row.outstanding)}</td>
+                          <td className="px-4 py-3 font-mono text-gray-700 dark:text-gray-300">{formatCurrency(row.amount)}</td>
+                          <td className="px-4 py-3 font-mono text-green-600 dark:text-green-400">{formatCurrency(row.paid)}</td>
+                          <td className="px-4 py-3 font-mono font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(row.outstanding)}</td>
                           <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                            {row.dueDate ? new Date(row.dueDate).toLocaleDateString("es-AR") : "—"}
+                            {row.dueDate ? formatDate(row.dueDate) : "—"}
                           </td>
                           <td className="px-4 py-3 font-mono">
                             {row.overdueDays === 0 ? <span className="text-green-500">Al dia</span> : (
@@ -252,8 +251,8 @@ export function AccountsPage() {
                       <p className="text-xs text-slate-400">{ar.customer.taxId}</p>
                     )}
                     <p className="text-xs text-slate-400 mt-0.5">
-                      {new Date(ar.createdAt).toLocaleDateString("es-AR")}
-                      {ar.dueDate && ` · Vence: ${new Date(ar.dueDate).toLocaleDateString("es-AR")}`}
+                      {formatDate(ar.createdAt)}
+                      {ar.dueDate && ` · Vence: ${formatDate(ar.dueDate)}`}
                     </p>
                   </div>
                   <div className="text-right">
@@ -261,16 +260,16 @@ export function AccountsPage() {
                       {STATUS_LABELS[ar.status]}
                     </span>
                     <p className="text-lg font-bold text-slate-800 dark:text-slate-100 mt-1">
-                      ${Number(ar.amount).toFixed(2)}
+                      {formatCurrency(ar.amount)}
                     </p>
                     {Number(ar.paid) > 0 && (
                       <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                        Pagado: ${Number(ar.paid).toFixed(2)}
+                        Pagado: {formatCurrency(ar.paid)}
                       </p>
                     )}
                     {remaining > 0 && (
                       <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
-                        {t("accounts.balance")}: ${remaining.toFixed(2)}
+                        {t("accounts.balance")}: {formatCurrency(remaining)}
                       </p>
                     )}
                   </div>
@@ -280,7 +279,7 @@ export function AccountsPage() {
                   <div className="text-xs text-slate-500 dark:text-slate-400 space-y-0.5 border-t border-slate-100 dark:border-slate-700 pt-2">
                     {ar.payments.map((p) => (
                       <p key={p.id}>
-                        · ${Number(p.amount).toFixed(2)} ({p.method}) — {new Date(p.createdAt).toLocaleDateString("es-AR")}
+                        · {formatCurrency(p.amount)} ({p.method}) — {formatDate(p.createdAt)}
                       </p>
                     ))}
                   </div>
@@ -296,7 +295,7 @@ export function AccountsPage() {
                         step={0.01}
                         value={payAmount}
                         onChange={(e) => setPayAmount(e.target.value)}
-                        placeholder={remaining.toFixed(2)}
+                        placeholder={String(remaining)}
                         className="input-minimal w-32 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
                         autoFocus
                       />
@@ -335,7 +334,7 @@ export function AccountsPage() {
                   ) : (
                     <button
                       type="button"
-                      onClick={() => { setPayingId(ar.id); setPayAmount(remaining.toFixed(2)); }}
+                      onClick={() => { setPayingId(ar.id); setPayAmount(String(remaining)); }}
                       className="btn-primary text-sm"
                     >
                       {t("accounts.pay")}

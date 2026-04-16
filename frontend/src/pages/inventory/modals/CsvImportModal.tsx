@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { API_BASE_URL } from "../../../lib/api";
+import { API_BASE_URL, getAccessToken } from "../../../lib/api";
 import { useToast } from "../../../contexts/ToastContext";
 
 type ImportResult = {
@@ -47,7 +47,7 @@ export function CsvImportModal({ onClose, onDone }: Props) {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       const res = await fetch(`${API_BASE_URL}/products/import-csv`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },

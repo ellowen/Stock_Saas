@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
+import { getAccessToken } from "../../lib/api";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../contexts/ToastContext";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { SearchInput } from "../../components/ui/SearchInput";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { useSortable } from "../../hooks/useSortable";
 
 function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
@@ -48,15 +50,17 @@ export default function SuppliersPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [confirmData, setConfirmData] = useState<{ open: boolean; message: string; onConfirm: () => void }>({ open: false, message: "", onConfirm: () => {} });
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [formTouched, setFormTouched] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const load = useCallback(async (q?: string) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       const url = `${API}/suppliers${q ? `?search=${encodeURIComponent(q)}` : ""}`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error();
@@ -79,11 +83,13 @@ export default function SuppliersPage() {
     setEditing(null);
     setForm({ ...EMPTY_FORM });
     setFormTouched(false);
+    setFormErrors({});
     setModalOpen(true);
   }
 
   function openEdit(s: Supplier) {
     setFormTouched(false);
+    setFormErrors({});
     setEditing(s);
     setForm({
       name: s.name,
@@ -104,7 +110,7 @@ export default function SuppliersPage() {
     }
     setSaving(true);
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       const body = {
         name: form.name.trim(),
         taxId: form.taxId || undefined,
@@ -135,10 +141,17 @@ export default function SuppliersPage() {
     }
   }
 
-  async function handleDelete(s: Supplier) {
-    if (!confirm(t("suppliers.deleteConfirm", { name: s.name }))) return;
+  function handleDelete(s: Supplier) {
+    setConfirmData({
+      open: true,
+      message: t("suppliers.deleteConfirm", { name: s.name }),
+      onConfirm: () => _doDelete(s),
+    });
+  }
+
+  async function _doDelete(s: Supplier) {
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       await fetch(`${API}/suppliers/${s.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
@@ -359,6 +372,16 @@ export default function SuppliersPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={confirmData.open}
+        title={t("suppliers.deleteTitle", { defaultValue: "Eliminar proveedor" })}
+        message={confirmData.message}
+        confirmLabel={t("common.delete", { defaultValue: "Eliminar" })}
+        variant="danger"
+        onConfirm={confirmData.onConfirm}
+        onClose={() => setConfirmData((p) => ({ ...p, open: false }))}
+      />
     </div>
   );
 }

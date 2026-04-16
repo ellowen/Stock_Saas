@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getAccessToken } from "../../../lib/api";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useToast } from "../../../contexts/ToastContext";
@@ -286,7 +287,7 @@ export function POSTab({
   const handleGenerateDocument = useCallback(async (docType: "REMITO" | "INVOICE") => {
     if (!branchId || lastSaleItems.length === 0) return;
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       const res = await fetch("/api/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },

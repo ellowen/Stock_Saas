@@ -134,11 +134,13 @@ export function DataTable<T>({
               <SkeletonRows cols={columns.length} />
             ) : paginated.length === 0 ? (
               <tr>
-                <td
-                  colSpan={columns.length}
-                  className="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400"
-                >
-                  {emptyMessage}
+                <td colSpan={columns.length} className="px-4 py-12 text-center">
+                  <div className="flex flex-col items-center gap-2 text-gray-400 dark:text-gray-500">
+                    <svg className="w-8 h-8 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                    </svg>
+                    <span className="text-sm">{emptyMessage}</span>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -170,7 +172,7 @@ export function DataTable<T>({
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-2.5 py-1 text-xs rounded border border-gray-200 dark:border-gray-600 disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="px-2.5 py-1 text-xs rounded border border-gray-200 dark:border-gray-600 disabled:opacity-60 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               ‹
             </button>
@@ -178,7 +180,7 @@ export function DataTable<T>({
               type="button"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-2.5 py-1 text-xs rounded border border-gray-200 dark:border-gray-600 disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="px-2.5 py-1 text-xs rounded border border-gray-200 dark:border-gray-600 disabled:opacity-60 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               ›
             </button>

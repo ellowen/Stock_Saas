@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { formatCurrency, formatCurrencyCompact } from "../../../lib/format";
 import {
   PieChart, Pie, Cell, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, ResponsiveContainer,
@@ -67,10 +68,10 @@ export function PaymentBreakdown({ data }: Props) {
           <div ref={pieRef} className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 p-4 h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: $${Number(value).toFixed(0)}`}>
+                <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: ${formatCurrencyCompact(value)}`}>
                   {chartData.map((_, i) => <Cell key={i} fill={chartData[i].fill} />)}
                 </Pie>
-                <RechartsTooltip formatter={(value: number | undefined) => [`$${Number(value ?? 0).toFixed(2)}`, t("reports.colTotal")]} />
+                <RechartsTooltip formatter={(value: number | undefined) => [formatCurrency(value), t("reports.colTotal")]} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -113,7 +114,7 @@ export function PaymentBreakdown({ data }: Props) {
                 <tr key={row.paymentMethod}>
                   <td>{PAYMENT_METHOD_KEYS[row.paymentMethod] ? t(PAYMENT_METHOD_KEYS[row.paymentMethod]) : row.paymentMethod}</td>
                   <td>{row.count}</td>
-                  <td className="font-medium">${Number(row.totalAmount).toFixed(2)}</td>
+                  <td className="font-medium">{formatCurrency(row.totalAmount)}</td>
                 </tr>
               ))}
             </tbody>

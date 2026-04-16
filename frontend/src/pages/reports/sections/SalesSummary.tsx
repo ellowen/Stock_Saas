@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { SkeletonReportCards } from "../../../components/Skeleton";
+import { formatCurrency } from "../../../lib/format";
 import type { Overview } from "../hooks/useReports";
 
 interface Props {
@@ -36,7 +37,7 @@ export function SalesSummary({ overview, loading, onRefresh }: Props) {
             <div className="rounded-xl bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900/20 dark:to-slate-800 border border-indigo-100 dark:border-indigo-800 p-4">
               <p className="text-xs font-medium text-indigo-700/80 dark:text-indigo-300 uppercase tracking-wider">{t("reports.revenueToday")}</p>
               <p className="mt-1 text-2xl font-bold text-indigo-800 dark:text-indigo-200">
-                ${Number(overview.totalRevenue).toFixed(2)}
+                {formatCurrency(overview.totalRevenue)}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t("reports.totalDay")}</p>
             </div>

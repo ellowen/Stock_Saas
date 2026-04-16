@@ -4,6 +4,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../contexts/ToastContext";
 import { API_BASE_URL, authFetch, authHeaders } from "../../lib/api";
 import { PageHeader, Button, FormField, Badge, Modal } from "../../components/ui";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { thermalPrinter } from "../../lib/thermal-printer";
 import { usePushNotifications } from "../../hooks/usePushNotifications";
 
@@ -77,6 +78,7 @@ export function SettingsPage() {
   const [attrForm, setAttrForm] = useState({ name: "", type: "TEXT" as "TEXT" | "NUMBER" | "SELECT", options: "" });
   const [attrSaving, setAttrSaving] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [confirmData, setConfirmData] = useState<{ open: boolean; message: string; onConfirm: () => void }>({ open: false, message: "", onConfirm: () => {} });
   const [applyingProfile, setApplyingProfile] = useState(false);
 
   const isOwner = user?.user.role === "OWNER";
@@ -199,8 +201,15 @@ export function SettingsPage() {
     }
   }
 
-  async function deleteAttr(attr: Attribute) {
-    if (!confirm(`¿Eliminar el atributo "${attr.name}"? Esta acción no se puede deshacer si no está en uso.`)) return;
+  function deleteAttr(attr: Attribute) {
+    setConfirmData({
+      open: true,
+      message: `¿Eliminar el atributo "${attr.name}"? Esta acción no se puede deshacer si no está en uso.`,
+      onConfirm: () => _doDeleteAttr(attr),
+    });
+  }
+
+  async function _doDeleteAttr(attr: Attribute) {
     try {
       const res = await authFetch(`${API_BASE_URL}/attributes/${attr.id}`, { method: "DELETE", headers: authHeaders() });
       if (!res.ok) {
@@ -736,6 +745,16 @@ export function SettingsPage() {
           ))}
         </div>
       </Modal>
+
+      <ConfirmModal
+        open={confirmData.open}
+        title="Eliminar atributo"
+        message={confirmData.message}
+        confirmLabel="Eliminar"
+        variant="danger"
+        onConfirm={confirmData.onConfirm}
+        onClose={() => setConfirmData((p) => ({ ...p, open: false }))}
+      />
     </div>
   );
 }

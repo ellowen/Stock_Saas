@@ -9,7 +9,16 @@
       "Bash(npm run:*)",
       "Bash(npm install:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m ':*)"
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(ls C:/Dev/Stock_Saas/frontend/src/*.css)",
+      "Bash(curl:*)",
+      "Bash(grep -v \"//\")",
+      "mcp__ide__getDiagnostics",
+      "Bash(find src/pages -name \"*.tsx\" -exec grep -l \"addToast\" {} \\\\;)",
+      "Bash(xargs sed:*)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(netstat -ano)"
     ]
   }
 }

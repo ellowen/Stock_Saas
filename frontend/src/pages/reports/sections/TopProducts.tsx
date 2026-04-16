@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { formatCurrency } from "../../../lib/format";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   ResponsiveContainer, Tooltip as RechartsTooltip,
@@ -64,7 +65,7 @@ export function TopProducts({ topProducts, salesByCategory }: Props) {
                   <td>{row.product?.name ?? "—"} <span className="font-mono text-xs text-slate-400">({row.sku})</span></td>
                   <td className="text-sm">{row.variantLabel ?? "—"}</td>
                   <td>{row.quantitySold}</td>
-                  <td className="font-medium">${Number(row.revenue).toFixed(2)}</td>
+                  <td className="font-medium font-mono">{formatCurrency(row.revenue)}</td>
                 </tr>
               ))}
             </tbody>

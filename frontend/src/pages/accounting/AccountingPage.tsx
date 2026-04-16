@@ -6,7 +6,10 @@ import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
 import { FormField } from "../../components/ui/FormField";
 import { Badge } from "../../components/ui/Badge";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
+import { Select } from "../../components/ui/Select";
 import { IconPlus, IconTrash } from "../../components/Icons";
+import { formatDate } from "../../lib/format";
 
 // ─── Shared Types ────────────────────────────────────────────────────────────
 
@@ -170,19 +173,19 @@ function AccountModal({
               />
             </FormField>
             <FormField label="Tipo">
-              <select className="input-minimal" value={form.type} onChange={(e) => set("type", e.target.value)}>
-                {ACCOUNT_TYPES.map((t) => (
-                  <option key={t} value={t}>{TYPE_LABELS[t]}</option>
-                ))}
-              </select>
+              <Select
+                options={ACCOUNT_TYPES.map((t) => ({ value: t, label: TYPE_LABELS[t] }))}
+                value={form.type}
+                onChange={(e) => set("type", e.target.value)}
+              />
             </FormField>
             <FormField label="Cuenta padre (opcional)">
-              <select className="input-minimal" value={form.parentId} onChange={(e) => set("parentId", e.target.value)}>
-                <option value="">— Sin padre —</option>
-                {parentOptions.map((a) => (
-                  <option key={a.id} value={a.id}>{a.code} – {a.name}</option>
-                ))}
-              </select>
+              <Select
+                options={parentOptions.map((a) => ({ value: String(a.id), label: `${a.code} \u2013 ${a.name}` }))}
+                placeholder="— Sin padre —"
+                value={form.parentId}
+                onChange={(e) => set("parentId", e.target.value)}
+              />
             </FormField>
           </>
         )}
@@ -590,7 +593,7 @@ function JournalDetailModal({
     <Modal open={!!entry} onClose={onClose} title={`Asiento #${entry.id}`} size="xl">
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-          <div><span className="text-muted-foreground">Fecha: </span>{new Date(entry.date).toLocaleDateString("es-AR")}</div>
+          <div><span className="text-muted-foreground">Fecha: </span>{formatDate(entry.date)}</div>
           <div><span className="text-muted-foreground">Estado: </span>
             <Badge variant={entry.status === "POSTED" ? "success" : "neutral"}>{entry.status === "POSTED" ? "Confirmado" : "Borrador"}</Badge>
           </div>
@@ -655,6 +658,7 @@ function LibroDiarioTab({ accounts }: { accounts: Account[] }) {
   const [filters, setFilters] = useState({ from: "", to: "", status: "" });
   const [modalOpen, setModalOpen] = useState(false);
   const [detail, setDetail] = useState<JournalEntry | null>(null);
+  const [confirmData, setConfirmData] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void; variant: "danger" | "warning" | "default" }>({ open: false, title: "", message: "", onConfirm: () => {}, variant: "default" });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -684,8 +688,17 @@ function LibroDiarioTab({ accounts }: { accounts: Account[] }) {
     }
   };
 
-  const handleVoid = async (id: number) => {
-    if (!confirm("¿Crear contra-asiento de anulación? El asiento original quedará vigente.")) return;
+  const handleVoid = (id: number) => {
+    setConfirmData({
+      open: true,
+      title: "Anular asiento",
+      message: "¿Crear contra-asiento de anulación? El asiento original quedará vigente.",
+      variant: "warning",
+      onConfirm: () => _doVoid(id),
+    });
+  };
+
+  const _doVoid = async (id: number) => {
     try {
       const res = await fetch(`/api/journal/${id}/void`, { method: "POST", headers: authHeaders() });
       if (!res.ok) throw new Error((await res.json()).message);
@@ -697,8 +710,17 @@ function LibroDiarioTab({ accounts }: { accounts: Account[] }) {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("¿Eliminar este borrador?")) return;
+  const handleDelete = (id: number) => {
+    setConfirmData({
+      open: true,
+      title: "Eliminar borrador",
+      message: "¿Eliminar este borrador?",
+      variant: "danger",
+      onConfirm: () => _doDelete(id),
+    });
+  };
+
+  const _doDelete = async (id: number) => {
     try {
       const res = await fetch(`/api/journal/${id}`, { method: "DELETE", headers: authHeaders() });
       if (!res.ok) throw new Error((await res.json()).message);
@@ -765,7 +787,7 @@ function LibroDiarioTab({ accounts }: { accounts: Account[] }) {
                     onClick={() => setDetail(e)}
                   >
                     <td className="py-2.5 px-4 text-muted-foreground font-mono text-xs">{e.id}</td>
-                    <td className="py-2.5 px-4">{new Date(e.date).toLocaleDateString("es-AR")}</td>
+                    <td className="py-2.5 px-4">{formatDate(e.date)}</td>
                     <td className="py-2.5 px-4 max-w-xs truncate">{e.description}</td>
                     <td className="py-2.5 px-4 text-muted-foreground text-xs">{e.reference ?? "—"}</td>
                     <td className="py-2.5 px-4">
@@ -789,6 +811,14 @@ function LibroDiarioTab({ accounts }: { accounts: Account[] }) {
 
       <JournalModal open={modalOpen} onClose={() => setModalOpen(false)} accounts={accounts} onSaved={load} />
       <JournalDetailModal entry={detail} onClose={() => setDetail(null)} onPost={handlePost} onVoid={handleVoid} onDelete={handleDelete} />
+      <ConfirmModal
+        open={confirmData.open}
+        title={confirmData.title}
+        message={confirmData.message}
+        variant={confirmData.variant}
+        onConfirm={confirmData.onConfirm}
+        onClose={() => setConfirmData((p) => ({ ...p, open: false }))}
+      />
     </>
   );
 }
@@ -1013,7 +1043,7 @@ function LibroIVATab() {
                 <tbody>
                   {ventasRows.map((r) => (
                     <tr key={r.id} className="border-b border-border/40 hover:bg-muted/20">
-                      <td className="py-2 px-3">{new Date(r.date).toLocaleDateString("es-AR")}</td>
+                      <td className="py-2 px-3">{formatDate(r.date)}</td>
                       <td className="py-2 px-3">
                         <Badge variant={r.type === "CREDIT_NOTE" ? "warning" : "info"}>
                           {r.type === "CREDIT_NOTE" ? "NC" : "FC"}
@@ -1094,7 +1124,7 @@ function LibroIVATab() {
                 <tbody>
                   {comprasRows.map((r) => (
                     <tr key={r.id} className="border-b border-border/40 hover:bg-muted/20">
-                      <td className="py-2.5 px-4">{new Date(r.date).toLocaleDateString("es-AR")}</td>
+                      <td className="py-2.5 px-4">{formatDate(r.date)}</td>
                       <td className="py-2.5 px-4 font-mono text-xs">{String(r.number).padStart(6, "0")}</td>
                       <td className="py-2.5 px-4">{r.supplierName}</td>
                       <td className="py-2.5 px-4 font-mono text-xs text-muted-foreground">{r.supplierCuit ?? "—"}</td>
@@ -1339,7 +1369,7 @@ function ReportesTab({ accounts }: { accounts: Account[] }) {
                   <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Sin movimientos en el período</td></tr>
                 ) : ledgerData.rows.map((r, i) => (
                   <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
-                    <td className="p-3 whitespace-nowrap">{new Date(r.date).toLocaleDateString("es-AR")}</td>
+                    <td className="p-3 whitespace-nowrap">{formatDate(r.date)}</td>
                     <td className="p-3 max-w-xs truncate">{r.description}</td>
                     <td className="p-3 text-muted-foreground">{r.reference ?? "-"}</td>
                     <td className="p-3 text-right font-mono">{r.debit > 0 ? fmt(r.debit) : "-"}</td>
