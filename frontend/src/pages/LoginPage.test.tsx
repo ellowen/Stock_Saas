@@ -83,7 +83,7 @@ describe("LoginPage", () => {
   // ── Flujo de login exitoso ────────────────────────────────────────────────────
 
   it("navega al dashboard tras login exitoso", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ accessToken: "fake-jwt-token" }),
     } as Response);
@@ -106,7 +106,7 @@ describe("LoginPage", () => {
   // ── Manejo de errores ─────────────────────────────────────────────────────────
 
   it("muestra error cuando el servidor responde con 401", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       json: async () => ({ message: "Credenciales inválidas" }),
     } as Response);
@@ -127,7 +127,7 @@ describe("LoginPage", () => {
   });
 
   it("muestra error cuando la respuesta no tiene token", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ data: "no token here" }),
     } as Response);
@@ -151,7 +151,7 @@ describe("LoginPage", () => {
 
   it("deshabilita el botón mientras carga", async () => {
     // fetch nunca resuelve durante el test
-    global.fetch = vi.fn().mockReturnValue(new Promise(() => {}));
+    globalThis.fetch = vi.fn().mockReturnValue(new Promise(() => {}));
 
     renderLogin();
 

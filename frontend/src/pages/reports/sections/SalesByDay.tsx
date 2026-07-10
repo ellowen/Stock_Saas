@@ -61,7 +61,7 @@ export function SalesByDay({ data }: Props) {
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis dataKey="fecha" tick={{ fontSize: 11 }} stroke="#94a3b8" />
             <YAxis tick={{ fontSize: 11 }} stroke="#94a3b8" tickFormatter={(v) => `$${v}`} />
-            <RechartsTooltip formatter={(value: number | undefined) => [formatCurrency(value), t("reports.revenue")]} />
+            <RechartsTooltip formatter={(value) => [formatCurrency(Number(value ?? 0)), t("reports.revenue")]} />
             <Area type="monotone" dataKey="ingresos" stroke="#6366f1" strokeWidth={2} fill="url(#colorIngresos)" name={t("reports.revenue")} />
           </AreaChart>
         </ResponsiveContainer>

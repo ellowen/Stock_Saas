@@ -70,7 +70,7 @@ describe("AuthContext", () => {
 
   it("carga el usuario cuando el token es válido", async () => {
     mockGetAccessToken.mockReturnValue("valid-token");
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => USER_RESPONSE,
     } as Response);
@@ -88,7 +88,7 @@ describe("AuthContext", () => {
 
   it("muestra el rol del usuario correctamente", async () => {
     mockGetAccessToken.mockReturnValue("valid-token");
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => USER_RESPONSE,
     } as Response);
@@ -108,7 +108,7 @@ describe("AuthContext", () => {
 
   it("OWNER tiene canManageUsers=true y canViewReports=true", async () => {
     mockGetAccessToken.mockReturnValue("valid-token");
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => USER_RESPONSE, // role: OWNER
     } as Response);
@@ -132,7 +132,7 @@ describe("AuthContext", () => {
       auth: { ...USER_RESPONSE.auth, role: "SELLER" },
       user: { ...USER_RESPONSE.user, role: "SELLER" },
     };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => sellerResponse,
     } as Response);
@@ -153,7 +153,7 @@ describe("AuthContext", () => {
 
   it("limpia el usuario cuando /protected/me responde 401", async () => {
     mockGetAccessToken.mockReturnValue("expired-token");
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 401,
       json: async () => ({}),
@@ -172,7 +172,7 @@ describe("AuthContext", () => {
 
   it("maneja error de red sin romper la app", async () => {
     mockGetAccessToken.mockReturnValue("some-token");
-    global.fetch = vi.fn().mockRejectedValue(new Error("Network Error"));
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error("Network Error"));
 
     render(
       <AuthProvider>

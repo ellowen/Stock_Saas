@@ -453,7 +453,7 @@ export function DashboardPage() {
                   <RechartsTooltip
                     contentStyle={{ backgroundColor: "#0f172a", border: "none", borderRadius: "8px", color: "#f1f5f9", fontSize: "12px" }}
                     labelFormatter={(_, p) => p?.[0]?.payload ? formatDay(p[0].payload.date) : ""}
-                    formatter={(value: number | undefined) => [`$${Number(value ?? 0).toLocaleString("es-AR", { minimumFractionDigits: 0 })}`, "Ingresos"]}
+                    formatter={(value) => [`$${Number(value ?? 0).toLocaleString("es-AR", { minimumFractionDigits: 0 })}`, "Ingresos"]}
                   />
                   <Area type="monotone" dataKey="ingresos" stroke="#059669" strokeWidth={2} fill="url(#colorIngresos)" dot={false} activeDot={{ r: 4 }} />
                 </AreaChart>
@@ -474,7 +474,7 @@ export function DashboardPage() {
                   <RechartsTooltip
                     contentStyle={{ backgroundColor: "#0f172a", border: "none", borderRadius: "8px", color: "#f1f5f9", fontSize: "12px" }}
                     labelFormatter={(_, p) => p?.[0]?.payload ? formatDay(p[0].payload.date) : ""}
-                    formatter={(value: number | undefined) => [value ?? 0, "Ventas"]}
+                    formatter={(value) => [Number(value ?? 0), "Ventas"]}
                   />
                   <Bar dataKey="ventas" fill="#6366f1" radius={[4, 4, 0, 0]} name="Ventas" maxBarSize={40} />
                 </BarChart>
