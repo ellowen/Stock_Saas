@@ -55,7 +55,6 @@ export default function SuppliersPage() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [formTouched, setFormTouched] = useState(false);
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const load = useCallback(async (q?: string) => {
     setLoading(true);
@@ -83,13 +82,11 @@ export default function SuppliersPage() {
     setEditing(null);
     setForm({ ...EMPTY_FORM });
     setFormTouched(false);
-    setFormErrors({});
     setModalOpen(true);
   }
 
   function openEdit(s: Supplier) {
     setFormTouched(false);
-    setFormErrors({});
     setEditing(s);
     setForm({
       name: s.name,

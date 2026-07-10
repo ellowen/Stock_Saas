@@ -581,9 +581,9 @@ function JournalDetailModal({
 }: {
   entry: JournalEntry | null;
   onClose: () => void;
-  onPost: (id: number) => Promise<void>;
-  onVoid: (id: number) => Promise<void>;
-  onDelete: (id: number) => Promise<void>;
+  onPost: (id: number) => void;
+  onVoid: (id: number) => void;
+  onDelete: (id: number) => void;
 }) {
   if (!entry) return null;
   const sumDebit = entry.lines.reduce((s, l) => s + Number(l.debit), 0);

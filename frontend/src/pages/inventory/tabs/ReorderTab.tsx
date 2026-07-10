@@ -1,5 +1,4 @@
 /**
-import { getAccessToken } from "../../../lib/api";
  * ReorderTab — Stock forecasting & intelligent reorder suggestions
  *
  * Shows sales velocity, days-to-stockout, urgency tiers, and lets the user
@@ -7,6 +6,7 @@ import { getAccessToken } from "../../../lib/api";
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { getAccessToken } from "../../../lib/api";
 import { useToast } from "../../../contexts/ToastContext";
 import { Badge } from "../../../components/ui/Badge";
 import type { Branch } from "../types";
