@@ -29,19 +29,6 @@ router.get("/periods", async (req: Request, res: Response) => {
   res.json(periods);
 });
 
-// GET /payrolls/:id
-router.get("/:id", async (req: Request, res: Response) => {
-  const companyId = req.auth!.companyId;
-  const id = parseInt(req.params["id"] as string);
-  if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
-  try {
-    const p = await service.getById(id, companyId);
-    res.json(p);
-  } catch (err: any) {
-    res.status(404).json({ message: err.message });
-  }
-});
-
 // POST /payrolls/preview — calcula sin guardar
 router.post("/preview", async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
@@ -241,6 +228,19 @@ router.get("/advances/pending/:employeeId", async (req: Request, res: Response) 
   if (isNaN(employeeId)) return res.status(400).json({ message: "ID inválido" });
   const advances = await service.pendingAdvancesForEmployee(companyId, employeeId);
   res.json(advances);
+});
+
+// GET /payrolls/:id — debe ir al final: las rutas literales de arriba (/periods, /advances, ...) deben resolverse primero
+router.get("/:id", async (req: Request, res: Response) => {
+  const companyId = req.auth!.companyId;
+  const id = parseInt(req.params["id"] as string);
+  if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
+  try {
+    const p = await service.getById(id, companyId);
+    res.json(p);
+  } catch (err: any) {
+    res.status(404).json({ message: err.message });
+  }
 });
 
 export const payrollsRouter = router;

@@ -13,7 +13,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    basicSsl(),
+    ...(process.env.NO_SSL ? [] : [basicSsl()]),
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
