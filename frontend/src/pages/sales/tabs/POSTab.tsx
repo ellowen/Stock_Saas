@@ -57,6 +57,13 @@ export function POSTab({
   const { cart, addToCart, updateCartQty, updateCartDiscount, updateCartPriceOverride, removeFromCart, clearCart, restoreCart } = useCart();
   const { heldSales, loading: heldSalesLoading, loadHeldSales, holdSale, resumeSale, discardSale } = useHeldSales();
   const [globalDiscount, setGlobalDiscount] = useState("");
+  // Promos automaticas (2x1, % por categoria/producto) — el cajero no las
+  // calcula, se traen del backend en cuanto cambia el carrito.
+  const [autoDiscounts, setAutoDiscounts] = useState<Record<number, number>>({});
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const [couponChecking, setCouponChecking] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
   // En desktop arranca expandido; en mobile colapsado para priorizar la
   // busqueda y el carrito sin scroll (ver toggle mas abajo).
   const [showDetails, setShowDetails] = useState(
@@ -112,12 +119,72 @@ export function POSTab({
     const v = variantsWithStock.find((x) => x.productVariantId === item.productVariantId);
     if (!v) return s;
     const itemDiscount = item.discount ?? 0;
+    const promoDiscount = autoDiscounts[item.productVariantId] ?? 0;
     const unitPrice = item.unitPriceOverride ?? parseFloat(v.price);
-    return s + (unitPrice - itemDiscount) * item.quantity;
+    return s + (unitPrice - itemDiscount - promoDiscount) * item.quantity;
   }, 0);
   const globalDiscountNum = Math.max(0, parseFloat(globalDiscount) || 0);
-  const totalAmount = Math.max(0, subtotalBeforeGlobal - globalDiscountNum);
+  const couponDiscountNum = appliedCoupon?.discount ?? 0;
+  const totalAmount = Math.max(0, subtotalBeforeGlobal - globalDiscountNum - couponDiscountNum);
   const totalRounded = Math.round(totalAmount * 100) / 100;
+
+  // Preview de promos automaticas (2x1, % por categoria/producto): se
+  // recalcula cada vez que cambia el carrito, debounced, solo para mostrar
+  // — el calculo real y autoritativo se hace de nuevo en el servidor al
+  // crear la venta, sin confiar en nada de esto.
+  useEffect(() => {
+    if (cart.length === 0) { setAutoDiscounts({}); return; }
+    const timer = setTimeout(async () => {
+      try {
+        const token = getAccessToken();
+        const items = cart.map((c) => {
+          const v = variantsWithStock.find((x) => x.productVariantId === c.productVariantId);
+          return {
+            productVariantId: c.productVariantId,
+            quantity: c.quantity,
+            unitPrice: c.unitPriceOverride ?? (v ? parseFloat(v.price) : 0),
+          };
+        });
+        const res = await fetch("/api/promotions/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ items }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const parsed: Record<number, number> = {};
+          for (const [k, v] of Object.entries(data.discounts ?? {})) parsed[Number(k)] = Number(v);
+          setAutoDiscounts(parsed);
+        }
+      } catch {
+        // silencioso: es solo un preview, no bloquea la venta
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- variantsWithStock cambia con inventory, no hace falta re-disparar por eso
+  }, [cart]);
+
+  const handleApplyCoupon = useCallback(async () => {
+    if (!couponInput.trim()) return;
+    setCouponChecking(true);
+    setCouponError(null);
+    try {
+      const token = getAccessToken();
+      const res = await fetch("/api/promotions/coupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code: couponInput.trim(), subtotal: subtotalBeforeGlobal }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || t("sales.couponInvalid"));
+      setAppliedCoupon({ code: couponInput.trim().toUpperCase(), discount: Number(data.discount) });
+    } catch (e) {
+      setAppliedCoupon(null);
+      setCouponError(e instanceof Error ? e.message : t("sales.couponInvalid"));
+    } finally {
+      setCouponChecking(false);
+    }
+  }, [couponInput, subtotalBeforeGlobal, t]);
 
   // Focus search on tab mount / branch change
   useEffect(() => {
@@ -145,6 +212,10 @@ export function POSTab({
       clearCart();
       setSelectedCustomer(null);
       setGlobalDiscount("");
+      setAutoDiscounts({});
+      setAppliedCoupon(null);
+      setCouponInput("");
+      setCouponError(null);
       loadHeldSales(branchId);
       showToast(t("sales.heldSaleSaved"), "success");
       searchInputRef.current?.focus();
@@ -221,6 +292,7 @@ export function POSTab({
         mixedBreakdown: paymentMethod === "MIXED" ? { cash: cashNum, card: cardNum } : undefined,
         customerId: selectedCustomer?.id ?? null,
         discountTotal: globalDiscountNum > 0 ? globalDiscountNum : undefined,
+        couponCode: appliedCoupon?.code,
       });
       setLastSaleId(createdSale?.id ?? null);
       setLastSaleCustomer(
@@ -298,6 +370,10 @@ export function POSTab({
       clearCart();
       setSelectedCustomer(null);
       setGlobalDiscount("");
+      setAutoDiscounts({});
+      setAppliedCoupon(null);
+      setCouponInput("");
+      setCouponError(null);
       setShowPaymentModal(false);
       setMixedCash("");
       setMixedCard("");
@@ -549,6 +625,7 @@ export function POSTab({
                           quantity={item.quantity}
                           discount={item.discount ?? 0}
                           priceOverride={item.unitPriceOverride}
+                          promoDiscount={autoDiscounts[item.productVariantId] ?? 0}
                           canDiscount={canDiscount}
                           canOverridePrice={canOverridePrice}
                           onIncrease={() => updateCartQty(i, 1)}
@@ -581,6 +658,44 @@ export function POSTab({
                           className="w-24 text-sm px-2 py-1 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
                         />
                       </div>
+                    )}
+                    {/* Cupon — cualquier cajero puede tomarlo, no requiere SALES_DISCOUNT */}
+                    {appliedCoupon ? (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+                          {t("sales.couponApplied", { amount: appliedCoupon.discount.toFixed(2) })}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => { setAppliedCoupon(null); setCouponInput(""); setCouponError(null); }}
+                          className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                        >
+                          {t("sales.customerDetach")}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-slate-500 dark:text-slate-400 flex-1">{t("sales.couponLabel")}</span>
+                        <input
+                          type="text"
+                          value={couponInput}
+                          onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleApplyCoupon(); } }}
+                          placeholder={t("sales.couponPlaceholder")}
+                          className="w-28 text-sm px-2 py-1 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleApplyCoupon}
+                          disabled={couponChecking || !couponInput.trim()}
+                          className="text-xs font-medium px-2.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 disabled:opacity-50"
+                        >
+                          {couponChecking ? "..." : t("sales.couponApply")}
+                        </button>
+                      </div>
+                    )}
+                    {couponError && !appliedCoupon && (
+                      <p className="text-xs text-red-600 dark:text-red-400">{couponError}</p>
                     )}
                     {globalDiscountNum > 0 && (
                       <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">

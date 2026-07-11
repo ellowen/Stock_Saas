@@ -28,6 +28,7 @@ import {
   IconCash,
   IconBook,
   IconShield,
+  IconTag,
 } from "../components/Icons";
 import { useTheme } from "../contexts/ThemeContext";
 
@@ -39,6 +40,7 @@ const navItems: {
 }[] = [
   { path: "/app/dashboard",  labelKey: "home",      Icon: IconHome },
   { path: "/app/inventory",  labelKey: "inventory", Icon: IconPackage },
+  { path: "/app/promotions", labelKey: "promotions", Icon: IconTag,       permission: "PRODUCTS_WRITE" },
   { path: "/app/sales",      labelKey: "sales",     Icon: IconShoppingCart },
   { path: "/app/transfers",  labelKey: "transfers", Icon: IconTransfer,    permission: "TRANSFERS_APPROVE" },
   { path: "/app/documents",  labelKey: "documents", Icon: IconDocument,    permission: "DOCUMENTS_WRITE" },

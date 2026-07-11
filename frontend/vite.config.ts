@@ -68,6 +68,7 @@ export default defineConfig({
       '/batches': { target: 'http://localhost:4000', changeOrigin: true },
       '/accounts-receivable': { target: 'http://localhost:4000', changeOrigin: true },
       '/held-sales': { target: 'http://localhost:4000', changeOrigin: true },
+      '/promotions': { target: 'http://localhost:4000', changeOrigin: true },
     },
   },
 })

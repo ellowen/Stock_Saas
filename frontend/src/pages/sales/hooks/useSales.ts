@@ -11,6 +11,7 @@ export type CreateSaleParams = {
   mixedBreakdown?: { cash: number; card: number };
   customerId?: number | null;
   discountTotal?: number;
+  couponCode?: string;
 };
 
 export type UseSalesReturn = {
@@ -90,6 +91,9 @@ export function useSales(): UseSalesReturn {
       }
       if (params.discountTotal != null && params.discountTotal > 0) {
         body.discountTotal = params.discountTotal;
+      }
+      if (params.couponCode) {
+        body.couponCode = params.couponCode;
       }
       const res = await authFetch(`${API_BASE_URL}/sales`, {
         method: "POST",

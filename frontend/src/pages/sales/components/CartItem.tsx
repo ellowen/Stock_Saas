@@ -11,6 +11,7 @@ type Props = {
   quantity: number;
   discount: number;
   priceOverride?: number;
+  promoDiscount?: number;
   canDiscount: boolean;
   canOverridePrice: boolean;
   onIncrease: () => void;
@@ -28,6 +29,7 @@ export function CartItem({
   quantity,
   discount,
   priceOverride,
+  promoDiscount = 0,
   canDiscount,
   canOverridePrice,
   onIncrease,
@@ -42,7 +44,7 @@ export function CartItem({
   const qtyInputRef = useRef<HTMLInputElement>(null);
   const isOverridden = priceOverride != null;
   const effectivePrice = isOverridden ? priceOverride : price;
-  const lineTotal = Math.max(0, (effectivePrice - discount) * quantity);
+  const lineTotal = Math.max(0, (effectivePrice - discount) * quantity - promoDiscount * quantity);
 
   const startEditQty = () => {
     setQtyInput(String(quantity));
@@ -136,6 +138,11 @@ export function CartItem({
               className="w-20 text-xs px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
             />
           </div>
+        )}
+        {promoDiscount > 0 && (
+          <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mt-1">
+            {t("sales.promoApplied", { amount: (promoDiscount * quantity).toFixed(2) })}
+          </p>
         )}
       </div>
       <div className="flex items-center gap-2 shrink-0 mt-1">

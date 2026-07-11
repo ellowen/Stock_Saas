@@ -23,6 +23,7 @@ import EmployeesPage from "./pages/employees/EmployeesPage";
 import PayrollPage from "./pages/payroll/PayrollPage";
 import AccountingPage from "./pages/accounting/AccountingPage";
 import AuditPage from "./pages/audit/AuditPage";
+import PromotionsPage from "./pages/promotions/PromotionsPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./contexts/ToastContext";
@@ -69,6 +70,7 @@ function App() {
         <Route path="payroll" element={<PayrollPage />} />
         <Route path="accounting" element={<AccountingPage />} />
         <Route path="audit" element={<AuditPage />} />
+        <Route path="promotions" element={<PromotionsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

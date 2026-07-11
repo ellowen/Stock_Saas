@@ -12,6 +12,16 @@ jest.mock("../config/database/prisma", () => ({
   prisma: {
     $transaction: jest.fn(),
     sale: { findMany: jest.fn(), findUnique: jest.fn() },
+    // createSale pre-fetches precios (fuera de la transaccion) para calcular
+    // promos automaticas antes de entrar al $transaction mockeado arriba.
+    productVariant: {
+      findMany: jest.fn().mockResolvedValue([
+        { id: 101, price: new Prisma.Decimal("1500.00"), productId: 1, product: { category: null } },
+      ]),
+    },
+    // Sin promos activas por defecto: computeAutoDiscounts corta apenas
+    // esto devuelve [] y nunca llega a pedir productVariant de nuevo.
+    promotion: { findMany: jest.fn().mockResolvedValue([]), findFirst: jest.fn().mockResolvedValue(null) },
   },
 }));
 

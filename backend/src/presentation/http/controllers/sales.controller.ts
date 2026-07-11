@@ -26,6 +26,7 @@ const createSaleSchema = z.object({
   notes: z.string().optional(),
   customerId: z.number().int().positive().optional().nullable(),
   discountTotal: z.number().min(0).optional(),
+  couponCode: z.string().min(1).optional(),
   items: z.array(saleItemSchema).min(1),
 });
 
@@ -117,6 +118,12 @@ export const createSaleController = async (req: Request, res: Response) => {
         return res
           .status(409)
           .json({ message: "Insufficient stock to complete the sale" });
+      }
+      if (error.message === "INVALID_COUPON") {
+        return res.status(400).json({ message: "Cupón inválido" });
+      }
+      if (error.message === "EXPIRED_COUPON") {
+        return res.status(400).json({ message: "Cupón vencido" });
       }
     }
     // eslint-disable-next-line no-console

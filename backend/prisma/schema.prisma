@@ -68,6 +68,7 @@ model Company {
   journalEntries     JournalEntry[]
   pushSubscriptions  PushSubscription[]
   heldSales          HeldSale[]
+  promotions         Promotion[]
 
   @@map("companies")
 }
@@ -177,10 +178,51 @@ model Product {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  company  Company          @relation(fields: [companyId], references: [id])
-  variants ProductVariant[]
+  company    Company          @relation(fields: [companyId], references: [id])
+  variants   ProductVariant[]
+  promotions Promotion[]
 
   @@map("products")
+}
+
+enum PromotionType {
+  PERCENT_OFF // ej: 20% off
+  BUY_X_GET_Y_FREE // ej: 2x1 (buyQty=2, freeQty=1), "3x2" (buyQty=3, freeQty=1)
+}
+
+enum PromotionScope {
+  ALL
+  PRODUCT
+  CATEGORY
+}
+
+// Promocion automatica (o por cupon si couponCode esta seteado). El cajero
+// nunca calcula el descuento a mano: PERCENT_OFF/BUY_X_GET_Y_FREE sin cupon
+// se aplican solos al armar el carrito; con cupon, el cajero solo escribe
+// el codigo y el motor valida y aplica.
+model Promotion {
+  id         Int            @id @default(autoincrement())
+  companyId  Int            @map("company_id")
+  name       String
+  type       PromotionType
+  scope      PromotionScope @default(ALL)
+  productId  Int?           @map("product_id")
+  category   String?
+  percentOff Float?         @map("percent_off")
+  buyQty     Int?           @map("buy_qty")
+  freeQty    Int?           @map("free_qty")
+  couponCode String?        @unique @map("coupon_code")
+  isActive   Boolean        @default(true) @map("is_active")
+  startsAt   DateTime?      @map("starts_at")
+  endsAt     DateTime?      @map("ends_at")
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+
+  company Company  @relation(fields: [companyId], references: [id])
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@index([companyId, isActive])
+  @@map("promotions")
 }
 
 model ProductVariant {

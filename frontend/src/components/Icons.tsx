@@ -218,6 +218,15 @@ export function IconShield({ className = iconClass }: IconProps = {}) {
   );
 }
 
+export function IconTag({ className = iconClass }: IconProps = {}) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.169.659 1.591l9.581 9.581a2.25 2.25 0 003.182 0l4.318-4.318a2.25 2.25 0 000-3.182L11.16 3.66A2.25 2.25 0 009.568 3z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6h.008v.008H6V6z" />
+    </svg>
+  );
+}
+
 export function IconGiroLogo({ className = "w-8 h-8" }: { className?: string } = {}) {
   return (
     <svg viewBox="0 0 40 40" fill="none" className={className} aria-hidden>

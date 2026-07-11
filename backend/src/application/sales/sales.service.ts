@@ -2,8 +2,10 @@ import { InventoryMovementType, PaymentMethod, Prisma } from "@prisma/client";
 import { prisma } from "../../config/database/prisma";
 import { NotificationsService } from "../notifications/notifications.service";
 import { autoJournal } from "../accounting/auto-journal.service";
+import { PromotionService } from "../promotions/promotion.service";
 
 const notificationsService = new NotificationsService();
+const promotionService = new PromotionService();
 
 export interface SaleItemInput {
   productVariantId: number;
@@ -20,6 +22,7 @@ export interface CreateSaleInput {
   notes?: string;
   customerId?: number | null;
   discountTotal?: number;
+  couponCode?: string;
   items: SaleItemInput[];
 }
 
@@ -32,6 +35,24 @@ export class SalesService {
     if (input.items.length === 0) {
       throw new Error("NO_ITEMS");
     }
+
+    // Descuentos automaticos (2x1, % por categoria/producto): se calculan
+    // server-side, nunca se confia en lo que mande el cliente. Se resuelven
+    // antes de la transaccion porque necesitan el precio efectivo por linea
+    // (incluyendo price override) para saber cuanto vale cada unidad "gratis".
+    const preVariants = await prisma.productVariant.findMany({
+      where: { id: { in: input.items.map((i) => i.productVariantId) }, companyId, isActive: true },
+      select: { id: true, price: true },
+    });
+    const priceByVariant = new Map(preVariants.map((v) => [v.id, v.price]));
+    const autoDiscounts = await promotionService.computeAutoDiscounts(
+      companyId,
+      input.items.map((i) => ({
+        productVariantId: i.productVariantId,
+        quantity: i.quantity,
+        unitPrice: i.unitPriceOverride ?? Number(priceByVariant.get(i.productVariantId) ?? 0),
+      }))
+    );
 
     return prisma.$transaction(async (tx) => {
       const branch = await tx.branch.findFirst({
@@ -88,7 +109,10 @@ export class SalesService {
           item.unitPriceOverride != null
             ? new Prisma.Decimal(item.unitPriceOverride)
             : variant.price;
-        const itemDiscount = new Prisma.Decimal(item.discount ?? 0);
+        const manualDiscount = new Prisma.Decimal(item.discount ?? 0);
+        const autoDiscount = new Prisma.Decimal(autoDiscounts.get(item.productVariantId) ?? 0);
+        let itemDiscount = manualDiscount.add(autoDiscount);
+        if (itemDiscount.greaterThan(unitPrice)) itemDiscount = unitPrice;
         const lineTotal = unitPrice.mul(item.quantity).sub(itemDiscount.mul(item.quantity));
 
         totalAmount = totalAmount.add(lineTotal);
@@ -104,7 +128,19 @@ export class SalesService {
         };
       });
 
-      const globalDiscount = new Prisma.Decimal(input.discountTotal ?? 0);
+      let globalDiscount = new Prisma.Decimal(input.discountTotal ?? 0);
+
+      // Cupon: se re-valida server-side contra la promo real, nunca se
+      // confia en un monto de descuento mandado por el cliente.
+      if (input.couponCode) {
+        const couponDiscount = await promotionService.applyCoupon(
+          companyId,
+          input.couponCode,
+          Number(totalAmount)
+        );
+        globalDiscount = globalDiscount.add(new Prisma.Decimal(couponDiscount));
+      }
+
       totalAmount = totalAmount.sub(globalDiscount);
       if (totalAmount.lessThan(0)) totalAmount = new Prisma.Decimal(0);
 

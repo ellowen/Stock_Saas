@@ -33,6 +33,7 @@ import { checkSubscription } from "./infrastructure/http/middleware/checkSubscri
 import { pushRouter } from "./infrastructure/http/routers/push.router";
 import { billingRouter } from "./infrastructure/http/routers/billing.router";
 import { heldSalesRouter } from "./infrastructure/http/routers/held-sales.router";
+import { promotionsRouter } from "./infrastructure/http/routers/promotions.router";
 
 export const createApp = (): Application => {
   const app = express();
@@ -84,6 +85,7 @@ export const createApp = (): Application => {
   app.use("/push", pushRouter);
   app.use("/billing", billingRouter);
   app.use("/held-sales", heldSalesRouter);
+  app.use("/promotions", promotionsRouter);
 
   app.get("/health", (_req, res) => {
     res.json({
