@@ -32,6 +32,7 @@ Documento de referencia para verificar que la app funcione correctamente. Incluy
 | `/app/payroll` | PayrollPage | Sí | Liquidación de sueldos (Fase 5) |
 | `/app/accounting` | AccountingPage | Sí | Plan de cuentas FACPCE, libro diario, libro IVA, reportes contables (Fase 5) |
 | `/app/audit` | AuditPage | Sí | Logs de auditoría |
+| `/app/promotions` | PromotionsPage | Sí | CRUD de promociones (2x1, % por producto/categoría, cupones) |
 | `*` | — | — | Redirige a `/` |
 
 ---
@@ -98,6 +99,11 @@ Documento de referencia para verificar que la app funcione correctamente. Incluy
 | GET/POST | `/journal` | Libro diario: asientos manuales/automáticos, confirmar, anular (Fase 5) |
 | GET | `/iva-book` | Libro IVA ventas/compras/balance (Fase 5) |
 | GET | `/accounting-reports` | Balance de sumas y saldos, libro mayor, estado de resultados (Fase 5) |
+| POST | `/sales/:id/send-receipt` | Envía el recibo de una venta por email (Nodemailer) |
+| GET/POST/POST/DELETE | `/held-sales` | Ventas en espera: listar, crear, `:id/resume` (retoma y borra), `:id` (descartar) |
+| GET/POST/PUT/DELETE | `/promotions` | CRUD de promociones (mutaciones requieren permiso `PRODUCTS_WRITE`) |
+| POST | `/promotions/preview` | Preview de descuentos automáticos para un carrito (solo UI, no autoritativo) |
+| POST | `/promotions/coupon` | Valida un código de cupón y devuelve el descuento |
 
 ---
 
@@ -117,7 +123,12 @@ Documento de referencia para verificar que la app funcione correctamente. Incluy
 - **i18n**: cambio de idioma (es/en) en pantallas traducidas.
 - **Empleados (Fase 5)**: alta con sueldo bruto y fecha de ingreso, baja. ✅ Verificado 2026-07-11.
 - **Payroll (Fase 5)**: "Calcular todos" genera borradores del período, confirmar, marcar pagado (dispara asiento automático si `accountingEnabled`). ✅ Verificado 2026-07-11.
-- **Contabilidad (Fase 5)**: generar plan de cuentas FACPCE, asiento manual, confirmar asiento, balance de sumas y saldos. ✅ Verificado 2026-07-11. Libro IVA y libro mayor/estado de resultados: pendiente de probar con datos reales.
+- **Contabilidad (Fase 5)**: generar plan de cuentas FACPCE, asiento manual, confirmar asiento, balance de sumas y saldos, libro mayor, estado de resultados, libro IVA, auto-journal automático (venta + compra recibida). ✅ Verificado 2026-07-11 con `accountingEnabled` activado.
+- **POS — hold/resume sale**: poner en espera vacía el carrito, retomar lo restaura completo (incluye descuentos y price override) y saca la venta de la lista. ✅ Verificado 2026-07-11.
+- **POS — price override**: gateado por `SALES_PRICE_OVERRIDE`; sin el permiso no aparece el input, con el permiso reemplaza el precio de línea. ✅ Verificado 2026-07-11.
+- **POS — pago inline**: cobrar reemplaza el área del carrito in-place (sin overlay); cancelar restaura el carrito intacto. ✅ Verificado 2026-07-11.
+- **POS — recibo email/WhatsApp**: envío real de email (logueado en consola sin SMTP) y link de WhatsApp con resumen de la venta. ✅ Verificado 2026-07-11.
+- **POS — promociones automáticas**: 2x1 se aplica solo al llegar a la cantidad necesaria; cupón se valida y aplica sobre el subtotal ya con el 2x1; el total que registra el backend coincide con el preview del frontend. ✅ Verificado 2026-07-11.
 
 ---
 
@@ -140,7 +151,8 @@ Documento de referencia para verificar que la app funcione correctamente. Incluy
 - [x] Empleados: alta y baja. (2026-07-11)
 - [x] Payroll: calcular todos, confirmar, marcar pagado. (2026-07-11)
 - [x] Contabilidad: plan de cuentas, asiento manual, confirmar, balance de sumas y saldos. (2026-07-11)
-- [ ] Contabilidad: libro IVA, libro mayor, estado de resultados, auto-journal automático (ventas/compras/sueldos con `accountingEnabled`).
+- [x] Contabilidad: libro IVA, libro mayor, estado de resultados, auto-journal automático (ventas/compras/sueldos con `accountingEnabled`). (2026-07-11)
+- [x] POS: hold/resume sale, price override, pago inline, recibo email/WhatsApp, promociones automáticas (2x1) y cupones. (2026-07-11)
 
 ---
 
@@ -192,4 +204,4 @@ El frontend en desarrollo está configurado para:
 - **Backend**: ver `backend/.env.example` (DB, JWT, nodemailer, etc.).
 - **Frontend**: ver `frontend/.env.example` (ej. `VITE_API_URL` para producción).
 
-Actualizado 2026-07-11: rutas y endpoints de Fase 5 (empleados, payroll, contabilidad) y de los módulos de clientes/proveedores/documentos/compras/facturación agregados a las tablas; antes solo cubrían el MVP inicial.
+Actualizado 2026-07-11: rutas y endpoints de Fase 5 (empleados, payroll, contabilidad) y de los módulos de clientes/proveedores/documentos/compras/facturación agregados a las tablas; antes solo cubrían el MVP inicial. Sumados además los endpoints y verificación del roadmap de rediseño del POS (`/held-sales`, `/promotions`, `/sales/:id/send-receipt`, página `/app/promotions`).

@@ -14,8 +14,17 @@ Ideas para seguir mejorando GIRO más adelante:
   - [x] Mostrar en el mensaje de éxito el vuelto a entregar (ej. “Entregar $X de vuelto”) para que quede anotado.
   - [x] Botones rápidos de monto recibido: +200, +500.
   - [x] Sonido o notificación clara al confirmar la venta (beep de éxito con Web Audio API).
-  - [x] Opción de “recibo” en pantalla (total, pagado, vuelto) que quede visible unos segundos después de cobrar.
+  - [x] Opción de “recibo” en pantalla (total, pagado, vuelto). *El modal rápido se cierra solo a los 5s; el banner con las acciones (imprimir/descargar/email/WhatsApp) queda visible hasta la próxima venta.*
   - *Las anteriores ya implementadas en Ventas (SalesPage).*
+  - **Rediseño UX/funcional del POS (2026-07-11)**, del [audit de POS](https://claude.ai/code/artifact/1196c6bb-328a-4d64-8d6f-44f2e5f7f0ff):
+    - [x] Fix de bug: un código escaneado que también matcheaba por substring otro SKU/nombre podía agregar el producto equivocado (match exacto ahora siempre gana).
+    - [x] Permisos `SALES_DISCOUNT` / `SALES_PRICE_OVERRIDE` — antes cualquier usuario aplicaba descuentos ilimitados sin control.
+    - [x] Price override end-to-end (antes no existía ni en el modelo de datos).
+    - [x] Hold / resume sale (poner una venta en espera para atender a otro cliente).
+    - [x] Panel de pago inline reemplazando el modal flotante (no tapa el carrito).
+    - [x] Mobile-first real (antes cero breakpoints responsive en todo el módulo).
+    - [x] Recibo por email y WhatsApp (antes solo imprimir/descargar HTML).
+    - [x] Motor de promociones automáticas: 2x1/3x2, % por producto/categoría, cupones manuales. Página `/app/promotions` para administrarlas. *v1 sin tiers de cliente ni reglas de stacking entre promos superpuestas.*
 
 - **Inventario**
   - [x] Alertas de stock bajo (aviso cuando la cantidad baje de un mínimo configurable). *Mínimo por ítem en Inventario (modal Editar); si no se define, alerta cuando &lt; 5. Badge "Bajo mínimo" en tabla y contador en Dashboard.*
