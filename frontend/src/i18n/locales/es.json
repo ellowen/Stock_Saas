@@ -552,6 +552,7 @@
     "cartDecrease": "Menos una unidad",
     "cartIncrease": "Más una unidad",
     "cartRemove": "Quitar del carrito",
+    "paymentBackToCart": "Volver al carrito",
     "paymentTitle": "¿Cómo cobrás?",
     "paymentTotal": "Total:",
     "paymentMethodLabel": "Medio de pago (1–4)",

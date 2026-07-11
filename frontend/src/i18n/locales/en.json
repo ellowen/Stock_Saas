@@ -263,6 +263,7 @@
     "cartDecrease": "Decrease by one",
     "cartIncrease": "Increase by one",
     "cartRemove": "Remove from cart",
+    "paymentBackToCart": "Back to cart",
     "paymentTitle": "How are you charging?",
     "paymentTotal": "Total:",
     "paymentMethodLabel": "Payment method (1–4)",

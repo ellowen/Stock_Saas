@@ -7,7 +7,7 @@ import { Tooltip } from "../../../components/Tooltip";
 import { IconCurrency, IconShoppingCart } from "../../../components/Icons";
 import { ProductSearch } from "../components/ProductSearch";
 import { CartItem } from "../components/CartItem";
-import { PaymentModal } from "../components/PaymentModal";
+import { PaymentPanel } from "../components/PaymentPanel";
 import { ReceiptView } from "../components/ReceiptView";
 import { CustomerSearchInput } from "../components/CustomerSearchInput";
 import { HeldSalesPanel } from "../components/HeldSalesPanel";
@@ -179,6 +179,9 @@ export function POSTab({
     setShowPaymentModal(false);
     setCashReceived("");
     setMixedCashReceived("");
+    // Al volver de pago al carrito, la busqueda vuelve a ser lo primero
+    // que el cajero necesita — igual que al terminar una venta.
+    setTimeout(() => searchInputRef.current?.focus(), 0);
   }, []);
 
   const handleConfirmSale = useCallback(async () => {
@@ -454,112 +457,138 @@ export function POSTab({
       {/* Cart */}
       <div className="flex flex-col gap-5">
         <div className="rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-sm overflow-hidden">
-          <div className="bg-slate-50 dark:bg-slate-700/50 px-5 py-4 border-b border-slate-200 dark:border-slate-600 flex items-center gap-3">
-            <IconShoppingCart className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{t("sales.cartTitle")}</h2>
-            {totalItems > 0 && (
-              <span className="ml-auto text-base font-medium text-slate-500 dark:text-slate-400">
-                {t("sales.cartItems", { count: totalItems })}
-              </span>
-            )}
-          </div>
-          <div className="max-h-[320px] overflow-y-auto">
-            {cart.length === 0 ? (
-              <div className="px-5 py-14 text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 mb-4">
-                  <IconShoppingCart className="w-8 h-8" />
-                </div>
-                <p className="text-base text-slate-500 dark:text-slate-400 leading-relaxed">
-                  {t("sales.emptyCartMessage")}
-                </p>
-              </div>
-            ) : (
-              <ul className="divide-y divide-slate-100 dark:divide-slate-600">
-                {cart.map((item, i) => {
-                  const v = variantsWithStock.find((x) => x.productVariantId === item.productVariantId);
-                  const price = v ? parseFloat(v.price) : 0;
-                  return (
-                    <CartItem
-                      key={`${item.productVariantId}-${i}`}
-                      productName={v ? v.productName : `ID ${item.productVariantId}`}
-                      sku={v?.sku ?? ""}
-                      attributeLabel={v ? formatAttributes(v.attributes) : ""}
-                      price={price}
-                      quantity={item.quantity}
-                      discount={item.discount ?? 0}
-                      priceOverride={item.unitPriceOverride}
-                      canDiscount={canDiscount}
-                      canOverridePrice={canOverridePrice}
-                      onIncrease={() => updateCartQty(i, 1)}
-                      onDecrease={() => updateCartQty(i, -1)}
-                      onRemove={() => removeFromCart(i)}
-                      onDiscountChange={(d) => updateCartDiscount(i, d)}
-                      onPriceOverrideChange={(p) => updateCartPriceOverride(i, p)}
-                    />
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-
-          {cart.length > 0 && (
+          {showPaymentModal ? (
+            <PaymentPanel
+              itemCount={totalItems}
+              totalAmount={totalAmount}
+              hasCustomer={!!selectedCustomer}
+              paymentMethod={paymentMethod}
+              onPaymentMethodChange={(m) => {
+                setPaymentMethod(m);
+                if (m === "CASH") setCashReceived(totalRounded.toFixed(2));
+              }}
+              cashReceived={cashReceived}
+              onCashReceivedChange={setCashReceived}
+              mixedCash={mixedCash}
+              onMixedCashChange={setMixedCash}
+              mixedCard={mixedCard}
+              onMixedCardChange={setMixedCard}
+              mixedCashReceived={mixedCashReceived}
+              onMixedCashReceivedChange={setMixedCashReceived}
+              submitting={submitting}
+              onConfirm={handleConfirmSale}
+              onCancel={closePaymentModal}
+            />
+          ) : (
             <>
-              <div className="border-t border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 px-5 py-4 space-y-3">
-                {/* Global discount — requiere permiso SALES_DISCOUNT */}
-                {canDiscount && (
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-slate-500 dark:text-slate-400 flex-1">{t("sales.discountGlobalLabel")}</span>
-                    <span className="text-sm text-slate-400">$</span>
-                    <input
-                      type="number"
-                      min={0}
-                      step={0.01}
-                      value={globalDiscount}
-                      placeholder="0"
-                      onChange={(e) => setGlobalDiscount(e.target.value)}
-                      className="w-24 text-sm px-2 py-1 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                    />
-                  </div>
-                )}
-                {globalDiscountNum > 0 && (
-                  <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
-                    <span>{t("sales.subtotal")}</span>
-                    <span>${subtotalBeforeGlobal.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-baseline gap-4">
-                  <span className="text-base font-medium text-slate-600 dark:text-slate-400">
-                    {t("sales.totalToCharge")}
+              <div className="bg-slate-50 dark:bg-slate-700/50 px-5 py-4 border-b border-slate-200 dark:border-slate-600 flex items-center gap-3">
+                <IconShoppingCart className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{t("sales.cartTitle")}</h2>
+                {totalItems > 0 && (
+                  <span className="ml-auto text-base font-medium text-slate-500 dark:text-slate-400">
+                    {t("sales.cartItems", { count: totalItems })}
                   </span>
-                  <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                    ${totalAmount.toFixed(2)}
-                  </span>
-                </div>
+                )}
               </div>
-              <div className="p-5 border-t border-slate-200 dark:border-slate-600 space-y-2">
-                <Tooltip content={t("sales.checkoutTooltip")}>
-                  <button
-                    ref={cobrarButtonRef}
-                    type="button"
-                    onClick={openPaymentModal}
-                    disabled={submitting || cart.length === 0 || !branchId}
-                    className="btn-primary w-full py-4 text-lg font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    aria-keyshortcuts="F4"
-                  >
-                    <IconCurrency className="w-6 h-6" />
-                    {t("sales.chargeButton")}
-                  </button>
-                </Tooltip>
-                <button
-                  type="button"
-                  onClick={handleHoldSale}
-                  disabled={submitting || cart.length === 0}
-                  className="btn-secondary w-full py-2.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {t("sales.heldSaleHold")}
-                </button>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 text-center">{t("sales.chargeKeyboardHint")}</p>
+              <div className="max-h-[320px] overflow-y-auto">
+                {cart.length === 0 ? (
+                  <div className="px-5 py-14 text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 mb-4">
+                      <IconShoppingCart className="w-8 h-8" />
+                    </div>
+                    <p className="text-base text-slate-500 dark:text-slate-400 leading-relaxed">
+                      {t("sales.emptyCartMessage")}
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-slate-100 dark:divide-slate-600">
+                    {cart.map((item, i) => {
+                      const v = variantsWithStock.find((x) => x.productVariantId === item.productVariantId);
+                      const price = v ? parseFloat(v.price) : 0;
+                      return (
+                        <CartItem
+                          key={`${item.productVariantId}-${i}`}
+                          productName={v ? v.productName : `ID ${item.productVariantId}`}
+                          sku={v?.sku ?? ""}
+                          attributeLabel={v ? formatAttributes(v.attributes) : ""}
+                          price={price}
+                          quantity={item.quantity}
+                          discount={item.discount ?? 0}
+                          priceOverride={item.unitPriceOverride}
+                          canDiscount={canDiscount}
+                          canOverridePrice={canOverridePrice}
+                          onIncrease={() => updateCartQty(i, 1)}
+                          onDecrease={() => updateCartQty(i, -1)}
+                          onRemove={() => removeFromCart(i)}
+                          onDiscountChange={(d) => updateCartDiscount(i, d)}
+                          onPriceOverrideChange={(p) => updateCartPriceOverride(i, p)}
+                        />
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
+
+              {cart.length > 0 && (
+                <>
+                  <div className="border-t border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 px-5 py-4 space-y-3">
+                    {/* Global discount — requiere permiso SALES_DISCOUNT */}
+                    {canDiscount && (
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-slate-500 dark:text-slate-400 flex-1">{t("sales.discountGlobalLabel")}</span>
+                        <span className="text-sm text-slate-400">$</span>
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          value={globalDiscount}
+                          placeholder="0"
+                          onChange={(e) => setGlobalDiscount(e.target.value)}
+                          className="w-24 text-sm px-2 py-1 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                        />
+                      </div>
+                    )}
+                    {globalDiscountNum > 0 && (
+                      <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
+                        <span>{t("sales.subtotal")}</span>
+                        <span>${subtotalBeforeGlobal.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-baseline gap-4">
+                      <span className="text-base font-medium text-slate-600 dark:text-slate-400">
+                        {t("sales.totalToCharge")}
+                      </span>
+                      <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                        ${totalAmount.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-5 border-t border-slate-200 dark:border-slate-600 space-y-2">
+                    <Tooltip content={t("sales.checkoutTooltip")}>
+                      <button
+                        ref={cobrarButtonRef}
+                        type="button"
+                        onClick={openPaymentModal}
+                        disabled={submitting || cart.length === 0 || !branchId}
+                        className="btn-primary w-full py-4 text-lg font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-keyshortcuts="F4"
+                      >
+                        <IconCurrency className="w-6 h-6" />
+                        {t("sales.chargeButton")}
+                      </button>
+                    </Tooltip>
+                    <button
+                      type="button"
+                      onClick={handleHoldSale}
+                      disabled={submitting || cart.length === 0}
+                      className="btn-secondary w-full py-2.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {t("sales.heldSaleHold")}
+                    </button>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 text-center">{t("sales.chargeKeyboardHint")}</p>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
@@ -592,29 +621,6 @@ export function POSTab({
           onClose={() => setDocPreview(null)}
         />
       )}
-
-      {/* Payment modal */}
-      <PaymentModal
-        open={showPaymentModal}
-        totalAmount={totalAmount}
-        hasCustomer={!!selectedCustomer}
-        paymentMethod={paymentMethod}
-        onPaymentMethodChange={(m) => {
-          setPaymentMethod(m);
-          if (m === "CASH") setCashReceived(totalRounded.toFixed(2));
-        }}
-        cashReceived={cashReceived}
-        onCashReceivedChange={setCashReceived}
-        mixedCash={mixedCash}
-        onMixedCashChange={setMixedCash}
-        mixedCard={mixedCard}
-        onMixedCardChange={setMixedCard}
-        mixedCashReceived={mixedCashReceived}
-        onMixedCashReceivedChange={setMixedCashReceived}
-        submitting={submitting}
-        onConfirm={handleConfirmSale}
-        onCancel={closePaymentModal}
-      />
     </div>
   );
 }
