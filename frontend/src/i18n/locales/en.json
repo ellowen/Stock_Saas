@@ -299,6 +299,8 @@
     "branchTooltip": "Sales and stock are recorded for this branch",
     "branchLabel": "Branch",
     "selectBranchPlaceholder": "Select branch",
+    "detailsShow": "Show more",
+    "detailsHide": "Hide",
     "cartTitle": "Cart",
     "cartItems": "{{count}} item",
     "cartItems_plural": "{{count}} items",

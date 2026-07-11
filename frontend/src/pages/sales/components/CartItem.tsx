@@ -143,7 +143,7 @@ export function CartItem({
           <button
             type="button"
             onClick={onDecrease}
-            className="p-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
+            className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
           >
             <IconMinus className="w-5 h-5" />
           </button>
@@ -177,7 +177,7 @@ export function CartItem({
           <button
             type="button"
             onClick={onIncrease}
-            className="p-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
+            className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
           >
             <IconPlus className="w-5 h-5" />
           </button>
@@ -186,7 +186,7 @@ export function CartItem({
           <button
             type="button"
             onClick={onRemove}
-            className="p-2 rounded-lg text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+            className="p-2.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
           >
             <IconX className="w-5 h-5" />
           </button>

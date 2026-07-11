@@ -588,6 +588,8 @@
     "branchTooltip": "Las ventas y el stock se registran para esta sucursal",
     "branchLabel": "Sucursal",
     "selectBranchPlaceholder": "Seleccionar sucursal",
+    "detailsShow": "Ver más",
+    "detailsHide": "Ocultar",
     "cartTitle": "Carrito",
     "cartItems": "{{count}} ítem",
     "cartItems_plural": "{{count}} ítems",

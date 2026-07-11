@@ -57,6 +57,11 @@ export function POSTab({
   const { cart, addToCart, updateCartQty, updateCartDiscount, updateCartPriceOverride, removeFromCart, clearCart, restoreCart } = useCart();
   const { heldSales, loading: heldSalesLoading, loadHeldSales, holdSale, resumeSale, discardSale } = useHeldSales();
   const [globalDiscount, setGlobalDiscount] = useState("");
+  // En desktop arranca expandido; en mobile colapsado para priorizar la
+  // busqueda y el carrito sin scroll (ver toggle mas abajo).
+  const [showDetails, setShowDetails] = useState(
+    () => typeof window === "undefined" || window.matchMedia("(min-width: 640px)").matches
+  );
 
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
@@ -406,9 +411,25 @@ export function POSTab({
   }, [branchId, lastSaleItems, branches, company, t, showToast, selectedCustomer]);
 
   return (
-    <div className="flex flex-col gap-8 max-w-2xl rounded-2xl p-6 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-600">
-      {/* Branch selector */}
-      <div className="space-y-6">
+    <div className="flex flex-col gap-6 sm:gap-8 w-full sm:max-w-2xl rounded-2xl p-4 sm:p-6 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-600">
+      {/* En mobile, sucursal/cliente/en-espera van colapsados detras de un
+          toggle para que la busqueda quede arriba de todo sin scroll —
+          en desktop siempre estan visibles (sm:block se impone al estado). */}
+      <button
+        type="button"
+        onClick={() => setShowDetails((v) => !v)}
+        className="sm:hidden flex items-center justify-between text-sm font-medium text-slate-600 dark:text-slate-300 px-1"
+      >
+        <span>
+          {branches.find((b) => b.id === branchId)?.name ?? t("sales.branchLabel")}
+          {selectedCustomer ? ` · ${selectedCustomer.name}` : ""}
+        </span>
+        <span className="text-indigo-600 dark:text-indigo-400">
+          {showDetails ? t("sales.detailsHide") : t("sales.detailsShow")}
+        </span>
+      </button>
+
+      <div className={`${showDetails ? "flex" : "hidden"} sm:flex flex-col gap-4 sm:gap-6`}>
         <Tooltip content={t("sales.branchTooltip")}>
           <div>
             <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
@@ -417,7 +438,7 @@ export function POSTab({
             <select
               value={branchId === "" ? "" : String(branchId)}
               onChange={(e) => onBranchChange(e.target.value ? Number(e.target.value) : "")}
-              className="input-minimal max-w-xs text-base py-2.5 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
+              className="input-minimal w-full sm:max-w-xs text-base py-2.5 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
             >
               <option value="">{t("sales.selectBranchPlaceholder")}</option>
               {branches.map((b) => (
@@ -449,7 +470,9 @@ export function POSTab({
             />
           </div>
         )}
+      </div>
 
+      <div className="space-y-6">
         {typeof branchId === "number" && (
           <ProductSearch
             variants={variantsWithStock}
