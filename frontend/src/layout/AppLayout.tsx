@@ -1,7 +1,7 @@
 import { type ReactElement, useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { setAccessToken } from "../lib/api";
+import { getAccessToken, setAccessToken } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { Tooltip } from "../components/Tooltip";
 import {
@@ -80,7 +80,7 @@ function NotificationBell() {
 
   useEffect(() => {
     const fetch_ = async () => {
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       const res = await fetch("/analytics/alerts", { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) { const d = await res.json(); setTotal(d.total); setAlerts(d.alerts); }
     };
