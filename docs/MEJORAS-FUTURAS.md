@@ -155,9 +155,9 @@ Si más adelante querés **sin “sueño”** del backend y más recursos, un pl
 
 - [x] Repo en GitHub (github.com/ellowen/Stock_Saas) con frontend y backend en carpetas separadas.
 - [x] Variables de entorno documentadas (`backend/.env.example` y `frontend/.env.example`).
-- [ ] En producción, `DATABASE_URL` y `JWT_SECRET` (o equivalentes) seguros y distintos a los de desarrollo.
-- [ ] CORS del backend permitiendo el origen del frontend (URL de Vercel/Netlify).
-- [ ] Build del frontend usando la URL del API de producción (`VITE_API_URL` o similar).
+- [ ] En producción, `DATABASE_URL` y `JWT_SECRET` (o equivalentes) seguros y distintos a los de desarrollo. *(paso operativo al desplegar, no de código)*
+- [x] CORS del backend configurable por origen: `CORS_ORIGIN` en `.env` (coma-separado). Sin definir, sigue permitiendo cualquier origen (ok para desarrollo, **hay que setearla en producción**). Código en `backend/src/app.ts` + `config/env.ts`.
+- [x] El build del frontend ya usa `VITE_API_URL` en producción (`frontend/src/lib/api.ts`) — solo falta setear la variable con la URL real del backend al desplegar.
 
 ---
 

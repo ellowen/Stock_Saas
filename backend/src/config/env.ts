@@ -19,6 +19,9 @@ export const env = {
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
   // Recuperación de contraseña (opcionales)
   appUrl: process.env.APP_URL ?? "http://localhost:5173",
+  // Origenes permitidos para CORS, separados por coma (ej. "https://miapp.com,https://www.miapp.com").
+  // Si no se define, permite cualquier origen (comportamiento actual, valido solo para desarrollo).
+  corsOrigins: process.env.CORS_ORIGIN?.split(",").map((o) => o.trim()).filter(Boolean),
   smtpHost: process.env.SMTP_HOST,
   smtpPort: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : undefined,
   smtpSecure: process.env.SMTP_SECURE === "true",

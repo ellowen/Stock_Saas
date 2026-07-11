@@ -36,7 +36,7 @@ import { billingRouter } from "./infrastructure/http/routers/billing.router";
 export const createApp = (): Application => {
   const app = express();
 
-  app.use(cors());
+  app.use(cors(env.corsOrigins ? { origin: env.corsOrigins } : undefined));
   app.use(json());
   app.use(urlencoded({ extended: true }));
 
