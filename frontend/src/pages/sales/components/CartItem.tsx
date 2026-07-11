@@ -10,11 +10,14 @@ type Props = {
   price: number;
   quantity: number;
   discount: number;
+  priceOverride?: number;
   canDiscount: boolean;
+  canOverridePrice: boolean;
   onIncrease: () => void;
   onDecrease: () => void;
   onRemove: () => void;
   onDiscountChange: (value: number) => void;
+  onPriceOverrideChange: (value: number | null) => void;
 };
 
 export function CartItem({
@@ -24,17 +27,22 @@ export function CartItem({
   price,
   quantity,
   discount,
+  priceOverride,
   canDiscount,
+  canOverridePrice,
   onIncrease,
   onDecrease,
   onRemove,
   onDiscountChange,
+  onPriceOverrideChange,
 }: Props) {
   const { t } = useTranslation();
   const [editingQty, setEditingQty] = useState(false);
   const [qtyInput, setQtyInput] = useState("");
   const qtyInputRef = useRef<HTMLInputElement>(null);
-  const lineTotal = Math.max(0, (price - discount) * quantity);
+  const isOverridden = priceOverride != null;
+  const effectivePrice = isOverridden ? priceOverride : price;
+  const lineTotal = Math.max(0, (effectivePrice - discount) * quantity);
 
   const startEditQty = () => {
     setQtyInput(String(quantity));
@@ -65,7 +73,15 @@ export function CartItem({
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{attributeLabel}</p>
         )}
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-          ${price.toFixed(2)} × {quantity}
+          {isOverridden ? (
+            <>
+              <span className="line-through text-slate-400 dark:text-slate-500">${price.toFixed(2)}</span>{" "}
+              <span className="text-indigo-600 dark:text-indigo-400 font-medium">${effectivePrice.toFixed(2)}</span>
+            </>
+          ) : (
+            <>${price.toFixed(2)}</>
+          )}
+          {" "}× {quantity}
           {discount > 0 && (
             <span className="text-emerald-600 dark:text-emerald-400">
               {" "}− ${(discount * quantity).toFixed(2)}
@@ -81,13 +97,13 @@ export function CartItem({
             <input
               type="number"
               min={0}
-              max={price}
+              max={effectivePrice}
               step={0.01}
               value={discount === 0 ? "" : discount}
               placeholder="0"
               onChange={(e) => {
                 const v = parseFloat(e.target.value);
-                onDiscountChange(isNaN(v) || v < 0 ? 0 : Math.min(v, price));
+                onDiscountChange(isNaN(v) || v < 0 ? 0 : Math.min(v, effectivePrice));
               }}
               className="w-20 text-xs px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
             />
@@ -99,6 +115,27 @@ export function CartItem({
               {t("sales.discount")}: ${discount.toFixed(2)} {t("sales.discountPerUnit")}
             </p>
           )
+        )}
+        {/* Override de precio — requiere permiso SALES_PRICE_OVERRIDE */}
+        {canOverridePrice && (
+          <div className="flex items-center gap-1.5 mt-1">
+            <span className="text-xs text-slate-400">{t("sales.priceOverride")}:</span>
+            <span className="text-xs text-slate-400">$</span>
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              value={priceOverride ?? ""}
+              placeholder={price.toFixed(2)}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw === "") { onPriceOverrideChange(null); return; }
+                const v = parseFloat(raw);
+                onPriceOverrideChange(isNaN(v) || v < 0 ? null : v);
+              }}
+              className="w-20 text-xs px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            />
+          </div>
         )}
       </div>
       <div className="flex items-center gap-2 shrink-0 mt-1">

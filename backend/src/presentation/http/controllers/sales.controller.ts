@@ -11,6 +11,7 @@ const saleItemSchema = z.object({
   productVariantId: z.number().int().positive(),
   quantity: z.number().int().positive(),
   discount: z.number().min(0).optional(),
+  unitPriceOverride: z.number().min(0).optional(),
 });
 
 const createSaleSchema = z.object({
@@ -57,6 +58,18 @@ export const createSaleController = async (req: Request, res: Response) => {
     );
     if (!allowed) {
       return res.status(403).json({ message: "Forbidden: se requiere permiso SALES_DISCOUNT" });
+    }
+  }
+
+  const hasPriceOverride = rest.items.some((i) => i.unitPriceOverride != null);
+  if (hasPriceOverride) {
+    const allowed = await permissionService.hasPermission(
+      req.auth.userId,
+      req.auth.role as any,
+      "SALES_PRICE_OVERRIDE"
+    );
+    if (!allowed) {
+      return res.status(403).json({ message: "Forbidden: se requiere permiso SALES_PRICE_OVERRIDE" });
     }
   }
 

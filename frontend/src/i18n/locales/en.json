@@ -330,6 +330,7 @@
     "statusPENDING": "Pending",
     "discount": "Disc.",
     "discountPerUnit": "per unit",
+    "priceOverride": "Price",
     "discountGlobalLabel": "Global discount ($)",
     "subtotal": "Subtotal",
     "customerLabel": "Customer (optional)",

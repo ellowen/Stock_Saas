@@ -619,6 +619,7 @@
     "statusPENDING": "Pendiente",
     "discount": "Dto.",
     "discountPerUnit": "por unidad",
+    "priceOverride": "Precio",
     "discountGlobalLabel": "Descuento global ($)",
     "subtotal": "Subtotal",
     "customerLabel": "Cliente (opcional)",

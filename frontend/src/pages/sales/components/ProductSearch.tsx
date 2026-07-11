@@ -33,16 +33,28 @@ export function ProductSearch({
 
   const searchTerm = searchInput.trim().toLowerCase();
 
+  // Rankeado: prefijo de barcode > prefijo de SKU > prefijo de nombre >
+  // substring de barcode/SKU/nombre. Sin esto, un match parcial de nombre
+  // podia aparecer antes que el barcode exacto que el cajero acaba de
+  // escanear, quedando resaltado primero en el dropdown.
   const suggestions = (() => {
     if (!searchTerm) return variants.slice(0, MAX_SUGGESTIONS);
-    return variants
-      .filter(
-        (v) =>
-          v.productName.toLowerCase().includes(searchTerm) ||
-          v.sku.toLowerCase().includes(searchTerm) ||
-          (v.barcode && v.barcode.toLowerCase().includes(searchTerm))
-      )
-      .slice(0, MAX_SUGGESTIONS);
+    const scored: Array<{ v: VariantWithStock; rank: number }> = [];
+    for (const v of variants) {
+      const barcode = v.barcode?.toLowerCase() ?? "";
+      const sku = v.sku.toLowerCase();
+      const name = v.productName.toLowerCase();
+      let rank = -1;
+      if (barcode && barcode.startsWith(searchTerm)) rank = 0;
+      else if (sku.startsWith(searchTerm)) rank = 1;
+      else if (name.startsWith(searchTerm)) rank = 2;
+      else if (barcode.includes(searchTerm)) rank = 3;
+      else if (sku.includes(searchTerm)) rank = 4;
+      else if (name.includes(searchTerm)) rank = 5;
+      if (rank >= 0) scored.push({ v, rank });
+    }
+    scored.sort((a, b) => a.rank - b.rank);
+    return scored.slice(0, MAX_SUGGESTIONS).map((s) => s.v);
   })();
 
   // Scroll highlighted item into view

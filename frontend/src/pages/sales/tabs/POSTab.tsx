@@ -48,8 +48,9 @@ export function POSTab({
   const { t } = useTranslation();
   const { company, hasPermission } = useAuth();
   const canDiscount = hasPermission("SALES_DISCOUNT");
+  const canOverridePrice = hasPermission("SALES_PRICE_OVERRIDE");
   const { showToast } = useToast();
-  const { cart, addToCart, updateCartQty, updateCartDiscount, removeFromCart, clearCart } = useCart();
+  const { cart, addToCart, updateCartQty, updateCartDiscount, updateCartPriceOverride, removeFromCart, clearCart } = useCart();
   const [globalDiscount, setGlobalDiscount] = useState("");
 
   const [selectedCustomer, setSelectedCustomer] = useState<{ id: number; name: string; taxId: string | null; phone: string | null } | null>(null);
@@ -99,7 +100,8 @@ export function POSTab({
     const v = variantsWithStock.find((x) => x.productVariantId === item.productVariantId);
     if (!v) return s;
     const itemDiscount = item.discount ?? 0;
-    return s + (parseFloat(v.price) - itemDiscount) * item.quantity;
+    const unitPrice = item.unitPriceOverride ?? parseFloat(v.price);
+    return s + (unitPrice - itemDiscount) * item.quantity;
   }, 0);
   const globalDiscountNum = Math.max(0, parseFloat(globalDiscount) || 0);
   const totalAmount = Math.max(0, subtotalBeforeGlobal - globalDiscountNum);
@@ -176,7 +178,7 @@ export function POSTab({
       const branch = branches.find((b) => b.id === Number(branchId));
       const receiptItems = cart.map((c) => {
         const v = variantsWithStock.find((x) => x.productVariantId === c.productVariantId);
-        const unitPrice = v ? parseFloat(v.price) : 0;
+        const unitPrice = c.unitPriceOverride ?? (v ? parseFloat(v.price) : 0);
         return {
           name: v?.productName ?? "—",
           sku: v?.sku ?? "",
@@ -220,7 +222,7 @@ export function POSTab({
             variantId: c.productVariantId,
             description: v ? `${v.productName}${v.attributes?.length ? ` (${v.attributes.map((a) => a.value).join("/")})` : ""}` : `ID ${c.productVariantId}`,
             quantity: c.quantity,
-            unitPrice: v ? parseFloat(v.price) : 0,
+            unitPrice: c.unitPriceOverride ?? (v ? parseFloat(v.price) : 0),
           };
         })
       );
@@ -424,11 +426,14 @@ export function POSTab({
                       price={price}
                       quantity={item.quantity}
                       discount={item.discount ?? 0}
+                      priceOverride={item.unitPriceOverride}
                       canDiscount={canDiscount}
+                      canOverridePrice={canOverridePrice}
                       onIncrease={() => updateCartQty(i, 1)}
                       onDecrease={() => updateCartQty(i, -1)}
                       onRemove={() => removeFromCart(i)}
                       onDiscountChange={(d) => updateCartDiscount(i, d)}
+                      onPriceOverrideChange={(p) => updateCartPriceOverride(i, p)}
                     />
                   );
                 })}

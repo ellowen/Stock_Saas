@@ -9,6 +9,7 @@ export interface SaleItemInput {
   productVariantId: number;
   quantity: number;
   discount?: number;
+  unitPriceOverride?: number;
 }
 
 export interface CreateSaleInput {
@@ -83,7 +84,10 @@ export class SalesService {
 
       const saleItemsData = input.items.map((item) => {
         const variant = variants.find((v) => v.id === item.productVariantId)!;
-        const unitPrice = variant.price;
+        const unitPrice =
+          item.unitPriceOverride != null
+            ? new Prisma.Decimal(item.unitPriceOverride)
+            : variant.price;
         const itemDiscount = new Prisma.Decimal(item.discount ?? 0);
         const lineTotal = unitPrice.mul(item.quantity).sub(itemDiscount.mul(item.quantity));
 

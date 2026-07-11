@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../../contexts/AuthContext";
 import { useSales } from "./hooks/useSales";
 import { POSTab } from "./tabs/POSTab";
 import { SalesHistoryTab } from "./tabs/SalesHistoryTab";
@@ -7,6 +8,7 @@ import type { SalesTab } from "./types";
 
 export function SalesPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<SalesTab>("pos");
   const [branchId, setBranchId] = useState<number | "">("");
 
@@ -30,19 +32,24 @@ export function SalesPage() {
 
   // Load branches once on mount
   useEffect(() => {
-    loadBranches().then(() => {
-      // branchId will be set reactively below once branches load
-    });
+    loadBranches();
   }, [loadBranches]);
 
-  // Auto-select first branch when branches load
+  // Preferir la sucursal ya asignada al usuario (viene con el JWT, sin round-trip
+  // extra) en vez de esperar a que termine de cargar la lista completa de
+  // sucursales. Si el usuario no tiene sucursal fija (ej. OWNER), cae al
+  // fallback de "primera sucursal de la lista" una vez que esta carga.
   useEffect(() => {
-    if (branches.length > 0 && branchId === "") {
+    if (branchId !== "") return;
+    if (user?.auth.branchId != null) {
+      setBranchId(user.auth.branchId);
+    } else if (branches.length > 0) {
       setBranchId(branches[0].id);
     }
-  }, [branches, branchId]);
+  }, [branches, branchId, user]);
 
-  // Reload inventory when branch changes
+  // Carga el inventario apenas se resuelve la sucursal — en paralelo con la
+  // carga de sucursales, no despues (evita el "waterfall" secuencial).
   useEffect(() => {
     if (typeof branchId === "number") {
       loadInventory(branchId);

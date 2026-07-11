@@ -6,6 +6,7 @@ export type UseCartReturn = {
   addToCart: (variantId: number, quantity?: number) => void;
   updateCartQty: (index: number, delta: number) => void;
   updateCartDiscount: (index: number, discount: number) => void;
+  updateCartPriceOverride: (index: number, price: number | null) => void;
   removeFromCart: (index: number) => void;
   clearCart: () => void;
 };
@@ -44,6 +45,14 @@ export function useCart(): UseCartReturn {
     });
   }, []);
 
+  const updateCartPriceOverride = useCallback((index: number, price: number | null) => {
+    setCart((c) => {
+      const next = [...c];
+      next[index] = { ...next[index], unitPriceOverride: price == null || price < 0 ? undefined : price };
+      return next;
+    });
+  }, []);
+
   const removeFromCart = useCallback((index: number) => {
     setCart((c) => c.filter((_, i) => i !== index));
   }, []);
@@ -52,5 +61,5 @@ export function useCart(): UseCartReturn {
     setCart([]);
   }, []);
 
-  return { cart, addToCart, updateCartQty, updateCartDiscount, removeFromCart, clearCart };
+  return { cart, addToCart, updateCartQty, updateCartDiscount, updateCartPriceOverride, removeFromCart, clearCart };
 }

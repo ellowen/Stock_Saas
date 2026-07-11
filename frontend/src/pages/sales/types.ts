@@ -29,7 +29,12 @@ export type InventoryRow = {
   };
 };
 
-export type CartEntry = { productVariantId: number; quantity: number; discount?: number };
+export type CartEntry = {
+  productVariantId: number;
+  quantity: number;
+  discount?: number;
+  unitPriceOverride?: number;
+};
 
 export type PaymentMethod = "CASH" | "CARD" | "MIXED" | "OTHER" | "CREDIT";
 
