@@ -34,7 +34,7 @@ Ideas para seguir mejorando GIRO más adelante:
 - **General**
   - [x] PWA (instalable en el celular como app). *vite-plugin-pwa con manifest (nombre GIRO, theme-color); instalable desde el navegador en móvil/desktop.*
   - [x] Notificaciones in-app para stock bajo. *Al entrar al Dashboard, si hay ítems bajo mínimo: toast informativo + banner con enlace a Inventario (una vez por sesión).*
-  - [ ] Notificaciones push (navegador, opcional) para alertas de stock o resúmenes cuando la app está cerrada.
+  - [x] Notificaciones push (navegador) para alertas de stock o resúmenes cuando la app está cerrada. *Web Push con VAPID; suscripción/permiso en Settings (`usePushNotifications`), backend en `push.router.ts` + `push.controller.ts`.*
   - [x] Multi-idioma (es/en). *Base: i18next + react-i18next; selector ES/EN en header (app) y en login; traducciones en menú, login y dashboard; idioma guardado en localStorage. Resto de pantallas se puede ir traduciendo con las mismas claves.*
   - [ ] App móvil nativa (React Native o similar) si hace falta uso intensivo en celular.
   - [x] Atajos de teclado en POS. *Enter en el modal de cobro confirma la venta; Escape cierra el modal o las sugerencias de búsqueda. Hint en el modal: "Enter confirmar · Escape cancelar".*
@@ -153,8 +153,8 @@ Si más adelante querés **sin “sueño”** del backend y más recursos, un pl
 
 ## Checklist antes de subir
 
-- [ ] Repo en GitHub (o GitLab) con frontend y backend en carpetas o repos separados.
-- [ ] Variables de entorno documentadas (`.env.example` sin valores sensibles).
+- [x] Repo en GitHub (github.com/ellowen/Stock_Saas) con frontend y backend en carpetas separadas.
+- [x] Variables de entorno documentadas (`backend/.env.example` y `frontend/.env.example`).
 - [ ] En producción, `DATABASE_URL` y `JWT_SECRET` (o equivalentes) seguros y distintos a los de desarrollo.
 - [ ] CORS del backend permitiendo el origen del frontend (URL de Vercel/Netlify).
 - [ ] Build del frontend usando la URL del API de producción (`VITE_API_URL` o similar).

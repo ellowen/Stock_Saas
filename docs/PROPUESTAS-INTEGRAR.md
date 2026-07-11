@@ -19,7 +19,7 @@ Hacé **un paso a la vez**; cuando esté listo, pasá al siguiente.
 | **7** | Filtros/búsqueda avanzada en Inventario (categoría, marca, stock bajo). | ✅ Hecho |
 | **8** | Rate limiting en el backend (Express). | ✅ Hecho |
 | **9** | Tests: al menos un test e2e (login → dashboard) o tests unitarios de un servicio. | ✅ Hecho |
-| **10** | Integración real de pago (Stripe) cuando quieran monetizar. | Pendiente |
+| **10** | Integración real de pago (Stripe) cuando quieran monetizar. | ✅ Hecho |
 
 Cuando termines un paso, actualizá la tabla (poné ✅ en Estado) y seguí con el siguiente.
 
@@ -27,7 +27,7 @@ Cuando termines un paso, actualizá la tabla (poné ✅ en Estado) y seguí con 
 
 ## 1. Ya documentado y pendiente (MEJORAS-FUTURAS.md)
 
-- **Notificaciones push** (navegador): alertas de stock bajo o resúmenes cuando la app está cerrada. Requiere Service Worker, permiso del usuario y backend para enviar (ej. web-push).
+- ✅ **Notificaciones push** (navegador): hecho — Web Push con VAPID, suscripción en Settings.
 - **App móvil nativa**: React Native o similar si el uso en celular crece mucho; hoy la PWA ya permite instalar.
 
 ---
@@ -52,19 +52,19 @@ Hoy están traducidos: menú, login y dashboard. El resto de pantallas tiene tex
 
 ## 4. Producto y operación día a día
 
-| Propuesta | Descripción | Esfuerzo |
-|-----------|-------------|----------|
-| **Importación masiva de productos** | Subir Excel/CSV con productos y variantes (nombre, SKU, talle, color, precio) y crear/actualizar en lote. | Medio |
-| **Búsqueda y filtros avanzados** | En Inventario: por categoría, marca, rango de precio, “solo con stock bajo”. En Ventas: por método de pago, sucursal, rango de fechas. | Bajo–medio |
-| **Recordatorio “Olvidé contraseña” desde login** | Ya existe `/forgot-password`; asegurar que el link en login sea visible y que el flujo esté bien indicado. | Bajo |
-| **Resumen por email** | Opcional: email diario o semanal con ventas del día/semana y ítems bajo mínimo (requiere cron + envío de correo). | Medio |
-| **Comprobante/recibo descargable** | Después de una venta, botón “Descargar recibo” (PDF o HTML para imprimir) con ítems, total, fecha, sucursal. | Bajo–medio |
+| Propuesta | Descripción | Esfuerzo | Estado |
+|-----------|-------------|----------|--------|
+| **Importación masiva de productos** | Subir Excel/CSV con productos y variantes (nombre, SKU, talle, color, precio) y crear/actualizar en lote. | Medio | ✅ Hecho (`CsvImportModal`) |
+| **Búsqueda y filtros avanzados** | En Inventario: por categoría, marca, rango de precio, “solo con stock bajo”. En Ventas: por método de pago, sucursal, rango de fechas. | Bajo–medio | ✅ Hecho |
+| **Recordatorio “Olvidé contraseña” desde login** | Ya existe `/forgot-password`; asegurar que el link en login sea visible y que el flujo esté bien indicado. | Bajo | ✅ Hecho |
+| **Resumen por email** | Email diario (20:00) y semanal (lunes 08:00) con ventas, via cron. | Medio | ✅ Hecho (`infrastructure/cron/jobs.ts` + `notifications.service.ts`) |
+| **Comprobante/recibo descargable** | Después de una venta, botón “Descargar recibo” (PDF o HTML para imprimir) con ítems, total, fecha, sucursal. | Bajo–medio | ✅ Hecho |
 
 ---
 
-## 5. Planes y facturación (cuando quieran monetizar)
+## 5. Planes y facturación
 
-- **Stripe (o similar)**: integrar el modal de “Método de pago” con Stripe Checkout o Elements; guardar `subscriptionStatus` y `plan` según el pago.
+- ✅ **Stripe + MercadoPago**: integrados en Fase 7 (`backend/src/application/billing/`), con límites por plan.
 - **Facturación por uso**: si algún plan tiene límites (ej. sucursales), validar en backend y mostrar aviso en Plan cuando se acerquen al límite.
 - **Portal del cliente**: enlace “Gestionar suscripción” que abra el Customer Portal de Stripe (cambiar plan, ver facturas, actualizar tarjeta).
 
@@ -72,13 +72,13 @@ Hoy están traducidos: menú, login y dashboard. El resto de pantallas tiene tex
 
 ## 6. Calidad, seguridad y despliegue
 
-| Propuesta | Descripción | Esfuerzo |
-|-----------|-------------|----------|
-| **Tests** | Tests unitarios (servicios del backend, utilidades del frontend) y un flujo e2e básico (login → dashboard o una venta). | Medio–alto |
-| **Variables de entorno documentadas** | `.env.example` en backend y frontend con todas las variables necesarias (sin valores sensibles), como en el checklist de MEJORAS-FUTURAS. | Bajo |
-| **Rate limiting** | En Express: limitar requests por IP o por usuario (ej. 100 req/15 min) para evitar abusos. | Bajo |
-| **Logs de auditoría** | Tabla “quién hizo qué y cuándo” (alta de usuario, cambio de rol, eliminación de producto, etc.) para empresas que lo pidan. | Medio |
-| **Checklist pre-deploy** | Ir tildando en MEJORAS-FUTURAS el checklist “antes de subir” (repo, CORS, `VITE_API_URL`, etc.) cuando lo vayan cumpliendo. | Bajo |
+| Propuesta | Descripción | Esfuerzo | Estado |
+|-----------|-------------|----------|--------|
+| **Tests** | Tests unitarios (servicios del backend, utilidades del frontend) y un flujo e2e básico (login → dashboard o una venta). | Medio–alto | ✅ Hecho — backend 64/64, frontend 33/33 (2026-07-11) |
+| **Variables de entorno documentadas** | `.env.example` en backend y frontend con todas las variables necesarias (sin valores sensibles), como en el checklist de MEJORAS-FUTURAS. | Bajo | ✅ Hecho |
+| **Rate limiting** | En Express: limitar requests por IP o por usuario (ej. 100 req/15 min) para evitar abusos. | Bajo | ✅ Hecho |
+| **Logs de auditoría** | Tabla “quién hizo qué y cuándo” (alta de usuario, cambio de rol, eliminación de producto, etc.) para empresas que lo pidan. | Medio | ✅ Hecho (`audit.router.ts`) |
+| **Checklist pre-deploy** | Ir tildando en MEJORAS-FUTURAS el checklist “antes de subir” (repo, CORS, `VITE_API_URL`, etc.) cuando lo vayan cumpliendo. | Bajo | En progreso — ver [MEJORAS-FUTURAS.md](./MEJORAS-FUTURAS.md#checklist-antes-de-subir) |
 
 ---
 

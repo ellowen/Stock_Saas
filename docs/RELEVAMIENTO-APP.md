@@ -15,13 +15,23 @@ Documento de referencia para verificar que la app funcione correctamente. Incluy
 | `/reset-password` | ResetPasswordPage | No | Nueva contraseña con token |
 | `/app` | (redirect) | Sí | Redirige a `/app/dashboard` |
 | `/app/dashboard` | DashboardPage | Sí | Resumen, alertas stock bajo |
-| `/app/inventory` | InventoryPage | Sí | Productos, stock por sucursal, historial, filtros |
+| `/app/inventory` | InventoryPage | Sí | Productos, stock por sucursal, historial, filtros, reposición |
 | `/app/sales` | SalesPage | Sí | POS + historial de ventas |
 | `/app/transfers` | TransfersPage | Sí | Traspasos entre sucursales |
 | `/app/branches` | BranchesPage | Sí | CRUD sucursales |
 | `/app/users` | UsersPage | Sí | CRUD usuarios y roles |
 | `/app/reports` | ReportsPage | Sí | Reportes por período, gráficos |
-| `/app/plan` | PlanPage | Sí | Plan actual, export, planes disponibles |
+| `/app/plan` | PlanPage | Sí | Plan actual, export, planes disponibles, billing (Stripe/MercadoPago) |
+| `/app/settings` | SettingsPage | Sí | Idioma, tema, notificaciones push |
+| `/app/customers` | CustomersPage | Sí | CRUD clientes |
+| `/app/suppliers` | SuppliersPage | Sí | CRUD proveedores |
+| `/app/documents` | DocumentsPage | Sí | Documentos imprimibles (facturas/remitos) |
+| `/app/purchases` | PurchaseOrdersPage | Sí | Órdenes de compra |
+| `/app/accounts` | AccountsPage | Sí | Cuentas por cobrar |
+| `/app/employees` | EmployeesPage | Sí | ABM empleados (Fase 5) |
+| `/app/payroll` | PayrollPage | Sí | Liquidación de sueldos (Fase 5) |
+| `/app/accounting` | AccountingPage | Sí | Plan de cuentas FACPCE, libro diario, libro IVA, reportes contables (Fase 5) |
+| `/app/audit` | AuditPage | Sí | Logs de auditoría |
 | `*` | — | — | Redirige a `/` |
 
 ---
@@ -69,6 +79,25 @@ Documento de referencia para verificar que la app funcione correctamente. Incluy
 | GET | `/analytics/products-without-movement` | Productos sin movimiento |
 | GET | `/analytics/top-products` | Top productos |
 | GET | `/analytics/sales-by-day` | Ventas por día |
+| GET/POST/PUT/DELETE | `/customers` | CRUD clientes |
+| GET/POST/PUT/DELETE | `/suppliers` | CRUD proveedores |
+| GET/POST | `/documents` | Documentos imprimibles |
+| GET/POST/PUT/DELETE | `/purchase-orders` | Órdenes de compra |
+| GET/POST | `/accounts-receivable` | Cuentas por cobrar |
+| GET/POST/PATCH | `/stock-counts` | Conteos de stock |
+| GET/POST | `/batches` | Lotes de inventario |
+| GET/POST | `/attributes` | Atributos de producto (talle/color) |
+| GET/POST | `/tax-configs` | Configuración de impuestos |
+| GET | `/permissions` | Permisos por rol |
+| GET | `/audit-logs` | Logs de auditoría |
+| GET/POST | `/billing` | Suscripción (Stripe/MercadoPago), límites por plan |
+| GET/POST/DELETE | `/push` | Web Push: vapid-public-key, subscribe, unsubscribe |
+| GET/POST/PUT/DELETE | `/employees` | ABM empleados (Fase 5) |
+| GET/POST/PATCH/DELETE | `/payrolls` | Liquidación de sueldos, anticipos (Fase 5) |
+| GET/POST/PUT | `/accounts-chart` | Plan de cuentas FACPCE (Fase 5) |
+| GET/POST | `/journal` | Libro diario: asientos manuales/automáticos, confirmar, anular (Fase 5) |
+| GET | `/iva-book` | Libro IVA ventas/compras/balance (Fase 5) |
+| GET | `/accounting-reports` | Balance de sumas y saldos, libro mayor, estado de resultados (Fase 5) |
 
 ---
 
@@ -86,6 +115,9 @@ Documento de referencia para verificar que la app funcione correctamente. Incluy
 - **Olvidé contraseña**: email → link reset → nueva contraseña.
 - **Modo oscuro**: toggle en páginas públicas y persistencia al cargar.
 - **i18n**: cambio de idioma (es/en) en pantallas traducidas.
+- **Empleados (Fase 5)**: alta con sueldo bruto y fecha de ingreso, baja. ✅ Verificado 2026-07-11.
+- **Payroll (Fase 5)**: "Calcular todos" genera borradores del período, confirmar, marcar pagado (dispara asiento automático si `accountingEnabled`). ✅ Verificado 2026-07-11.
+- **Contabilidad (Fase 5)**: generar plan de cuentas FACPCE, asiento manual, confirmar asiento, balance de sumas y saldos. ✅ Verificado 2026-07-11. Libro IVA y libro mayor/estado de resultados: pendiente de probar con datos reales.
 
 ---
 
@@ -105,6 +137,10 @@ Documento de referencia para verificar que la app funcione correctamente. Incluy
 - [ ] Rutas protegidas redirigen a login sin token; con token cargan bien.
 - [ ] Rate limiting: muchas peticiones seguidas reciben 429.
 - [ ] Modo oscuro y i18n según implementación.
+- [x] Empleados: alta y baja. (2026-07-11)
+- [x] Payroll: calcular todos, confirmar, marcar pagado. (2026-07-11)
+- [x] Contabilidad: plan de cuentas, asiento manual, confirmar, balance de sumas y saldos. (2026-07-11)
+- [ ] Contabilidad: libro IVA, libro mayor, estado de resultados, auto-journal automático (ventas/compras/sueldos con `accountingEnabled`).
 
 ---
 
@@ -156,4 +192,4 @@ El frontend en desarrollo está configurado para:
 - **Backend**: ver `backend/.env.example` (DB, JWT, nodemailer, etc.).
 - **Frontend**: ver `frontend/.env.example` (ej. `VITE_API_URL` para producción).
 
-Actualizado: relevamiento, tests iniciales y acceso LAN + HTTPS.
+Actualizado 2026-07-11: rutas y endpoints de Fase 5 (empleados, payroll, contabilidad) y de los módulos de clientes/proveedores/documentos/compras/facturación agregados a las tablas; antes solo cubrían el MVP inicial.

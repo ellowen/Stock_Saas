@@ -1,10 +1,10 @@
-# Clothing Stock SaaS
+# GIRO — Clothing Stock SaaS
 
-SaaS de gestión de stock para tiendas de ropa. Multi-tenant (por empresa), con productos, variantes (talle/color), inventario por sucursal, punto de venta, traspasos y analytics.
+SaaS de gestión de stock para tiendas de ropa. Multi-tenant (por empresa), con productos, variantes (talle/color), inventario por sucursal, punto de venta, traspasos, empleados/sueldos, contabilidad argentina y analytics.
 
 ## Requisitos
 
-- **Node.js** 18+ (recomendado 20+ para el frontend)
+- **Node.js** 20.19+ o 22.12+ (requerido por Vite 8 en el frontend)
 - **MySQL** con base de datos creada
 - Cuenta con `root` o usuario con permisos
 
@@ -37,7 +37,7 @@ npm run dev
 
 - API: **http://localhost:4000**
 - Health: http://localhost:4000/health
-- Usuario de prueba (después del seed): `owner@example.com` / `password123`
+- Usuario de prueba (después del seed): usuario `owner`, contraseña `password123` (login por username, no por email)
 
 ### 2. Frontend (React)
 
@@ -49,21 +49,20 @@ npm install
 npm run dev
 ```
 
-- App: **http://localhost:5173**
-- Login con `owner@example.com` / `password123`
+- App: **https://localhost:5173** (certificado autofirmado — el navegador va a pedir aceptar la excepción de seguridad)
+- Login con usuario `owner` / `password123`
 
-Si el frontend no arranca por versión de Node (Vite 7 requiere Node 20+), usar Node 18 con:
+Si necesitás correr el dev server sin HTTPS (por ejemplo para probarlo con una herramienta que no acepta certificados autofirmados), usá:
 
 ```bash
 cd frontend
-npm install vite@5.4.10 @vitejs/plugin-react@4.3.4
-npm run dev
+NO_SSL=1 npm run dev
 ```
 
 ## Estructura
 
-- **backend**: Express + TypeScript + Prisma + MySQL. Auth JWT, multi-tenant por `companyId`, rutas de productos, inventario, ventas, traspasos, analytics y sucursales.
-- **frontend**: React (Vite) + TypeScript + Tailwind. Login, dashboard, inventario (productos + stock), punto de venta (POS), traspasos.
+- **backend**: Express + TypeScript + Prisma + MySQL. Auth JWT, multi-tenant por `companyId`, rutas de productos, inventario, ventas, traspasos, analytics, sucursales, empleados/sueldos y contabilidad.
+- **frontend**: React (Vite) + TypeScript + Tailwind. Login, dashboard, inventario (productos + stock), punto de venta (POS), traspasos, empleados, liquidación de sueldos, plan de cuentas/libro diario/libro IVA.
 
 ## Postman
 
