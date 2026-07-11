@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { API_BASE_URL, authFetch, authHeaders } from "../../../lib/api";
 
-type Customer = { id: number; name: string; taxId: string | null; phone: string | null };
+export type Customer = { id: number; name: string; taxId: string | null; phone: string | null; email: string | null };
 
 type Props = {
   selectedCustomer: Customer | null;

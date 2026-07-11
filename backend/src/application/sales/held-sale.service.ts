@@ -13,7 +13,7 @@ export class HeldSaleService {
     return prisma.heldSale.findMany({
       where: { companyId, ...(branchId ? { branchId } : {}) },
       include: {
-        customer: { select: { id: true, name: true, taxId: true, phone: true } },
+        customer: { select: { id: true, name: true, taxId: true, phone: true, email: true } },
         user: { select: { id: true, fullName: true, username: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -43,7 +43,7 @@ export class HeldSaleService {
       const held = await tx.heldSale.findFirst({
         where: { id, companyId },
         include: {
-          customer: { select: { id: true, name: true, taxId: true, phone: true } },
+          customer: { select: { id: true, name: true, taxId: true, phone: true, email: true } },
         },
       });
       if (!held) throw new Error("HELD_SALE_NOT_FOUND");

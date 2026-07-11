@@ -2,10 +2,14 @@ import { Request, Response } from "express";
 import { PaymentMethod } from "@prisma/client";
 import { z } from "zod";
 import { SalesService } from "../../../application/sales/sales.service";
+import { sendReceiptEmail } from "../../../application/sales/receipt.service";
 import { auditService } from "../../../application/audit/audit.service";
 import { PermissionService } from "../../../application/permissions/permission.service";
+import { prisma } from "../../../config/database/prisma";
 
 const permissionService = new PermissionService();
+
+const sendReceiptSchema = z.object({ email: z.string().email() });
 
 const saleItemSchema = z.object({
   productVariantId: z.number().int().positive(),
@@ -118,6 +122,29 @@ export const createSaleController = async (req: Request, res: Response) => {
     // eslint-disable-next-line no-console
     console.error(error);
     return res.status(500).json({ message: "Unexpected error" });
+  }
+};
+
+export const sendReceiptController = async (req: Request, res: Response) => {
+  if (!req.auth) return res.status(401).json({ message: "Unauthorized" });
+  const id = parseInt(req.params["id"] as string);
+  if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
+
+  const parseResult = sendReceiptSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ message: "Invalid request body", errors: parseResult.error.flatten() });
+  }
+
+  try {
+    const sale = await service.getById(id, req.auth.companyId);
+    if (!sale) return res.status(404).json({ message: "Venta no encontrada" });
+    const company = await prisma.company.findUnique({ where: { id: req.auth.companyId }, select: { name: true } });
+    await sendReceiptEmail(sale, company?.name ?? "GIRO", parseResult.data.email);
+    return res.json({ message: "Recibo enviado" });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error(error);
+    return res.status(500).json({ message: "Error al enviar el recibo" });
   }
 };
 

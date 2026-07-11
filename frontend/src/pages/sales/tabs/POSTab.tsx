@@ -9,7 +9,7 @@ import { ProductSearch } from "../components/ProductSearch";
 import { CartItem } from "../components/CartItem";
 import { PaymentPanel } from "../components/PaymentPanel";
 import { ReceiptView } from "../components/ReceiptView";
-import { CustomerSearchInput } from "../components/CustomerSearchInput";
+import { CustomerSearchInput, type Customer } from "../components/CustomerSearchInput";
 import { HeldSalesPanel } from "../components/HeldSalesPanel";
 import { DocumentPreviewModal } from "../../../components/documents/DocumentPreviewModal";
 import type { DocumentData, CompanyInfo } from "../../../components/documents/DocumentTemplate";
@@ -35,7 +35,8 @@ type Props = {
   inventory: InventoryRow[];
   submitting: boolean;
   inventoryError: string | null;
-  onCreateSale: (params: CreateSaleParams) => Promise<void>;
+  onCreateSale: (params: CreateSaleParams) => Promise<{ id: number }>;
+  onSendReceiptEmail: (saleId: number, email: string) => Promise<void>;
 };
 
 export function POSTab({
@@ -46,6 +47,7 @@ export function POSTab({
   submitting,
   inventoryError,
   onCreateSale,
+  onSendReceiptEmail,
 }: Props) {
   const { t } = useTranslation();
   const { company, hasPermission } = useAuth();
@@ -56,7 +58,7 @@ export function POSTab({
   const { heldSales, loading: heldSalesLoading, loadHeldSales, holdSale, resumeSale, discardSale } = useHeldSales();
   const [globalDiscount, setGlobalDiscount] = useState("");
 
-  const [selectedCustomer, setSelectedCustomer] = useState<{ id: number; name: string; taxId: string | null; phone: string | null } | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   const [searchInput, setSearchInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -75,6 +77,8 @@ export function POSTab({
   const [lastSaleReceipt, setLastSaleReceipt] = useState<ReceiptPrintData | null>(null);
   const [docPreview, setDocPreview] = useState<{ data: DocumentData; company: CompanyInfo } | null>(null);
   const [lastSaleItems, setLastSaleItems] = useState<Array<{ variantId?: number; description: string; quantity: number; unitPrice: number }>>([]);
+  const [lastSaleId, setLastSaleId] = useState<number | null>(null);
+  const [lastSaleCustomer, setLastSaleCustomer] = useState<{ email: string | null; phone: string | null } | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const cobrarButtonRef = useRef<HTMLButtonElement>(null);
@@ -205,7 +209,7 @@ export function POSTab({
         : 0;
 
     try {
-      await onCreateSale({
+      const createdSale = await onCreateSale({
         branchId: Number(branchId),
         method: paymentMethod,
         cart,
@@ -213,6 +217,10 @@ export function POSTab({
         customerId: selectedCustomer?.id ?? null,
         discountTotal: globalDiscountNum > 0 ? globalDiscountNum : undefined,
       });
+      setLastSaleId(createdSale?.id ?? null);
+      setLastSaleCustomer(
+        selectedCustomer ? { email: selectedCustomer.email, phone: selectedCustomer.phone } : null
+      );
 
       let msg = t("sales.saleSuccess", { total: totalRounded.toFixed(2) });
       if (paymentMethod === "MIXED") {
@@ -291,7 +299,10 @@ export function POSTab({
       setCashReceived("");
       setMixedCashReceived("");
       searchInputRef.current?.focus();
-      setTimeout(() => setSuccess(null), 5000);
+      // El banner de exito (con los botones de imprimir/descargar/whatsapp/email)
+      // queda visible hasta la proxima venta, no se auto-cierra: mandar un
+      // email a mano necesita mas de 5 segundos. Solo el modal de "recibo
+      // rapido" (con el vuelto) se cierra solo.
       setTimeout(() => setReceipt(null), 5000);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("sales.saleError"));
@@ -609,6 +620,10 @@ export function POSTab({
           lastSaleReceipt={lastSaleReceipt}
           successMessage={success}
           onGenerateDocument={handleGenerateDocument}
+          saleId={lastSaleId}
+          customerEmail={lastSaleCustomer?.email ?? null}
+          customerPhone={lastSaleCustomer?.phone ?? null}
+          onSendEmail={onSendReceiptEmail}
         />
       </div>
 

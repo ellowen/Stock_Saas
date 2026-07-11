@@ -162,6 +162,18 @@ export function downloadReceiptHtml(data: ReceiptPrintData) {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * wa.me con un resumen de la venta. Sin telefono abre el selector de
+ * contacto de WhatsApp; con telefono lo pre-completa (solo dígitos, con
+ * codigo de pais si el numero lo incluye).
+ */
+export function buildWhatsAppReceiptLink(data: ReceiptPrintData, phone: string | null): string {
+  const itemsText = data.items.map((i) => `${i.qty}x ${i.name} - $${i.subtotal.toFixed(2)}`).join("\n");
+  const text = `${data.companyName}\n${data.branchName} · ${data.date}\n\n${itemsText}\n\nTotal: $${data.total.toFixed(2)} (${data.paymentLabel})`;
+  const digits = phone ? phone.replace(/\D/g, "") : "";
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+}
+
 export function playSuccessSound() {
   try {
     const ctx = new (window.AudioContext ||

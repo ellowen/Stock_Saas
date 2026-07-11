@@ -18,6 +18,7 @@ export function SalesPage() {
     loadBranches,
     loadInventory,
     createSale,
+    sendReceiptEmail,
     cancelSale,
     returnSaleItems,
     historySales,
@@ -137,6 +138,7 @@ export function SalesPage() {
           submitting={submitting}
           inventoryError={inventoryError}
           onCreateSale={createSale}
+          onSendReceiptEmail={sendReceiptEmail}
         />
       )}
     </div>

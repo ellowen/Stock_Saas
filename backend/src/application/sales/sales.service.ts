@@ -210,6 +210,21 @@ export class SalesService {
     });
   }
 
+  async getById(id: number, companyId: number) {
+    return prisma.sale.findFirst({
+      where: { id, companyId },
+      include: {
+        items: {
+          include: {
+            variant: { include: { product: true } },
+          },
+        },
+        branch: true,
+        customer: { select: { id: true, name: true, email: true } },
+      },
+    });
+  }
+
   async listSales(
     companyId: number,
     opts?: { branchId?: number; from?: string; to?: string },

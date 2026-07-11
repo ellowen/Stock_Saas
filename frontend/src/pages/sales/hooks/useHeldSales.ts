@@ -10,7 +10,7 @@ export type HeldSale = {
   cart: CartEntry[];
   discountTotal: string | number;
   createdAt: string;
-  customer?: { id: number; name: string; taxId: string | null; phone: string | null } | null;
+  customer?: { id: number; name: string; taxId: string | null; phone: string | null; email: string | null } | null;
   user?: { id: number; fullName: string; username: string };
 };
 

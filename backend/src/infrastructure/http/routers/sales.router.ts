@@ -3,6 +3,7 @@ import { authMiddleware } from "../middleware/auth";
 import {
   createSaleController,
   listSalesController,
+  sendReceiptController,
 } from "../../../presentation/http/controllers/sales.controller";
 import {
   cancelSaleController,
@@ -18,6 +19,7 @@ router.get("/", listSalesController);
 router.post("/", checkSaleLimit, createSaleController);
 router.post("/:id/cancel", cancelSaleController);
 router.post("/:id/return", returnSaleItemsController);
+router.post("/:id/send-receipt", sendReceiptController);
 
 export const salesRouter = router;
 

@@ -18,7 +18,8 @@ export type UseSalesReturn = {
   inventory: InventoryRow[];
   loadBranches: () => Promise<void>;
   loadInventory: (branchId: number) => Promise<void>;
-  createSale: (params: CreateSaleParams) => Promise<void>;
+  createSale: (params: CreateSaleParams) => Promise<{ id: number }>;
+  sendReceiptEmail: (saleId: number, email: string) => Promise<void>;
   cancelSale: (saleId: number) => Promise<void>;
   returnSaleItems: (saleId: number, items: ReturnItemInput[], reason?: string) => Promise<void>;
   historySales: SaleListItem[];
@@ -97,9 +98,20 @@ export function useSales(): UseSalesReturn {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error((data as { message?: string }).message || "Error al registrar venta");
+      return data as { id: number };
     } finally {
       setSubmitting(false);
     }
+  }, []);
+
+  const sendReceiptEmail = useCallback(async (saleId: number, email: string) => {
+    const res = await authFetch(`${API_BASE_URL}/sales/${saleId}/send-receipt`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((data as { message?: string }).message || "Error al enviar el recibo");
   }, []);
 
   const loadHistory = useCallback(async (filters: { branchId?: string; from?: string; to?: string }) => {
@@ -146,6 +158,7 @@ export function useSales(): UseSalesReturn {
     loadBranches,
     loadInventory,
     createSale,
+    sendReceiptEmail,
     cancelSale,
     returnSaleItems,
     historySales,

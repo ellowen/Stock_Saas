@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatCurrency } from "../../../lib/format";
-import { openReceiptPrint, downloadReceiptHtml } from "../types";
+import { openReceiptPrint, downloadReceiptHtml, buildWhatsAppReceiptLink } from "../types";
 import type { ReceiptPrintData } from "../types";
 
 type Props = {
@@ -8,10 +9,87 @@ type Props = {
   lastSaleReceipt: ReceiptPrintData | null;
   successMessage: string | null;
   onGenerateDocument?: (type: "REMITO" | "INVOICE") => void;
+  saleId?: number | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  onSendEmail?: (saleId: number, email: string) => Promise<void>;
 };
 
-export function ReceiptView({ receipt, lastSaleReceipt, successMessage, onGenerateDocument }: Props) {
+/** Boton "Email" que despliega un input inline para confirmar/editar la direccion antes de mandar. */
+function EmailReceiptControl({
+  saleId,
+  defaultEmail,
+  onSendEmail,
+  labelClassName,
+}: {
+  saleId: number;
+  defaultEmail: string | null;
+  onSendEmail: (saleId: number, email: string) => Promise<void>;
+  labelClassName: string;
+}) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState(defaultEmail ?? "");
+  const [sending, setSending] = useState(false);
+  const [status, setStatus] = useState<"idle" | "sent" | "error">("idle");
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className={labelClassName}>
+        {t("sales.emailReceipt")}
+      </button>
+    );
+  }
+
+  const handleSend = async () => {
+    if (!email.trim()) return;
+    setSending(true);
+    setStatus("idle");
+    try {
+      await onSendEmail(saleId, email.trim());
+      setStatus("sent");
+    } catch {
+      setStatus("error");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder={t("sales.emailPlaceholder")}
+        className="text-xs px-2 py-1 rounded border border-slate-300 dark:border-slate-500 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 w-40"
+      />
+      <button
+        type="button"
+        onClick={handleSend}
+        disabled={sending || !email.trim()}
+        className="text-xs font-medium px-2 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+      >
+        {sending ? "..." : t("sales.emailSend")}
+      </button>
+      {status === "sent" && <span className="text-xs text-emerald-600 dark:text-emerald-400">{t("sales.emailSent")}</span>}
+      {status === "error" && <span className="text-xs text-red-600 dark:text-red-400">{t("sales.emailError")}</span>}
+    </div>
+  );
+}
+
+export function ReceiptView({
+  receipt,
+  lastSaleReceipt,
+  successMessage,
+  onGenerateDocument,
+  saleId,
+  customerEmail,
+  customerPhone,
+  onSendEmail,
+}: Props) {
+  const { t } = useTranslation();
+  const whatsAppLink = lastSaleReceipt ? buildWhatsAppReceiptLink(lastSaleReceipt, customerPhone ?? null) : null;
 
   return (
     <>
@@ -20,7 +98,7 @@ export function ReceiptView({ receipt, lastSaleReceipt, successMessage, onGenera
         <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-5 py-4 text-base text-emerald-800 dark:text-emerald-200 space-y-3">
           <p>{successMessage}</p>
           {lastSaleReceipt && (
-            <div className="flex flex-wrap gap-2 pt-1">
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => openReceiptPrint(lastSaleReceipt)}
@@ -36,6 +114,30 @@ export function ReceiptView({ receipt, lastSaleReceipt, successMessage, onGenera
               >
                 {t("sales.downloadReceipt")}
               </button>
+              {whatsAppLink && (
+                <>
+                  <span className="text-emerald-400 dark:text-emerald-500">·</span>
+                  <a
+                    href={whatsAppLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-emerald-700 dark:text-emerald-300 hover:underline inline-flex items-center gap-1.5"
+                  >
+                    {t("sales.whatsAppReceipt")}
+                  </a>
+                </>
+              )}
+              {saleId != null && onSendEmail && (
+                <>
+                  <span className="text-emerald-400 dark:text-emerald-500">·</span>
+                  <EmailReceiptControl
+                    saleId={saleId}
+                    defaultEmail={customerEmail ?? null}
+                    onSendEmail={onSendEmail}
+                    labelClassName="text-sm font-medium text-emerald-700 dark:text-emerald-300 hover:underline"
+                  />
+                </>
+              )}
             </div>
           )}
         </div>
@@ -100,7 +202,7 @@ export function ReceiptView({ receipt, lastSaleReceipt, successMessage, onGenera
               </div>
             )}
             {lastSaleReceipt && (
-              <div className="flex flex-wrap justify-center gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
+              <div className="flex flex-wrap items-center justify-center gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
                 <button
                   type="button"
                   onClick={() => openReceiptPrint(lastSaleReceipt)}
@@ -115,6 +217,16 @@ export function ReceiptView({ receipt, lastSaleReceipt, successMessage, onGenera
                 >
                   {t("sales.downloadReceiptShort")}
                 </button>
+                {whatsAppLink && (
+                  <a
+                    href={whatsAppLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    {t("sales.whatsAppReceiptShort")}
+                  </a>
+                )}
               </div>
             )}
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-4">{t("sales.receiptAutoClose")}</p>
