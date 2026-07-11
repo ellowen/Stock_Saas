@@ -3,6 +3,9 @@ import { PaymentMethod } from "@prisma/client";
 import { z } from "zod";
 import { SalesService } from "../../../application/sales/sales.service";
 import { auditService } from "../../../application/audit/audit.service";
+import { PermissionService } from "../../../application/permissions/permission.service";
+
+const permissionService = new PermissionService();
 
 const saleItemSchema = z.object({
   productVariantId: z.number().int().positive(),
@@ -43,6 +46,19 @@ export const createSaleController = async (req: Request, res: Response) => {
   }
 
   const { branchId, ...rest } = parseResult.data;
+
+  const hasDiscount =
+    (rest.discountTotal ?? 0) > 0 || rest.items.some((i) => (i.discount ?? 0) > 0);
+  if (hasDiscount) {
+    const allowed = await permissionService.hasPermission(
+      req.auth.userId,
+      req.auth.role as any,
+      "SALES_DISCOUNT"
+    );
+    if (!allowed) {
+      return res.status(403).json({ message: "Forbidden: se requiere permiso SALES_DISCOUNT" });
+    }
+  }
 
   const effectiveBranchId =
     branchId ?? req.auth.branchId ?? null;

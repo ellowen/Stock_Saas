@@ -6,7 +6,7 @@ import { PermissionKey, UserRole } from "@prisma/client";
 export const ROLE_DEFAULTS: Record<UserRole, PermissionKey[]> = {
   OWNER: [
     "PRODUCTS_WRITE", "PRODUCTS_DELETE", "INVENTORY_WRITE",
-    "SALES_VOID", "SALES_HISTORY", "TRANSFERS_APPROVE",
+    "SALES_VOID", "SALES_HISTORY", "SALES_DISCOUNT", "SALES_PRICE_OVERRIDE", "TRANSFERS_APPROVE",
     "EMPLOYEES_VIEW", "EMPLOYEES_WRITE",
     "ACCOUNTING_VIEW", "ACCOUNTING_WRITE",
     "REPORTS_VIEW", "USERS_MANAGE", "SETTINGS_MANAGE", "AUDIT_VIEW",
@@ -14,7 +14,7 @@ export const ROLE_DEFAULTS: Record<UserRole, PermissionKey[]> = {
   ],
   MANAGER: [
     "PRODUCTS_WRITE", "PRODUCTS_DELETE", "INVENTORY_WRITE",
-    "SALES_VOID", "SALES_HISTORY", "TRANSFERS_APPROVE",
+    "SALES_VOID", "SALES_HISTORY", "SALES_DISCOUNT", "SALES_PRICE_OVERRIDE", "TRANSFERS_APPROVE",
     "EMPLOYEES_VIEW",
     "ACCOUNTING_VIEW",
     "REPORTS_VIEW",
@@ -30,7 +30,7 @@ export const ROLE_DEFAULTS: Record<UserRole, PermissionKey[]> = {
 // All permission keys for UI display
 export const ALL_PERMISSIONS: PermissionKey[] = [
   "PRODUCTS_WRITE", "PRODUCTS_DELETE", "INVENTORY_WRITE",
-  "SALES_VOID", "SALES_HISTORY", "TRANSFERS_APPROVE",
+  "SALES_VOID", "SALES_HISTORY", "SALES_DISCOUNT", "SALES_PRICE_OVERRIDE", "TRANSFERS_APPROVE",
   "EMPLOYEES_VIEW", "EMPLOYEES_WRITE",
   "ACCOUNTING_VIEW", "ACCOUNTING_WRITE",
   "REPORTS_VIEW", "USERS_MANAGE", "SETTINGS_MANAGE", "AUDIT_VIEW",
@@ -43,6 +43,8 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   INVENTORY_WRITE: "Ajustar cantidades de stock",
   SALES_VOID: "Anular ventas",
   SALES_HISTORY: "Ver historial de ventas (todos)",
+  SALES_DISCOUNT: "Aplicar descuentos en el POS",
+  SALES_PRICE_OVERRIDE: "Modificar el precio en el POS",
   TRANSFERS_APPROVE: "Aprobar transferencias de stock",
   EMPLOYEES_VIEW: "Ver empleados y sueldos",
   EMPLOYEES_WRITE: "Gestionar empleados y sueldos",
@@ -61,7 +63,7 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
 export const PERMISSION_GROUPS: { label: string; keys: PermissionKey[] }[] = [
   { label: "Productos", keys: ["PRODUCTS_WRITE", "PRODUCTS_DELETE"] },
   { label: "Inventario", keys: ["INVENTORY_WRITE", "TRANSFERS_APPROVE"] },
-  { label: "Ventas", keys: ["SALES_HISTORY", "SALES_VOID"] },
+  { label: "Ventas", keys: ["SALES_HISTORY", "SALES_VOID", "SALES_DISCOUNT", "SALES_PRICE_OVERRIDE"] },
   { label: "Clientes / Documentos", keys: ["CUSTOMERS_WRITE", "DOCUMENTS_WRITE"] },
   { label: "Proveedores / Compras", keys: ["SUPPLIERS_WRITE", "PURCHASES_MANAGE"] },
   { label: "Empleados", keys: ["EMPLOYEES_VIEW", "EMPLOYEES_WRITE"] },

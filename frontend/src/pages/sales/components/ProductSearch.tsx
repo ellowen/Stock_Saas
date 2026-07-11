@@ -119,22 +119,29 @@ export function ProductSearch({
     if (e.key !== "Enter") return;
     e.preventDefault();
 
-    // highlighted item
+    // Exact barcode/SKU match siempre gana, sin importar que este resaltado en
+    // el dropdown de coincidencias difusas. Evita que un escaneo agregue el
+    // producto equivocado cuando el codigo escaneado tambien matchea por
+    // substring el nombre o SKU de otro producto.
+    if (searchTerm) {
+      const exact = variants.find(
+        (v) =>
+          (v.barcode && v.barcode.trim().toLowerCase() === searchTerm) ||
+          v.sku.trim().toLowerCase() === searchTerm
+      );
+      if (exact) {
+        selectVariant(exact.productVariantId);
+        return;
+      }
+    }
+
+    // highlighted item (carril de coincidencia difusa)
     if (suggestionHighlightIndex >= 0 && suggestionHighlightIndex < suggestions.length) {
       selectVariant(suggestions[suggestionHighlightIndex].productVariantId);
       return;
     }
 
     if (!searchTerm) return;
-
-    // exact barcode scan
-    const byBarcode = variants.find(
-      (v) => v.barcode && v.barcode.trim().toLowerCase() === searchTerm
-    );
-    if (byBarcode) {
-      selectVariant(byBarcode.productVariantId);
-      return;
-    }
 
     // single match
     if (suggestions.length === 1) {

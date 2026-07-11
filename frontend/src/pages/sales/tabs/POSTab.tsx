@@ -46,7 +46,8 @@ export function POSTab({
   onCreateSale,
 }: Props) {
   const { t } = useTranslation();
-  const { company } = useAuth();
+  const { company, hasPermission } = useAuth();
+  const canDiscount = hasPermission("SALES_DISCOUNT");
   const { showToast } = useToast();
   const { cart, addToCart, updateCartQty, updateCartDiscount, removeFromCart, clearCart } = useCart();
   const [globalDiscount, setGlobalDiscount] = useState("");
@@ -423,6 +424,7 @@ export function POSTab({
                       price={price}
                       quantity={item.quantity}
                       discount={item.discount ?? 0}
+                      canDiscount={canDiscount}
                       onIncrease={() => updateCartQty(i, 1)}
                       onDecrease={() => updateCartQty(i, -1)}
                       onRemove={() => removeFromCart(i)}
@@ -437,20 +439,22 @@ export function POSTab({
           {cart.length > 0 && (
             <>
               <div className="border-t border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 px-5 py-4 space-y-3">
-                {/* Global discount */}
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-slate-500 dark:text-slate-400 flex-1">{t("sales.discountGlobalLabel")}</span>
-                  <span className="text-sm text-slate-400">$</span>
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={globalDiscount}
-                    placeholder="0"
-                    onChange={(e) => setGlobalDiscount(e.target.value)}
-                    className="w-24 text-sm px-2 py-1 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                  />
-                </div>
+                {/* Global discount — requiere permiso SALES_DISCOUNT */}
+                {canDiscount && (
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-slate-500 dark:text-slate-400 flex-1">{t("sales.discountGlobalLabel")}</span>
+                    <span className="text-sm text-slate-400">$</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={globalDiscount}
+                      placeholder="0"
+                      onChange={(e) => setGlobalDiscount(e.target.value)}
+                      className="w-24 text-sm px-2 py-1 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                    />
+                  </div>
+                )}
                 {globalDiscountNum > 0 && (
                   <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
                     <span>{t("sales.subtotal")}</span>

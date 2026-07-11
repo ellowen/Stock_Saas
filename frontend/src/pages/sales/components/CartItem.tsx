@@ -10,6 +10,7 @@ type Props = {
   price: number;
   quantity: number;
   discount: number;
+  canDiscount: boolean;
   onIncrease: () => void;
   onDecrease: () => void;
   onRemove: () => void;
@@ -23,6 +24,7 @@ export function CartItem({
   price,
   quantity,
   discount,
+  canDiscount,
   onIncrease,
   onDecrease,
   onRemove,
@@ -71,25 +73,33 @@ export function CartItem({
           )}
           {" "}= <span className="font-medium text-slate-700 dark:text-slate-200">${lineTotal.toFixed(2)}</span>
         </p>
-        {/* Discount per item */}
-        <div className="flex items-center gap-1.5 mt-1.5">
-          <span className="text-xs text-slate-400">{t("sales.discount")}:</span>
-          <span className="text-xs text-slate-400">$</span>
-          <input
-            type="number"
-            min={0}
-            max={price}
-            step={0.01}
-            value={discount === 0 ? "" : discount}
-            placeholder="0"
-            onChange={(e) => {
-              const v = parseFloat(e.target.value);
-              onDiscountChange(isNaN(v) || v < 0 ? 0 : Math.min(v, price));
-            }}
-            className="w-20 text-xs px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-          />
-          <span className="text-xs text-slate-400">{t("sales.discountPerUnit")}</span>
-        </div>
+        {/* Descuento por linea — requiere permiso SALES_DISCOUNT */}
+        {canDiscount ? (
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <span className="text-xs text-slate-400">{t("sales.discount")}:</span>
+            <span className="text-xs text-slate-400">$</span>
+            <input
+              type="number"
+              min={0}
+              max={price}
+              step={0.01}
+              value={discount === 0 ? "" : discount}
+              placeholder="0"
+              onChange={(e) => {
+                const v = parseFloat(e.target.value);
+                onDiscountChange(isNaN(v) || v < 0 ? 0 : Math.min(v, price));
+              }}
+              className="w-20 text-xs px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            />
+            <span className="text-xs text-slate-400">{t("sales.discountPerUnit")}</span>
+          </div>
+        ) : (
+          discount > 0 && (
+            <p className="text-xs text-slate-400 mt-1.5">
+              {t("sales.discount")}: ${discount.toFixed(2)} {t("sales.discountPerUnit")}
+            </p>
+          )
+        )}
       </div>
       <div className="flex items-center gap-2 shrink-0 mt-1">
         <Tooltip content={t("sales.cartDecrease")}>
