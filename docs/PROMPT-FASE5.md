@@ -6,17 +6,41 @@
 
 ## Estado de tareas
 
+> Actualizado 2026-07-11: todo lo de abajo ya está implementado (routers +
+> páginas). Esta tabla decía "Pendiente" en todo pero estaba desactualizada;
+> el código llevaba meses hecho sin verificarse. Verificación end-to-end en
+> el browser el 2026-07-11 (ver detalle abajo).
+
 | # | Tarea | Estado |
 |---|-------|--------|
-| 5.1 | ABM de Empleados | ⬜ Pendiente |
-| 5.2 | Liquidación de sueldos (Argentina) | ⬜ Pendiente |
-| 5.3 | Registro de pagos de sueldos y SAC | ⬜ Pendiente |
-| 5.4 | Plan de cuentas contables | ⬜ Pendiente |
-| 5.5 | Asientos contables manuales y automáticos | ⬜ Pendiente |
-| 5.6 | Libro IVA Ventas / Compras | ⬜ Pendiente |
-| 5.7 | Reportes contables (Diario, Mayor, Balance) | ⬜ Pendiente |
+| 5.1 | ABM de Empleados | ✅ Verificado |
+| 5.2 | Liquidación de sueldos (Argentina) | ✅ Verificado |
+| 5.3 | Registro de pagos de sueldos y SAC | ✅ Verificado (pago; SAC no probado en browser) |
+| 5.4 | Plan de cuentas contables | ✅ Verificado |
+| 5.5 | Asientos contables manuales y automáticos | ✅ Manual verificado. Automático (auto-journal) existe en código, gateado por flag `accountingEnabled` de la empresa — no probado en browser |
+| 5.6 | Libro IVA Ventas / Compras | ⬜ Implementado, no probado en browser |
+| 5.7 | Reportes contables (Diario, Mayor, Balance) | ✅ Balance de sumas y saldos verificado. Libro Mayor / Estado de Resultados no probados en browser |
 
 Orden: RRHH primero (5.1–5.3), luego contabilidad (5.4–5.7).
+
+### Verificación 2026-07-11 (ver commit 7d8fca2)
+
+Flujo probado en el browser: crear empleado → "Calcular todos" liquida
+sueldos → confirmar liquidación → marcar pagada → generar plan de cuentas
+FACPCE → crear asiento manual → confirmar asiento → balance de sumas y
+saldos refleja el asiento. Todo funcionó de punta a punta.
+
+Se encontraron y arreglaron 2 bugs reales en el camino:
+- `GET /payrolls/advances` devolvía 400 siempre por orden de rutas en Express
+  (`/:id` interceptaba antes de llegar a `/advances`).
+- Las fechas sin hora (hireDate, fecha de asiento) se mostraban un día antes
+  en toda la app por un bug de timezone en `formatDate`/`formatDateMedium`/
+  `formatMonth` (UTC medianoche renderizado en huso local UTC-3).
+
+Pendiente de una próxima sesión: probar Libro IVA (ventas/compras/balance)
+y Libro Mayor / Estado de Resultados con datos reales, y validar el
+auto-journal automático (ventas, compras, sueldos) con `accountingEnabled`
+prendido.
 
 ---
 
