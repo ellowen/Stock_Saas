@@ -9,6 +9,7 @@ export type UseCartReturn = {
   updateCartPriceOverride: (index: number, price: number | null) => void;
   removeFromCart: (index: number) => void;
   clearCart: () => void;
+  restoreCart: (entries: CartEntry[]) => void;
 };
 
 export function useCart(): UseCartReturn {
@@ -61,5 +62,10 @@ export function useCart(): UseCartReturn {
     setCart([]);
   }, []);
 
-  return { cart, addToCart, updateCartQty, updateCartDiscount, updateCartPriceOverride, removeFromCart, clearCart };
+  /** Reemplaza el carrito entero — usado al retomar una venta en espera. */
+  const restoreCart = useCallback((entries: CartEntry[]) => {
+    setCart(entries);
+  }, []);
+
+  return { cart, addToCart, updateCartQty, updateCartDiscount, updateCartPriceOverride, removeFromCart, clearCart, restoreCart };
 }

@@ -14,32 +14,32 @@ datasource db {
 }
 
 model Company {
-  id                 Int         @id @default(autoincrement())
-  name               String
-  legalName          String?     @map("legal_name")
-  taxId              String?     @map("tax_id")
-  address            String?
-  city               String?
-  phone              String?
-  email              String?
-  logoUrl            String?     @map("logo_url")
-  currency           String?     @default("ARS")
-  industryType       String?     @default("GENERIC") @map("industry_type")
-  lowStockAlerts     Boolean     @default(false) @map("low_stock_alerts")
-  salesReportFreq    String?     @default("NONE") @map("sales_report_freq")
-  artRate            Float       @default(0.025) @map("art_rate")       // ART patronal (configurable)
-  unionRate          Float       @default(0.02)  @map("union_rate")     // Cuota sindical empleado
-  accountingEnabled  Boolean     @default(false) @map("accounting_enabled") // activa asientos automaticos
-  plan               CompanyPlan @default(FREE)
-  isActive           Boolean     @default(true) @map("is_active")
-  trialEndsAt        DateTime?   @map("trial_ends_at")
-  subscriptionStatus String?     @map("subscription_status")
-  stripeCustomerId      String?     @map("stripe_customer_id")
-  stripeSubscriptionId  String?     @map("stripe_subscription_id")
-  mpSubscriptionId      String?     @map("mp_subscription_id")
-  currentPeriodEnd      DateTime?   @map("current_period_end")
-  createdAt             DateTime    @default(now()) @map("created_at")
-  updatedAt          DateTime    @updatedAt @map("updated_at")
+  id                   Int         @id @default(autoincrement())
+  name                 String
+  legalName            String?     @map("legal_name")
+  taxId                String?     @map("tax_id")
+  address              String?
+  city                 String?
+  phone                String?
+  email                String?
+  logoUrl              String?     @map("logo_url")
+  currency             String?     @default("ARS")
+  industryType         String?     @default("GENERIC") @map("industry_type")
+  lowStockAlerts       Boolean     @default(false) @map("low_stock_alerts")
+  salesReportFreq      String?     @default("NONE") @map("sales_report_freq")
+  artRate              Float       @default(0.025) @map("art_rate") // ART patronal (configurable)
+  unionRate            Float       @default(0.02) @map("union_rate") // Cuota sindical empleado
+  accountingEnabled    Boolean     @default(false) @map("accounting_enabled") // activa asientos automaticos
+  plan                 CompanyPlan @default(FREE)
+  isActive             Boolean     @default(true) @map("is_active")
+  trialEndsAt          DateTime?   @map("trial_ends_at")
+  subscriptionStatus   String?     @map("subscription_status")
+  stripeCustomerId     String?     @map("stripe_customer_id")
+  stripeSubscriptionId String?     @map("stripe_subscription_id")
+  mpSubscriptionId     String?     @map("mp_subscription_id")
+  currentPeriodEnd     DateTime?   @map("current_period_end")
+  createdAt            DateTime    @default(now()) @map("created_at")
+  updatedAt            DateTime    @updatedAt @map("updated_at")
 
   branches           Branch[]
   users              User[]
@@ -59,14 +59,15 @@ model Company {
   taxConfigs         TaxConfig[]
   stockCounts        StockCount[]
   batches            Batch[]
-  saleReturns          SaleReturn[]
-  accountsReceivable   AccountReceivable[]
-  employees            Employee[]
-  payrolls             Payroll[]
-  payrollAdvances      PayrollAdvance[]
-  accounts             Account[]
-  journalEntries       JournalEntry[]
-  pushSubscriptions    PushSubscription[]
+  saleReturns        SaleReturn[]
+  accountsReceivable AccountReceivable[]
+  employees          Employee[]
+  payrolls           Payroll[]
+  payrollAdvances    PayrollAdvance[]
+  accounts           Account[]
+  journalEntries     JournalEntry[]
+  pushSubscriptions  PushSubscription[]
+  heldSales          HeldSale[]
 
   @@map("companies")
 }
@@ -92,18 +93,19 @@ model Branch {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  company        Company             @relation(fields: [companyId], references: [id])
-  inventory      Inventory[]
+  company            Company             @relation(fields: [companyId], references: [id])
+  inventory          Inventory[]
   inventoryMovements InventoryMovement[]
-  sales          Sale[]
-  stockFrom      StockTransfer[] @relation("StockTransferFrom")
-  stockTo        StockTransfer[] @relation("StockTransferTo")
-  User           User[]
-  documents      Document[]
-  purchaseOrders PurchaseOrder[]
-  stockCounts    StockCount[]
-  batches        Batch[]
-  employees      Employee[]
+  sales              Sale[]
+  stockFrom          StockTransfer[]     @relation("StockTransferFrom")
+  stockTo            StockTransfer[]     @relation("StockTransferTo")
+  User               User[]
+  documents          Document[]
+  purchaseOrders     PurchaseOrder[]
+  stockCounts        StockCount[]
+  batches            Batch[]
+  employees          Employee[]
+  heldSales          HeldSale[]
 
   @@unique([companyId, code])
   @@map("branches")
@@ -123,13 +125,13 @@ model User {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 
-  company  Company  @relation(fields: [companyId], references: [id])
-  branch   Branch?  @relation(fields: [branchId], references: [id])
-  sales    Sale[]
+  company            Company             @relation(fields: [companyId], references: [id])
+  branch             Branch?             @relation(fields: [branchId], references: [id])
+  sales              Sale[]
   inventoryMovements InventoryMovement[]
 
-  createdStockTransfers  StockTransfer[] @relation("StockTransferCreatedBy")
-  approvedStockTransfers StockTransfer[] @relation("StockTransferApprovedBy")
+  createdStockTransfers  StockTransfer[]      @relation("StockTransferCreatedBy")
+  approvedStockTransfers StockTransfer[]      @relation("StockTransferApprovedBy")
   passwordResetTokens    PasswordResetToken[]
   documents              Document[]
   purchaseOrders         PurchaseOrder[]
@@ -139,6 +141,7 @@ model User {
   auditLogs              AuditLog[]
   pushSubscriptions      PushSubscription[]
   userPermissions        UserPermission[]
+  heldSales              HeldSale[]
 
   @@map("users")
 }
@@ -194,13 +197,13 @@ model ProductVariant {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  company           Company                   @relation(fields: [companyId], references: [id])
-  product           Product                   @relation(fields: [productId], references: [id])
-  stocks            Inventory[]
-  movements         InventoryMovement[]
-  items             SaleItem[]
-  StockTransferItem StockTransferItem[]
-  attributes        ProductVariantAttribute[]
+  company            Company                   @relation(fields: [companyId], references: [id])
+  product            Product                   @relation(fields: [productId], references: [id])
+  stocks             Inventory[]
+  movements          InventoryMovement[]
+  items              SaleItem[]
+  StockTransferItem  StockTransferItem[]
+  attributes         ProductVariantAttribute[]
   documentItems      DocumentItem[]
   purchaseOrderItems PurchaseOrderItem[]
   stockCountItems    StockCountItem[]
@@ -223,31 +226,31 @@ model Inventory {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  company  Company         @relation(fields: [companyId], references: [id])
-  branch   Branch          @relation(fields: [branchId], references: [id])
-  variant  ProductVariant  @relation(fields: [productVariantId], references: [id])
+  company Company        @relation(fields: [companyId], references: [id])
+  branch  Branch         @relation(fields: [branchId], references: [id])
+  variant ProductVariant @relation(fields: [productVariantId], references: [id])
 
   @@unique([companyId, branchId, productVariantId])
   @@map("inventory")
 }
 
 model InventoryMovement {
-  id               Int                 @id @default(autoincrement())
-  companyId        Int                 @map("company_id")
-  branchId         Int                  @map("branch_id")
-  productVariantId Int                  @map("product_variant_id")
+  id               Int                   @id @default(autoincrement())
+  companyId        Int                   @map("company_id")
+  branchId         Int                   @map("branch_id")
+  productVariantId Int                   @map("product_variant_id")
   type             InventoryMovementType @map("type")
-  quantityBefore   Int                  @map("quantity_before")
-  quantityAfter    Int                  @map("quantity_after")
-  userId           Int?                 @map("user_id")
-  referenceType    String?              @map("reference_type")
-  referenceId      Int?                 @map("reference_id")
-  createdAt        DateTime            @default(now()) @map("created_at")
+  quantityBefore   Int                   @map("quantity_before")
+  quantityAfter    Int                   @map("quantity_after")
+  userId           Int?                  @map("user_id")
+  referenceType    String?               @map("reference_type")
+  referenceId      Int?                  @map("reference_id")
+  createdAt        DateTime              @default(now()) @map("created_at")
 
-  company  Company         @relation(fields: [companyId], references: [id])
-  branch   Branch          @relation(fields: [branchId], references: [id])
-  variant  ProductVariant  @relation(fields: [productVariantId], references: [id])
-  user     User?           @relation(fields: [userId], references: [id])
+  company Company        @relation(fields: [companyId], references: [id])
+  branch  Branch         @relation(fields: [branchId], references: [id])
+  variant ProductVariant @relation(fields: [productVariantId], references: [id])
+  user    User?          @relation(fields: [userId], references: [id])
 
   @@index([companyId, branchId, createdAt(sort: Desc)])
   @@index([companyId, productVariantId, createdAt(sort: Desc)])
@@ -266,23 +269,23 @@ enum InventoryMovementType {
 }
 
 model Sale {
-  id                 Int           @id @default(autoincrement())
-  companyId          Int           @map("company_id")
-  branchId           Int           @map("branch_id")
-  userId             Int           @map("user_id")
-  totalAmount        Decimal       @map("total_amount") @db.Decimal(10, 2)
-  totalItems         Int           @map("total_items")
-  discountTotal      Decimal       @default(0) @map("discount_total") @db.Decimal(10, 2)
-  paymentMethod      PaymentMethod @map("payment_method")
-  paymentCashAmount  Decimal?      @map("payment_cash_amount") @db.Decimal(10, 2)
-  paymentCardAmount  Decimal?      @map("payment_card_amount") @db.Decimal(10, 2)
-  status             SaleStatus    @default(COMPLETED)
-  notes              String?
-  createdAt          DateTime      @default(now()) @map("created_at")
-  updatedAt          DateTime      @updatedAt @map("updated_at")
+  id                Int           @id @default(autoincrement())
+  companyId         Int           @map("company_id")
+  branchId          Int           @map("branch_id")
+  userId            Int           @map("user_id")
+  totalAmount       Decimal       @map("total_amount") @db.Decimal(10, 2)
+  totalItems        Int           @map("total_items")
+  discountTotal     Decimal       @default(0) @map("discount_total") @db.Decimal(10, 2)
+  paymentMethod     PaymentMethod @map("payment_method")
+  paymentCashAmount Decimal?      @map("payment_cash_amount") @db.Decimal(10, 2)
+  paymentCardAmount Decimal?      @map("payment_card_amount") @db.Decimal(10, 2)
+  status            SaleStatus    @default(COMPLETED)
+  notes             String?
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
 
-  customerId         Int?          @map("customer_id")
-  documentId         Int?          @map("document_id")
+  customerId Int? @map("customer_id")
+  documentId Int? @map("document_id")
 
   company  Company      @relation(fields: [companyId], references: [id])
   branch   Branch       @relation(fields: [branchId], references: [id])
@@ -344,16 +347,38 @@ model SaleReturn {
 }
 
 model SaleReturnItem {
-  id         Int     @id @default(autoincrement())
-  returnId   Int     @map("return_id")
-  variantId  Int     @map("variant_id")
-  quantity   Int
-  unitPrice  Decimal @db.Decimal(10, 2) @map("unit_price")
+  id        Int     @id @default(autoincrement())
+  returnId  Int     @map("return_id")
+  variantId Int     @map("variant_id")
+  quantity  Int
+  unitPrice Decimal @map("unit_price") @db.Decimal(10, 2)
 
   saleReturn SaleReturn     @relation(fields: [returnId], references: [id], onDelete: Cascade)
   variant    ProductVariant @relation(fields: [variantId], references: [id])
 
   @@map("sale_return_items")
+}
+
+// Venta "en espera" — carrito guardado para atender a otro cliente y
+// retomarlo despues, sin perder lo que ya se armo.
+model HeldSale {
+  id            Int      @id @default(autoincrement())
+  companyId     Int      @map("company_id")
+  branchId      Int      @map("branch_id")
+  userId        Int      @map("user_id")
+  customerId    Int?     @map("customer_id")
+  note          String?
+  cart          Json // CartEntry[] tal cual lo usa el frontend
+  discountTotal Decimal  @default(0) @map("discount_total") @db.Decimal(10, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  company  Company   @relation(fields: [companyId], references: [id])
+  branch   Branch    @relation(fields: [branchId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+
+  @@index([companyId, branchId])
+  @@map("held_sales")
 }
 
 model StockTransfer {
@@ -409,7 +434,7 @@ model Attribute {
   companyId Int           @map("company_id")
   name      String
   type      AttributeType @default(TEXT)
-  options   String?       // JSON array para type=SELECT, ej: '["Rojo","Azul"]'
+  options   String? // JSON array para type=SELECT, ej: '["Rojo","Azul"]'
   sortOrder Int           @default(0) @map("sort_order")
   createdAt DateTime      @default(now()) @map("created_at")
 
@@ -454,6 +479,7 @@ model Customer {
   documents          Document[]
   sales              Sale[]
   accountsReceivable AccountReceivable[]
+  heldSales          HeldSale[]
 
   @@index([companyId])
   @@map("customers")
@@ -525,10 +551,10 @@ model Document {
   date          DateTime       @default(now())
   dueDate       DateTime?      @map("due_date")
   notes         String?
-  subtotal      Decimal        @db.Decimal(10, 2) @default(0)
-  taxTotal      Decimal        @db.Decimal(10, 2) @default(0) @map("tax_total")
-  discountTotal Decimal        @db.Decimal(10, 2) @default(0) @map("discount_total")
-  total         Decimal        @db.Decimal(10, 2) @default(0)
+  subtotal      Decimal        @default(0) @db.Decimal(10, 2)
+  taxTotal      Decimal        @default(0) @map("tax_total") @db.Decimal(10, 2)
+  discountTotal Decimal        @default(0) @map("discount_total") @db.Decimal(10, 2)
+  total         Decimal        @default(0) @db.Decimal(10, 2)
   relatedDocId  Int?           @map("related_doc_id")
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
@@ -552,11 +578,11 @@ model DocumentItem {
   variantId   Int?    @map("variant_id")
   description String
   quantity    Decimal @db.Decimal(10, 3)
-  unitPrice   Decimal @db.Decimal(10, 2) @map("unit_price")
-  discount    Decimal @db.Decimal(10, 2) @default(0)
+  unitPrice   Decimal @map("unit_price") @db.Decimal(10, 2)
+  discount    Decimal @default(0) @db.Decimal(10, 2)
   taxConfigId Int?    @map("tax_config_id")
-  taxAmount   Decimal @db.Decimal(10, 2) @default(0) @map("tax_amount")
-  totalPrice  Decimal @db.Decimal(10, 2) @map("total_price")
+  taxAmount   Decimal @default(0) @map("tax_amount") @db.Decimal(10, 2)
+  totalPrice  Decimal @map("total_price") @db.Decimal(10, 2)
   sortOrder   Int     @default(0) @map("sort_order")
 
   document  Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
@@ -587,7 +613,7 @@ model PurchaseOrder {
   date       DateTime            @default(now())
   expectedAt DateTime?           @map("expected_at")
   notes      String?
-  total      Decimal             @db.Decimal(10, 2) @default(0)
+  total      Decimal             @default(0) @db.Decimal(10, 2)
   createdAt  DateTime            @default(now()) @map("created_at")
   updatedAt  DateTime            @updatedAt @map("updated_at")
 
@@ -607,8 +633,8 @@ model PurchaseOrderItem {
   variantId   Int?    @map("variant_id")
   description String
   quantity    Decimal @db.Decimal(10, 3)
-  unitPrice   Decimal @db.Decimal(10, 2) @map("unit_price")
-  received    Decimal @db.Decimal(10, 3) @default(0)
+  unitPrice   Decimal @map("unit_price") @db.Decimal(10, 2)
+  received    Decimal @default(0) @db.Decimal(10, 3)
 
   order   PurchaseOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   variant ProductVariant? @relation(fields: [variantId], references: [id])
@@ -641,11 +667,11 @@ model StockCount {
 }
 
 model StockCountItem {
-  id           Int        @id @default(autoincrement())
-  stockCountId Int        @map("stock_count_id")
-  variantId    Int        @map("variant_id")
-  systemQty    Int        @map("system_qty")
-  countedQty   Int?       @map("counted_qty")
+  id           Int  @id @default(autoincrement())
+  stockCountId Int  @map("stock_count_id")
+  variantId    Int  @map("variant_id")
+  systemQty    Int  @map("system_qty")
+  countedQty   Int? @map("counted_qty")
 
   stockCount StockCount     @relation(fields: [stockCountId], references: [id], onDelete: Cascade)
   variant    ProductVariant @relation(fields: [variantId], references: [id])
@@ -704,12 +730,12 @@ model AccountReceivable {
 }
 
 model ARPayment {
-  id             Int           @id @default(autoincrement())
-  receivableId   Int           @map("receivable_id")
-  amount         Decimal       @db.Decimal(10, 2)
-  method         PaymentMethod
-  notes          String?
-  createdAt      DateTime      @default(now()) @map("created_at")
+  id           Int           @id @default(autoincrement())
+  receivableId Int           @map("receivable_id")
+  amount       Decimal       @db.Decimal(10, 2)
+  method       PaymentMethod
+  notes        String?
+  createdAt    DateTime      @default(now()) @map("created_at")
 
   receivable AccountReceivable @relation(fields: [receivableId], references: [id], onDelete: Cascade)
 
@@ -747,15 +773,15 @@ model Employee {
   terminationDate DateTime?      @map("termination_date")
   status          EmployeeStatus @default(ACTIVE)
   contractType    ContractType   @default(FULL_TIME) @map("contract_type")
-  grossSalary     Decimal        @db.Decimal(10, 2) @map("gross_salary")
+  grossSalary     Decimal        @map("gross_salary") @db.Decimal(10, 2)
   bankAccount     String?        @map("bank_account")
   cbu             String?
   notes           String?
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
 
-  company  Company         @relation(fields: [companyId], references: [id])
-  branch   Branch?         @relation(fields: [branchId], references: [id])
+  company  Company          @relation(fields: [companyId], references: [id])
+  branch   Branch?          @relation(fields: [branchId], references: [id])
   payrolls Payroll[]
   advances PayrollAdvance[]
 
@@ -776,32 +802,32 @@ enum PayrollPeriodType {
 }
 
 model Payroll {
-  id          Int               @id @default(autoincrement())
-  companyId   Int               @map("company_id")
-  employeeId  Int               @map("employee_id")
-  period      String            // "2025-04"
-  periodType  PayrollPeriodType @default(MONTHLY) @map("period_type")
+  id         Int               @id @default(autoincrement())
+  companyId  Int               @map("company_id")
+  employeeId Int               @map("employee_id")
+  period     String // "2025-04"
+  periodType PayrollPeriodType @default(MONTHLY) @map("period_type")
 
-  basicSalary   Decimal @db.Decimal(10, 2) @map("basic_salary")
-  extraHours    Decimal @default(0) @db.Decimal(10, 2) @map("extra_hours")
+  basicSalary   Decimal @map("basic_salary") @db.Decimal(10, 2)
+  extraHours    Decimal @default(0) @map("extra_hours") @db.Decimal(10, 2)
   bonus         Decimal @default(0) @db.Decimal(10, 2)
-  otherEarnings Decimal @default(0) @db.Decimal(10, 2) @map("other_earnings")
-  grossTotal    Decimal @db.Decimal(10, 2) @map("gross_total")
+  otherEarnings Decimal @default(0) @map("other_earnings") @db.Decimal(10, 2)
+  grossTotal    Decimal @map("gross_total") @db.Decimal(10, 2)
 
-  deductJubilacion Decimal @db.Decimal(10, 2) @map("deduct_jubilacion")
-  deductObraSocial Decimal @db.Decimal(10, 2) @map("deduct_obra_social")
-  deductInssjp     Decimal @db.Decimal(10, 2) @map("deduct_inssjp")
-  deductSindicato  Decimal @default(0) @db.Decimal(10, 2) @map("deduct_sindicato")
-  deductOther      Decimal @default(0) @db.Decimal(10, 2) @map("deduct_other")
-  totalDeductions  Decimal @db.Decimal(10, 2) @map("total_deductions")
+  deductJubilacion Decimal @map("deduct_jubilacion") @db.Decimal(10, 2)
+  deductObraSocial Decimal @map("deduct_obra_social") @db.Decimal(10, 2)
+  deductInssjp     Decimal @map("deduct_inssjp") @db.Decimal(10, 2)
+  deductSindicato  Decimal @default(0) @map("deduct_sindicato") @db.Decimal(10, 2)
+  deductOther      Decimal @default(0) @map("deduct_other") @db.Decimal(10, 2)
+  totalDeductions  Decimal @map("total_deductions") @db.Decimal(10, 2)
 
-  netSalary Decimal @db.Decimal(10, 2) @map("net_salary")
+  netSalary Decimal @map("net_salary") @db.Decimal(10, 2)
 
-  patronalJubilacion Decimal @db.Decimal(10, 2) @map("patronal_jubilacion")
-  patronalInssjp     Decimal @db.Decimal(10, 2) @map("patronal_inssjp")
-  patronalObraSocial Decimal @db.Decimal(10, 2) @map("patronal_obra_social")
-  patronalArt        Decimal @default(0) @db.Decimal(10, 2) @map("patronal_art")
-  patronalTotal      Decimal @db.Decimal(10, 2) @map("patronal_total")
+  patronalJubilacion Decimal @map("patronal_jubilacion") @db.Decimal(10, 2)
+  patronalInssjp     Decimal @map("patronal_inssjp") @db.Decimal(10, 2)
+  patronalObraSocial Decimal @map("patronal_obra_social") @db.Decimal(10, 2)
+  patronalArt        Decimal @default(0) @map("patronal_art") @db.Decimal(10, 2)
+  patronalTotal      Decimal @map("patronal_total") @db.Decimal(10, 2)
 
   status    PayrollStatus @default(DRAFT)
   notes     String?
@@ -818,14 +844,14 @@ model Payroll {
 }
 
 model PayrollAdvance {
-  id          Int      @id @default(autoincrement())
-  companyId   Int      @map("company_id")
-  employeeId  Int      @map("employee_id")
-  amount      Decimal  @db.Decimal(10, 2)
-  date        DateTime @default(now())
-  deductedIn  String?  @map("deducted_in") // período en que se descontó, ej: "2025-05"
-  notes       String?
-  createdAt   DateTime @default(now()) @map("created_at")
+  id         Int      @id @default(autoincrement())
+  companyId  Int      @map("company_id")
+  employeeId Int      @map("employee_id")
+  amount     Decimal  @db.Decimal(10, 2)
+  date       DateTime @default(now())
+  deductedIn String?  @map("deducted_in") // período en que se descontó, ej: "2025-05"
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
 
   company  Company  @relation(fields: [companyId], references: [id])
   employee Employee @relation(fields: [employeeId], references: [id])
@@ -837,17 +863,17 @@ model PayrollAdvance {
 // ── Contabilidad ──────────────────────────────────────────────────────────────
 
 enum AccountType {
-  ASSET      // 1 - Activo
-  LIABILITY  // 2 - Pasivo
-  EQUITY     // 3 - Patrimonio neto
-  REVENUE    // 4 - Ingresos
-  EXPENSE    // 5 - Egresos
+  ASSET // 1 - Activo
+  LIABILITY // 2 - Pasivo
+  EQUITY // 3 - Patrimonio neto
+  REVENUE // 4 - Ingresos
+  EXPENSE // 5 - Egresos
 }
 
 model Account {
   id        Int         @id @default(autoincrement())
   companyId Int         @map("company_id")
-  code      String      // "1.1.01"
+  code      String // "1.1.01"
   name      String
   type      AccountType
   subtype   String?
@@ -903,9 +929,9 @@ model JournalEntry {
 }
 
 model JournalLine {
-  id             Int    @id @default(autoincrement())
-  journalEntryId Int    @map("journal_entry_id")
-  accountId      Int    @map("account_id")
+  id             Int     @id @default(autoincrement())
+  journalEntryId Int     @map("journal_entry_id")
+  accountId      Int     @map("account_id")
   debit          Decimal @default(0) @db.Decimal(12, 2)
   credit         Decimal @default(0) @db.Decimal(12, 2)
   description    String?
@@ -943,8 +969,8 @@ model AuditLog {
   id        Int      @id @default(autoincrement())
   companyId Int      @map("company_id")
   userId    Int?     @map("user_id")
-  action    String   // "CREATE" | "UPDATE" | "DELETE" | "LOGIN" | "EXPORT"
-  entity    String   // "User" | "Product" | "Sale" | "Transfer" | etc.
+  action    String // "CREATE" | "UPDATE" | "DELETE" | "LOGIN" | "EXPORT"
+  entity    String // "User" | "Product" | "Sale" | "Transfer" | etc.
   entityId  Int?     @map("entity_id")
   before    Json?
   after     Json?

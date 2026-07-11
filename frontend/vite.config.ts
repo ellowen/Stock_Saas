@@ -67,6 +67,7 @@ export default defineConfig({
       '/stock-counts': { target: 'http://localhost:4000', changeOrigin: true },
       '/batches': { target: 'http://localhost:4000', changeOrigin: true },
       '/accounts-receivable': { target: 'http://localhost:4000', changeOrigin: true },
+      '/held-sales': { target: 'http://localhost:4000', changeOrigin: true },
     },
   },
 })

@@ -10,9 +10,11 @@ import { CartItem } from "../components/CartItem";
 import { PaymentModal } from "../components/PaymentModal";
 import { ReceiptView } from "../components/ReceiptView";
 import { CustomerSearchInput } from "../components/CustomerSearchInput";
+import { HeldSalesPanel } from "../components/HeldSalesPanel";
 import { DocumentPreviewModal } from "../../../components/documents/DocumentPreviewModal";
 import type { DocumentData, CompanyInfo } from "../../../components/documents/DocumentTemplate";
 import { useCart } from "../hooks/useCart";
+import { useHeldSales } from "../hooks/useHeldSales";
 import { thermalPrinter } from "../../../lib/thermal-printer";
 import {
   formatAttributes,
@@ -50,7 +52,8 @@ export function POSTab({
   const canDiscount = hasPermission("SALES_DISCOUNT");
   const canOverridePrice = hasPermission("SALES_PRICE_OVERRIDE");
   const { showToast } = useToast();
-  const { cart, addToCart, updateCartQty, updateCartDiscount, updateCartPriceOverride, removeFromCart, clearCart } = useCart();
+  const { cart, addToCart, updateCartQty, updateCartDiscount, updateCartPriceOverride, removeFromCart, clearCart, restoreCart } = useCart();
+  const { heldSales, loading: heldSalesLoading, loadHeldSales, holdSale, resumeSale, discardSale } = useHeldSales();
   const [globalDiscount, setGlobalDiscount] = useState("");
 
   const [selectedCustomer, setSelectedCustomer] = useState<{ id: number; name: string; taxId: string | null; phone: string | null } | null>(null);
@@ -113,6 +116,55 @@ export function POSTab({
       searchInputRef.current?.focus();
     }
   }, [branchId]);
+
+  // Cargar ventas en espera de esta sucursal
+  useEffect(() => {
+    if (typeof branchId === "number") {
+      loadHeldSales(branchId);
+    }
+  }, [branchId, loadHeldSales]);
+
+  const handleHoldSale = useCallback(async () => {
+    if (cart.length === 0 || typeof branchId !== "number") return;
+    try {
+      await holdSale({
+        branchId,
+        customerId: selectedCustomer?.id ?? null,
+        cart,
+        discountTotal: globalDiscountNum > 0 ? globalDiscountNum : undefined,
+      });
+      clearCart();
+      setSelectedCustomer(null);
+      setGlobalDiscount("");
+      loadHeldSales(branchId);
+      showToast(t("sales.heldSaleSaved"), "success");
+      searchInputRef.current?.focus();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : t("sales.heldSaleError"), "error");
+    }
+  }, [cart, branchId, selectedCustomer, globalDiscountNum, holdSale, clearCart, loadHeldSales, showToast, t]);
+
+  const handleResumeHeldSale = useCallback(async (id: number) => {
+    try {
+      const held = await resumeSale(id);
+      restoreCart(held.cart);
+      setSelectedCustomer(held.customer ?? null);
+      setGlobalDiscount(Number(held.discountTotal) > 0 ? String(held.discountTotal) : "");
+      if (typeof branchId === "number") loadHeldSales(branchId);
+      showToast(t("sales.heldSaleResumed"), "success");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : t("sales.heldSaleError"), "error");
+    }
+  }, [resumeSale, restoreCart, branchId, loadHeldSales, showToast, t]);
+
+  const handleDiscardHeldSale = useCallback(async (id: number) => {
+    try {
+      await discardSale(id);
+      if (typeof branchId === "number") loadHeldSales(branchId);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : t("sales.heldSaleError"), "error");
+    }
+  }, [discardSale, branchId, loadHeldSales, showToast, t]);
 
   const openPaymentModal = useCallback(() => {
     setPaymentMethod("CASH");
@@ -364,6 +416,15 @@ export function POSTab({
         </Tooltip>
 
         {typeof branchId === "number" && (
+          <HeldSalesPanel
+            heldSales={heldSales}
+            loading={heldSalesLoading}
+            onResume={handleResumeHeldSale}
+            onDiscard={handleDiscardHeldSale}
+          />
+        )}
+
+        {typeof branchId === "number" && (
           <div>
             <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
               {t("sales.customerLabel")}
@@ -475,7 +536,7 @@ export function POSTab({
                   </span>
                 </div>
               </div>
-              <div className="p-5 border-t border-slate-200 dark:border-slate-600">
+              <div className="p-5 border-t border-slate-200 dark:border-slate-600 space-y-2">
                 <Tooltip content={t("sales.checkoutTooltip")}>
                   <button
                     ref={cobrarButtonRef}
@@ -489,6 +550,14 @@ export function POSTab({
                     {t("sales.chargeButton")}
                   </button>
                 </Tooltip>
+                <button
+                  type="button"
+                  onClick={handleHoldSale}
+                  disabled={submitting || cart.length === 0}
+                  className="btn-secondary w-full py-2.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t("sales.heldSaleHold")}
+                </button>
                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 text-center">{t("sales.chargeKeyboardHint")}</p>
               </div>
             </>
