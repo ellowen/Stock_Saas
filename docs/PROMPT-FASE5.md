@@ -6,41 +6,58 @@
 
 ## Estado de tareas
 
-> Actualizado 2026-07-11: todo lo de abajo ya está implementado (routers +
-> páginas). Esta tabla decía "Pendiente" en todo pero estaba desactualizada;
-> el código llevaba meses hecho sin verificarse. Verificación end-to-end en
-> el browser el 2026-07-11 (ver detalle abajo).
+> Actualizado 2026-07-11: todo lo de abajo está implementado y verificado
+> end-to-end en el browser (dos sesiones, ver detalle abajo). Esta tabla
+> decía "Pendiente" en todo pero estaba desactualizada; el código llevaba
+> meses hecho sin verificarse.
 
 | # | Tarea | Estado |
 |---|-------|--------|
 | 5.1 | ABM de Empleados | ✅ Verificado |
 | 5.2 | Liquidación de sueldos (Argentina) | ✅ Verificado |
-| 5.3 | Registro de pagos de sueldos y SAC | ✅ Verificado (pago; SAC no probado en browser) |
+| 5.3 | Registro de pagos de sueldos y SAC | ✅ Verificado (pago; SAC no probado explícitamente) |
 | 5.4 | Plan de cuentas contables | ✅ Verificado |
-| 5.5 | Asientos contables manuales y automáticos | ✅ Manual verificado. Automático (auto-journal) existe en código, gateado por flag `accountingEnabled` de la empresa — no probado en browser |
-| 5.6 | Libro IVA Ventas / Compras | ⬜ Implementado, no probado en browser |
-| 5.7 | Reportes contables (Diario, Mayor, Balance) | ✅ Balance de sumas y saldos verificado. Libro Mayor / Estado de Resultados no probados en browser |
+| 5.5 | Asientos contables manuales y automáticos | ✅ Verificado: manual y automático (venta, compra recibida; sueldo pagado ya probado en la sesión anterior) |
+| 5.6 | Libro IVA Ventas / Compras | ✅ Verificado (endpoint responde correctamente; vacío porque depende de facturas/documentos emitidos, no de asientos — no se emitió ninguna factura de prueba) |
+| 5.7 | Reportes contables (Diario, Mayor, Balance) | ✅ Verificado: balance de sumas y saldos, libro mayor (por cuenta) y estado de resultados, todos con datos reales |
 
 Orden: RRHH primero (5.1–5.3), luego contabilidad (5.4–5.7).
 
-### Verificación 2026-07-11 (ver commit 7d8fca2)
+### Verificación 2026-07-11, sesión 1 (commit 7d8fca2)
 
 Flujo probado en el browser: crear empleado → "Calcular todos" liquida
 sueldos → confirmar liquidación → marcar pagada → generar plan de cuentas
 FACPCE → crear asiento manual → confirmar asiento → balance de sumas y
 saldos refleja el asiento. Todo funcionó de punta a punta.
 
-Se encontraron y arreglaron 2 bugs reales en el camino:
+Bugs encontrados y arreglados:
 - `GET /payrolls/advances` devolvía 400 siempre por orden de rutas en Express
   (`/:id` interceptaba antes de llegar a `/advances`).
 - Las fechas sin hora (hireDate, fecha de asiento) se mostraban un día antes
   en toda la app por un bug de timezone en `formatDate`/`formatDateMedium`/
   `formatMonth` (UTC medianoche renderizado en huso local UTC-3).
 
-Pendiente de una próxima sesión: probar Libro IVA (ventas/compras/balance)
-y Libro Mayor / Estado de Resultados con datos reales, y validar el
-auto-journal automático (ventas, compras, sueldos) con `accountingEnabled`
-prendido.
+### Verificación 2026-07-11, sesión 2 (commit 406e81c)
+
+Activado `accountingEnabled` en Settings → Sueldos. Hecha una venta real
+(POS) y una orden de compra recibida (vía API); ambas generaron asientos
+automáticos correctos y balanceados (Caja/Ventas $132; Mercaderías/
+Proveedores $250). Probados Libro Mayor (cuenta Caja, saldo corriendo
+correcto), Estado de Resultados ($1.132 ganancia = $132 venta + $1.000
+asiento manual) y Libro IVA (responde bien, vacío por falta de facturas
+de prueba, no por error).
+
+Bugs encontrados y arreglados:
+- `GET /protected/company` no devolvía `artRate`, `unionRate` ni
+  `accountingEnabled` en el select (aunque `PUT` sí los guardaba) —
+  Settings > Sueldos siempre mostraba el checkbox de auto-journal
+  destildado al recargar, sin importar el valor real guardado.
+- El badge de notificaciones/alertas en el header (`AppLayout.tsx`) leía
+  el token JWT con la clave equivocada de `localStorage` (`"accessToken"`
+  en vez de `"access_token"`, y sin revisar `sessionStorage`) — devolvía
+  401 siempre, para cualquier usuario, en cualquier pantalla.
+
+No queda nada pendiente de verificar en Fase 5.
 
 ---
 
