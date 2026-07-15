@@ -4,12 +4,19 @@ import { z } from "zod";
 import { ProductService } from "../../../application/products/product.service";
 
 const productVariantSchema = z.object({
-  size: z.string().min(1),
-  color: z.string().min(1),
+  // size/color son el modo "legacy" (opcionales); una empresa con atributos
+  // flexibles configurados (Attribute/ProductVariantAttribute) manda
+  // `attributes` en su lugar. Ambos pueden convivir si hace falta.
+  size: z.string().optional(),
+  color: z.string().optional(),
   sku: z.string().min(1),
   barcode: z.string().min(1).optional(),
   price: z.number().nonnegative(),
   costPrice: z.number().nonnegative().optional(),
+  attributes: z.array(z.object({
+    attributeId: z.number().int().positive(),
+    value: z.string(),
+  })).optional(),
 });
 
 const productVariantUpdateSchema = productVariantSchema.extend({
@@ -167,6 +174,7 @@ export const updateProductController = async (req: Request, res: Response) => {
         barcode: v.barcode,
         price: v.price,
         costPrice: v.costPrice,
+        attributes: v.attributes,
       }));
     }
     const product = await service.updateProduct(req.auth.companyId, productId, payload);

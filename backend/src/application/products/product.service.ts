@@ -11,6 +11,8 @@ export interface CreateProductVariantInput {
   barcode?: string;
   price: number;
   costPrice?: number;
+  size?: string;
+  color?: string;
   attributes?: VariantAttributeInput[];
 }
 
@@ -61,6 +63,8 @@ export class ProductService {
             productId: product.id,
             sku: variant.sku,
             barcode: variant.barcode,
+            size: variant.size || null,
+            color: variant.color || null,
             price: new Prisma.Decimal(variant.price),
             costPrice:
               variant.costPrice !== undefined
@@ -202,6 +206,8 @@ export class ProductService {
         barcode?: string;
         price: number;
         costPrice?: number;
+        size?: string;
+        color?: string;
         attributes?: VariantAttributeInput[];
       }>;
     }
@@ -248,6 +254,8 @@ export class ProductService {
               data: {
                 sku: v.sku,
                 barcode: v.barcode ?? null,
+                size: v.size || null,
+                color: v.color || null,
                 price: new Prisma.Decimal(v.price),
                 costPrice:
                   v.costPrice !== undefined
@@ -278,6 +286,8 @@ export class ProductService {
                 productId,
                 sku: v.sku,
                 barcode: v.barcode,
+                size: v.size || null,
+                color: v.color || null,
                 price: new Prisma.Decimal(v.price),
                 costPrice:
                   v.costPrice !== undefined

@@ -1,65 +1,27 @@
-import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { API_BASE_URL, authFetch, authHeaders } from "../../../lib/api";
 import type { AttributeDefinition, VariantForm } from "../types";
 
 type Props = {
   variants: VariantForm[];
+  attributeDefs: AttributeDefinition[];
   onAdd: () => void;
   onUpdate: (i: number, field: keyof VariantForm, value: string) => void;
+  onUpdateAttribute: (variantIndex: number, attributeId: number, value: string) => void;
   onRemove: (i: number) => void;
 };
 
-export function VariantManager({ variants, onAdd, onUpdate, onRemove }: Props) {
+export function VariantManager({ variants, attributeDefs, onAdd, onUpdate, onUpdateAttribute, onRemove }: Props) {
   const { t } = useTranslation();
-  const [attributes, setAttributes] = useState<AttributeDefinition[]>([]);
 
-  const loadAttributes = useCallback(async () => {
-    try {
-      const res = await authFetch(`${API_BASE_URL}/attributes`, {
-        headers: authHeaders(),
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      setAttributes(Array.isArray(data) ? data : []);
-    } catch {
-      // ignore — fall back to legacy size/color fields
-    }
-  }, []);
+  // Con atributos flexibles configurados (Attribute/ProductVariantAttribute),
+  // se usan esos campos dinamicos en vez de los legacy size/color -- guardados
+  // como un array real de {attributeId, value} en cada variante, no un blob
+  // JSON metido en el campo size (asi estaba antes: nunca llegaba al backend
+  // como atributo real, y el propio size tampoco se persistia).
+  const hasFlexAttributes = attributeDefs.length > 0;
 
-  useEffect(() => {
-    loadAttributes();
-  }, [loadAttributes]);
-
-  // When there are flex attributes, we render dynamic fields using the
-  // `size` field as a serialized JSON map (attributeId -> value).
-  // For backwards compatibility we also keep SKU, barcode, price, costPrice.
-  const hasFlexAttributes = attributes.length > 0;
-
-  const getAttrValue = (variant: VariantForm, attrId: number): string => {
-    try {
-      const parsed = JSON.parse(variant.size || "{}") as Record<string, string>;
-      return parsed[String(attrId)] ?? "";
-    } catch {
-      return "";
-    }
-  };
-
-  const setAttrValue = (
-    variantIndex: number,
-    attrId: number,
-    value: string,
-    currentVariant: VariantForm
-  ) => {
-    let parsed: Record<string, string> = {};
-    try {
-      parsed = JSON.parse(currentVariant.size || "{}") as Record<string, string>;
-    } catch {
-      parsed = {};
-    }
-    parsed[String(attrId)] = value;
-    onUpdate(variantIndex, "size", JSON.stringify(parsed));
-  };
+  const getAttrValue = (variant: VariantForm, attrId: number): string =>
+    variant.attributes.find((a) => a.attributeId === attrId)?.value ?? "";
 
   return (
     <section className="space-y-4">
@@ -114,7 +76,7 @@ export function VariantManager({ variants, onAdd, onUpdate, onRemove }: Props) {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {hasFlexAttributes ? (
                 // --- Flexible attribute fields ---
-                attributes.map((attr) => (
+                attributeDefs.map((attr) => (
                   <div key={attr.id}>
                     <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                       {attr.name}
@@ -122,7 +84,7 @@ export function VariantManager({ variants, onAdd, onUpdate, onRemove }: Props) {
                     {attr.type === "SELECT" && attr.options && attr.options.length > 0 ? (
                       <select
                         value={getAttrValue(v, attr.id)}
-                        onChange={(e) => setAttrValue(i, attr.id, e.target.value, v)}
+                        onChange={(e) => onUpdateAttribute(i, attr.id, e.target.value)}
                         className="input-minimal dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
                       >
                         <option value="">{t("inventory.variantSelectPlaceholder")}</option>
@@ -137,7 +99,7 @@ export function VariantManager({ variants, onAdd, onUpdate, onRemove }: Props) {
                         type={attr.type === "NUMBER" ? "number" : "text"}
                         placeholder={attr.name}
                         value={getAttrValue(v, attr.id)}
-                        onChange={(e) => setAttrValue(i, attr.id, e.target.value, v)}
+                        onChange={(e) => onUpdateAttribute(i, attr.id, e.target.value)}
                         className="input-minimal dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:placeholder-slate-400"
                       />
                     )}

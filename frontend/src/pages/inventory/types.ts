@@ -14,6 +14,7 @@ export type Product = {
     barcode: string | null;
     price: string;
     costPrice: string | null;
+    attributes?: AttributeValue[];
   }>;
 };
 
@@ -57,6 +58,7 @@ export type VariantForm = {
   barcode: string;
   price: string;
   costPrice: string;
+  attributes: { attributeId: number; value: string }[];
 };
 
 // Flexible attributes (new backend model)

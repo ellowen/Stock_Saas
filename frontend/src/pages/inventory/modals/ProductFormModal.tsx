@@ -1,9 +1,9 @@
 import type React from "react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { API_BASE_URL, authFetch, authHeaders } from "../../../lib/api";
 import { useToast } from "../../../contexts/ToastContext";
-import type { Product, VariantForm } from "../types";
+import type { AttributeDefinition, Product, VariantForm } from "../types";
 import { VariantManager } from "./VariantManager";
 
 type Props = {
@@ -40,23 +40,52 @@ export function ProductFormModal({
                 ? v.costPrice
                 : String(v.costPrice)
               : "",
+          attributes: (v.attributes ?? []).map((a) => ({ attributeId: a.id, value: a.value })),
         }))
-      : [{ size: "", color: "", sku: "", barcode: "", price: "", costPrice: "" }]
+      : [{ size: "", color: "", sku: "", barcode: "", price: "", costPrice: "", attributes: [] }]
   );
+  const [attributeDefs, setAttributeDefs] = useState<AttributeDefinition[]>([]);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
   const { showToast } = useToast();
   const { t } = useTranslation();
 
+  const loadAttributeDefs = useCallback(async () => {
+    try {
+      const res = await authFetch(`${API_BASE_URL}/attributes`, { headers: authHeaders() });
+      if (!res.ok) return;
+      const data = await res.json();
+      setAttributeDefs(Array.isArray(data) ? data : []);
+    } catch {
+      // ignore — se cae al modo legacy size/color
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAttributeDefs();
+  }, [loadAttributeDefs]);
+
   const addVariant = () =>
     setVariants((v) => [
       ...v,
-      { size: "", color: "", sku: "", barcode: "", price: "", costPrice: "" },
+      { size: "", color: "", sku: "", barcode: "", price: "", costPrice: "", attributes: [] },
     ]);
 
   const updateVariant = (i: number, field: keyof VariantForm, value: string) =>
     setVariants((v) => v.map((row, j) => (j === i ? { ...row, [field]: value } : row)));
+
+  const updateVariantAttribute = (variantIndex: number, attributeId: number, value: string) =>
+    setVariants((v) =>
+      v.map((row, j) => {
+        if (j !== variantIndex) return row;
+        const existing = row.attributes.some((a) => a.attributeId === attributeId);
+        const attributes = existing
+          ? row.attributes.map((a) => (a.attributeId === attributeId ? { ...a, value } : a))
+          : [...row.attributes, { attributeId, value }];
+        return { ...row, attributes };
+      })
+    );
 
   const removeVariant = (i: number) => {
     if (variants.length <= 1) return;
@@ -77,6 +106,7 @@ export function ProductFormModal({
         barcode: v.barcode.trim() || undefined,
         price: parseFloat(v.price) || 0,
         costPrice: v.costPrice.trim() ? parseFloat(v.costPrice) : undefined,
+        attributes: v.attributes.filter((a) => a.value.trim() !== ""),
         id: editProduct?.variants[i]?.id,
       }));
 
@@ -103,12 +133,13 @@ export function ProductFormModal({
             brand: brand.trim() || undefined,
             variants: vars.map((v) => ({
               id: v.id,
-              size: v.size,
-              color: v.color,
+              size: v.size || undefined,
+              color: v.color || undefined,
               sku: v.sku,
               barcode: v.barcode,
               price: v.price,
               costPrice: v.costPrice,
+              attributes: v.attributes,
             })),
           }),
         });
@@ -130,12 +161,13 @@ export function ProductFormModal({
             category: resolvedCategory,
             brand: brand.trim() || undefined,
             variants: vars.map((v) => ({
-              size: v.size,
-              color: v.color,
+              size: v.size || undefined,
+              color: v.color || undefined,
               sku: v.sku,
               barcode: v.barcode,
               price: v.price,
               costPrice: v.costPrice,
+              attributes: v.attributes,
             })),
           }),
         });
@@ -284,8 +316,10 @@ export function ProductFormModal({
             {/* Variantes */}
             <VariantManager
               variants={variants}
+              attributeDefs={attributeDefs}
               onAdd={addVariant}
               onUpdate={updateVariant}
+              onUpdateAttribute={updateVariantAttribute}
               onRemove={removeVariant}
             />
 
