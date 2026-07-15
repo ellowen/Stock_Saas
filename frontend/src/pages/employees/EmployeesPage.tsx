@@ -228,7 +228,7 @@ export default function EmployeesPage() {
               className={[
                 "px-3 py-1.5 transition-colors",
                 filter === v
-                  ? "bg-primary-600 text-white"
+                  ? "bg-indigo-600 text-white"
                   : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700",
               ].join(" ")}
             >
@@ -241,7 +241,7 @@ export default function EmployeesPage() {
           placeholder="Buscar por nombre, cargo o CUIL…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 min-w-[200px] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="flex-1 min-w-[200px] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
 
@@ -267,7 +267,7 @@ export default function EmployeesPage() {
                 ] as [keyof Employee, string][]).map(([col, label]) => (
                   <th key={col} className="px-4 py-3 text-left">
                     <button type="button" onClick={() => toggle(col)}
-                      className="group inline-flex items-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                      className="group inline-flex items-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                       {label}
                       <SortIcon active={sortKey === col} dir={sortDir} />
                     </button>

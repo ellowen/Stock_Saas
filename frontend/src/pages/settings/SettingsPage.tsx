@@ -286,7 +286,7 @@ export function SettingsPage() {
             className={[
               "px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px",
               tab === t.key
-                ? "border-primary-600 text-primary-700 dark:text-primary-400 dark:border-primary-400"
+                ? "border-indigo-600 text-indigo-700 dark:text-indigo-400 dark:border-indigo-400"
                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200",
             ].join(" ")}
           >
@@ -422,7 +422,7 @@ export function SettingsPage() {
                     className={[
                       "shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
                       push.state === "subscribed"
-                        ? "bg-primary-600"
+                        ? "bg-indigo-600"
                         : "bg-gray-200 dark:bg-gray-600",
                       push.loading ? "opacity-50 cursor-not-allowed" : "",
                     ].join(" ")}
@@ -508,7 +508,7 @@ export function SettingsPage() {
                       {isOwner && (
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <button type="button" onClick={() => openEditAttr(attr)} className="text-xs font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400">
+                            <button type="button" onClick={() => openEditAttr(attr)} className="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
                               Editar
                             </button>
                             <button type="button" onClick={() => deleteAttr(attr)} className="text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400">
@@ -544,7 +544,7 @@ export function SettingsPage() {
           <p className="text-sm text-gray-500 dark:text-gray-400">
             La gestión de planes y pagos estará disponible próximamente.
           </p>
-          <a href="/app/plan" className="inline-flex text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400">
+          <a href="/app/plan" className="inline-flex text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
             Ver planes disponibles →
           </a>
         </div>

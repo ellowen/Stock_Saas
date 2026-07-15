@@ -17,7 +17,7 @@ const variantClasses: Record<Variant, string> = {
   danger:  "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
   info:    "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
   neutral: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-  primary: "bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-400",
+  primary: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
 };
 
 const dotClasses: Record<Variant, string> = {
@@ -26,7 +26,7 @@ const dotClasses: Record<Variant, string> = {
   danger:  "bg-red-500",
   info:    "bg-blue-500",
   neutral: "bg-gray-400",
-  primary: "bg-primary-500",
+  primary: "bg-indigo-500",
 };
 
 const sizeClasses: Record<Size, string> = {

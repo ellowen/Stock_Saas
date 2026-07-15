@@ -391,7 +391,7 @@ export default function PurchaseOrdersPage() {
             <div className="rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 py-16 text-center">
               <p className="text-slate-500 dark:text-slate-400 font-medium">{t("purchases.empty")}</p>
               <button type="button" onClick={() => setTab("new")}
-                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors">
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                 {t("purchases.tabNew")}
               </button>
@@ -409,7 +409,7 @@ export default function PurchaseOrdersPage() {
                     ] as [keyof PurchaseOrder, string][]).map(([col, label]) => (
                       <th key={col}>
                         <button type="button" onClick={() => toggle(col)}
-                          className="group inline-flex items-center text-left font-semibold hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                          className="group inline-flex items-center text-left font-semibold hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                           {label}
                           <SortIcon active={sortKey === col} dir={sortDir} />
                         </button>
@@ -447,7 +447,7 @@ export default function PurchaseOrdersPage() {
                             <button
                               type="button"
                               onClick={() => openReceive(order.id)}
-                              className="text-xs text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded px-2 py-1"
+                              className="text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded px-2 py-1"
                             >
                               {t("purchases.actionReceive")}
                             </button>

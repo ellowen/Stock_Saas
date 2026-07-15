@@ -56,7 +56,7 @@ function UsageBar({ label, current, limit }: { label: string; current: number; l
       </div>
       <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all ${danger ? "bg-red-500" : warn ? "bg-yellow-400" : "bg-primary-500"}`}
+          className={`h-full rounded-full transition-all ${danger ? "bg-red-500" : warn ? "bg-yellow-400" : "bg-indigo-500"}`}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -351,7 +351,7 @@ export function PlanPage() {
               type="button"
               disabled={portalLoading}
               onClick={handleStripePortal}
-              className="text-sm text-primary-600 dark:text-primary-400 hover:underline disabled:opacity-50"
+              className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-50"
             >
               {portalLoading ? "Redirigiendo…" : "Administrar suscripción (Stripe)"}
             </button>
@@ -380,13 +380,13 @@ export function PlanPage() {
               <div key={key} className={[
                 "rounded-xl border p-5 flex flex-col",
                 isCurrent
-                  ? "border-primary-300 dark:border-primary-600 bg-primary-50/50 dark:bg-primary-900/20"
+                  ? "border-indigo-300 dark:border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20"
                   : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800",
               ].join(" ")}>
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="font-bold text-gray-900 dark:text-white">{info.name}</h3>
                   {isCurrent && (
-                    <span className="text-xs font-medium bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300 px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 px-2 py-0.5 rounded-full">
                       Actual
                     </span>
                   )}
@@ -406,7 +406,7 @@ export function PlanPage() {
                   <button
                     type="button"
                     onClick={() => setCheckoutPlan(key)}
-                    className="w-full py-2 text-sm font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+                    className="w-full py-2 text-sm font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
                   >
                     Suscribirme
                   </button>

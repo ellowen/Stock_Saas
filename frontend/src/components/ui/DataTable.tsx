@@ -38,10 +38,10 @@ function SkeletonRows({ cols, rows = 5 }: { cols: number; rows?: number }) {
 function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
   return (
     <span className="ml-1 inline-flex flex-col opacity-50" aria-hidden>
-      <svg className={`w-2.5 h-2.5 ${active && dir === "asc" ? "opacity-100 text-primary-600" : ""}`} viewBox="0 0 10 6" fill="currentColor">
+      <svg className={`w-2.5 h-2.5 ${active && dir === "asc" ? "opacity-100 text-indigo-600" : ""}`} viewBox="0 0 10 6" fill="currentColor">
         <path d="M5 0L10 6H0L5 0Z" />
       </svg>
-      <svg className={`w-2.5 h-2.5 ${active && dir === "desc" ? "opacity-100 text-primary-600" : ""}`} viewBox="0 0 10 6" fill="currentColor">
+      <svg className={`w-2.5 h-2.5 ${active && dir === "desc" ? "opacity-100 text-indigo-600" : ""}`} viewBox="0 0 10 6" fill="currentColor">
         <path d="M5 6L0 0H10L5 6Z" />
       </svg>
     </span>
@@ -102,7 +102,7 @@ export function DataTable<T>({
           <button
             type="button"
             onClick={onExportCsv}
-            className="text-xs font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center gap-1"
+            className="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-1"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />

@@ -195,7 +195,7 @@ export function ReorderTab({ branches }: { branches: Branch[] }) {
               className={[
                 "rounded-xl border p-4 text-left transition-all",
                 filterUrgency === u
-                  ? "ring-2 ring-primary-500 border-primary-300 dark:border-primary-700"
+                  ? "ring-2 ring-indigo-500 border-indigo-300 dark:border-indigo-700"
                   : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500",
                 "bg-white dark:bg-gray-800",
               ].join(" ")}
@@ -239,27 +239,27 @@ export function ReorderTab({ branches }: { branches: Branch[] }) {
           </select>
         </div>
         <button onClick={load} disabled={loading}
-          className="px-4 py-2 text-sm rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-60 transition-colors">
+          className="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60 transition-colors">
           {loading ? "Calculando..." : "Actualizar"}
         </button>
       </div>
 
       {/* ── Create PO toolbar (shows when rows selected) ── */}
       {selectedRows.length > 0 && (
-        <div className="rounded-xl border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20 p-4 flex flex-wrap gap-4 items-center justify-between">
+        <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 p-4 flex flex-wrap gap-4 items-center justify-between">
           <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-sm font-medium text-primary-800 dark:text-primary-200">
+            <span className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
               {selectedRows.length} producto{selectedRows.length !== 1 ? "s" : ""} seleccionado{selectedRows.length !== 1 ? "s" : ""}
             </span>
             <div>
-              <label className="text-xs text-primary-600 dark:text-primary-400 mr-1">Sucursal destino:</label>
+              <label className="text-xs text-indigo-600 dark:text-indigo-400 mr-1">Sucursal destino:</label>
               <select value={targetBranchId} onChange={(e) => setTargetBranchId(e.target.value)} className="input-minimal text-sm w-40">
                 {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </div>
             {suppliers.length > 0 && (
               <div>
-                <label className="text-xs text-primary-600 dark:text-primary-400 mr-1">Proveedor alternativo:</label>
+                <label className="text-xs text-indigo-600 dark:text-indigo-400 mr-1">Proveedor alternativo:</label>
                 <select value={defaultSupplierId} onChange={(e) => setDefaultSupplierId(e.target.value)} className="input-minimal text-sm w-44">
                   <option value="">Usar ultimo proveedor</option>
                   {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -268,7 +268,7 @@ export function ReorderTab({ branches }: { branches: Branch[] }) {
             )}
           </div>
           <button onClick={handleCreatePO} disabled={creatingPO}
-            className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-60 transition-colors">
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60 transition-colors">
             {creatingPO ? "Creando OC..." : "Crear OC con seleccionados"}
           </button>
         </div>
@@ -313,7 +313,7 @@ export function ReorderTab({ branches }: { branches: Branch[] }) {
                       "transition-colors",
                       cfg.rowClass,
                       row.suggestedQty > 0 ? "cursor-pointer" : "cursor-default",
-                      isSelected ? "ring-inset ring-2 ring-primary-400 dark:ring-primary-600" : "hover:bg-gray-50 dark:hover:bg-gray-700/50",
+                      isSelected ? "ring-inset ring-2 ring-indigo-400 dark:ring-indigo-600" : "hover:bg-gray-50 dark:hover:bg-gray-700/50",
                     ].join(" ")}
                   >
                     <td className="px-3 py-3">
@@ -357,7 +357,7 @@ export function ReorderTab({ branches }: { branches: Branch[] }) {
                     </td>
                     <td className="px-4 py-3 font-mono font-semibold">
                       {row.suggestedQty > 0 ? (
-                        <span className="text-primary-700 dark:text-primary-400">{row.suggestedQty} u.</span>
+                        <span className="text-indigo-700 dark:text-indigo-400">{row.suggestedQty} u.</span>
                       ) : (
                         <span className="text-gray-300 dark:text-gray-600">—</span>
                       )}

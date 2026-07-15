@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState, useCallback } from "react";
-import { authHeaders } from "../../lib/api";
+import { API_BASE_URL, authFetch, authHeaders } from "../../lib/api";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ export default function AuditPage() {
       if (filterFrom)   params.set("from", filterFrom);
       if (filterTo)     params.set("to", filterTo);
 
-      const res = await fetch(`/audit-logs?${params.toString()}`, {
+      const res = await authFetch(`${API_BASE_URL}/audit-logs?${params.toString()}`, {
         headers: authHeaders(),
       });
       if (!res.ok) throw new Error("Error al cargar auditoría");

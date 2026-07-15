@@ -292,7 +292,7 @@ function NavItem({
           "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
           collapsed ? "justify-center px-2" : "",
           isActive
-            ? "bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+            ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
             : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100",
         ].join(" ")
       }
@@ -371,14 +371,14 @@ export function AppLayout() {
               onClick={closeSidebar}
               className="flex items-center gap-2 font-bold text-gray-900 dark:text-white"
             >
-              <span className="text-primary-600 dark:text-primary-400">
+              <span className="text-indigo-600 dark:text-indigo-400">
                 <IconGiroLogo className="w-6 h-6" />
               </span>
               <span className="text-base tracking-tight">GIRO</span>
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to="/app/dashboard" className="text-primary-600 dark:text-primary-400">
+            <Link to="/app/dashboard" className="text-indigo-600 dark:text-indigo-400">
               <IconGiroLogo className="w-6 h-6" />
             </Link>
           )}
@@ -494,7 +494,7 @@ export function AppLayout() {
             <button
               type="button"
               onClick={() => { navigate("/app/sales"); closeSidebar(); }}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors mr-2"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors mr-2"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -511,7 +511,7 @@ export function AppLayout() {
                 className={[
                   "rounded px-2 py-1 text-xs font-medium transition-colors",
                   i18n.language?.startsWith(lng)
-                    ? "bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300"
+                    ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300"
                     : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400",
                 ].join(" ")}
               >

@@ -136,7 +136,7 @@ export function AccountsPage() {
         {(["accounts", "aging"] as const).map((t_) => (
           <button key={t_} onClick={() => setTab(t_)}
             className={["px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-              tab === t_ ? "border-primary-500 text-primary-600 dark:text-primary-400" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"].join(" ")}>
+              tab === t_ ? "border-indigo-500 text-indigo-600 dark:text-indigo-400" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"].join(" ")}>
             {t_ === "accounts" ? "Cuentas corrientes" : "Aging (vencimientos)"}
           </button>
         ))}

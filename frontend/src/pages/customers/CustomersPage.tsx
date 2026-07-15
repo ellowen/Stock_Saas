@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { getAccessToken } from "../../lib/api";
+import { API_BASE_URL, authFetch, authHeaders } from "../../lib/api";
 import { formatCurrency, formatDate } from "../../lib/format";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../contexts/ToastContext";
@@ -20,8 +20,6 @@ function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
     </svg>
   );
 }
-
-const API = "/api";
 
 interface Customer {
   id: number;
@@ -82,8 +80,7 @@ export default function CustomersPage() {
     setHistory(null);
     setHistoryLoading(true);
     try {
-      const token = getAccessToken();
-      const res = await fetch(`${API}/customers/${c.id}/sales`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await authFetch(`${API_BASE_URL}/customers/${c.id}/sales`, { headers: authHeaders() });
       if (res.ok) setHistory(await res.json());
     } catch { /* ignore */ }
     finally { setHistoryLoading(false); }
@@ -92,9 +89,8 @@ export default function CustomersPage() {
   const load = useCallback(async (q?: string) => {
     setLoading(true);
     try {
-      const token = getAccessToken();
-      const url = `${API}/customers${q ? `?search=${encodeURIComponent(q)}` : ""}`;
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const url = `${API_BASE_URL}/customers${q ? `?search=${encodeURIComponent(q)}` : ""}`;
+      const res = await authFetch(url, { headers: authHeaders() });
       if (!res.ok) throw new Error();
       setCustomers(await res.json());
     } catch {
@@ -145,7 +141,6 @@ export default function CustomersPage() {
     if (Object.keys(errors).length > 0) return;
     setSaving(true);
     try {
-      const token = getAccessToken();
       const body = {
         name: form.name.trim(),
         taxId: form.taxId || undefined,
@@ -156,11 +151,11 @@ export default function CustomersPage() {
         phone: form.phone || undefined,
         notes: form.notes || undefined,
       };
-      const url = editing ? `${API}/customers/${editing.id}` : `${API}/customers`;
+      const url = editing ? `${API_BASE_URL}/customers/${editing.id}` : `${API_BASE_URL}/customers`;
       const method = editing ? "PUT" : "POST";
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: authHeaders(),
         body: JSON.stringify(body),
       });
       if (!res.ok) {
@@ -187,10 +182,9 @@ export default function CustomersPage() {
 
   async function _doDelete(c: Customer) {
     try {
-      const token = getAccessToken();
-      await fetch(`${API}/customers/${c.id}`, {
+      await authFetch(`${API_BASE_URL}/customers/${c.id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders(),
       });
       showToast(t("customers.deleted"), "success");
       setSelected((s) => { const n = new Set(s); n.delete(c.id); return n; });
@@ -210,11 +204,10 @@ export default function CustomersPage() {
 
   async function _doBulkDelete() {
     setBulkDeleting(true);
-    const token = getAccessToken();
     let errors = 0;
     for (const id of selected) {
       try {
-        await fetch(`${API}/customers/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+        await authFetch(`${API_BASE_URL}/customers/${id}`, { method: "DELETE", headers: authHeaders() });
       } catch { errors++; }
     }
     setSelected(new Set());
@@ -229,7 +222,7 @@ export default function CustomersPage() {
       <PageHeader
         title={t("customers.title")}
         subtitle={t("customers.subtitle")}
-        actions={<button type="button" onClick={openCreate} className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">{t("customers.new")}</button>}
+        actions={<button type="button" onClick={openCreate} className="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">{t("customers.new")}</button>}
       />
 
       <SearchInput
@@ -250,7 +243,7 @@ export default function CustomersPage() {
           <p className="text-gray-500 dark:text-gray-400 font-medium">{t("customers.empty")}</p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 mb-4">{t("customers.emptyHint")}</p>
           <button type="button" onClick={openCreate}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors">
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
             {t("customers.new")}
           </button>
@@ -264,7 +257,7 @@ export default function CustomersPage() {
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-semibold text-slate-800 dark:text-slate-100">{c.name}</p>
                   <div className="flex gap-1 shrink-0">
-                    <button type="button" onClick={() => openHistory(c)} className="text-xs text-primary-600 dark:text-primary-400 hover:underline px-2 py-1">Historial</button>
+                    <button type="button" onClick={() => openHistory(c)} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline px-2 py-1">Historial</button>
                     <button type="button" onClick={() => openEdit(c)} className="text-xs text-slate-500 dark:text-slate-400 hover:underline px-2 py-1">{t("customers.edit")}</button>
                     <button type="button" onClick={() => handleDelete(c)} className="text-xs text-red-500 dark:text-red-400 hover:underline px-2 py-1">{t("customers.delete")}</button>
                   </div>
@@ -310,7 +303,7 @@ export default function CustomersPage() {
                   ] as [keyof Customer, string][]).map(([col, label]) => (
                     <th key={col}>
                       <button type="button" onClick={() => toggle(col)}
-                        className="group inline-flex items-center text-left font-semibold hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                        className="group inline-flex items-center text-left font-semibold hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                         {label}
                         <SortIcon active={sortKey === col} dir={sortDir} />
                       </button>
@@ -321,7 +314,7 @@ export default function CustomersPage() {
               </thead>
               <tbody>
                 {sortedCustomers.map((c) => (
-                  <tr key={c.id} className={`group ${selected.has(c.id) ? "bg-primary-50 dark:bg-primary-900/10" : ""}`}>
+                  <tr key={c.id} className={`group ${selected.has(c.id) ? "bg-indigo-50 dark:bg-indigo-900/10" : ""}`}>
                     <td>
                       <input type="checkbox" className="rounded border-slate-300 dark:border-slate-600"
                         checked={selected.has(c.id)}
@@ -337,7 +330,7 @@ export default function CustomersPage() {
                     <td className="text-slate-500 dark:text-slate-400">{c.city ?? "—"}</td>
                     <td>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button type="button" onClick={() => openHistory(c)} className="text-xs text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded px-2 py-1">Historial</button>
+                        <button type="button" onClick={() => openHistory(c)} className="text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded px-2 py-1">Historial</button>
                         <button type="button" onClick={() => openEdit(c)} className="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded px-2 py-1">{t("customers.edit")}</button>
                         <button type="button" onClick={() => handleDelete(c)} className="text-xs text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded px-2 py-1">{t("customers.delete")}</button>
                       </div>

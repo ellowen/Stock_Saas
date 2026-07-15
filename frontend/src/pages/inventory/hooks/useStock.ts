@@ -46,6 +46,34 @@ export function useStock({ onMutated }: UseStockOptions = {}) {
 
   const { showToast } = useToast();
 
+  // Filtros activos de pantalla, para que exportar traiga lo mismo que se ve
+  // en la tabla — antes los tres exports ignoraban todo filtro. lowStockOnly
+  // no lo soporta el endpoint sin paginar, así que se aplica client-side acá.
+  const buildExportParams = useCallback(() => {
+    const params = new URLSearchParams();
+    if (branchId) params.set("branchId", branchId);
+    if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+    if (category.trim()) params.set("category", category.trim());
+    if (brand.trim()) params.set("brand", brand.trim());
+    if (hideZero) params.set("hideZero", "true");
+    const minP = minPrice.trim() !== "" ? parseFloat(minPrice) : NaN;
+    const maxP = maxPrice.trim() !== "" ? parseFloat(maxPrice) : NaN;
+    if (!Number.isNaN(minP) && minP >= 0) params.set("minPrice", String(minP));
+    if (!Number.isNaN(maxP) && maxP >= 0) params.set("maxPrice", String(maxP));
+    return params;
+  }, [branchId, debouncedSearch, category, brand, hideZero, minPrice, maxPrice]);
+
+  const fetchInventoryForExport = useCallback(async (): Promise<InventoryRow[]> => {
+    const params = buildExportParams();
+    const res = await authFetch(`${API_BASE_URL}/inventory?${params}`, { headers: authHeaders() });
+    if (!res.ok) throw new Error("Error al cargar inventario");
+    const inventory: InventoryRow[] = await res.json();
+    if (!lowStockOnly) return inventory;
+    return inventory.filter(
+      (row) => (row.minStock != null && row.quantity <= row.minStock) || (row.minStock == null && row.quantity < 5)
+    );
+  }, [buildExportParams, lowStockOnly]);
+
   const load = useCallback(
     async (p: number, searchOverride?: string) => {
       setLoading(true);
@@ -121,9 +149,7 @@ export function useStock({ onMutated }: UseStockOptions = {}) {
   const exportCsv = useCallback(async () => {
     setExportCsvLoading(true);
     try {
-      const res = await authFetch(`${API_BASE_URL}/inventory`, { headers: authHeaders() });
-      if (!res.ok) throw new Error("Error al cargar inventario");
-      const inventory: InventoryRow[] = await res.json();
+      const inventory = await fetchInventoryForExport();
       const headers = ["Sucursal", "Código", "Producto", "Categoría", "Talle", "Color", "SKU", "Cantidad"];
       const rows = inventory.map((row) => [
         escapeCsvCell(row.branch.name),
@@ -148,14 +174,12 @@ export function useStock({ onMutated }: UseStockOptions = {}) {
     } finally {
       setExportCsvLoading(false);
     }
-  }, []);
+  }, [fetchInventoryForExport]);
 
   const exportExcel = useCallback(async () => {
     setExportExcelLoading(true);
     try {
-      const res = await authFetch(`${API_BASE_URL}/inventory`, { headers: authHeaders() });
-      if (!res.ok) throw new Error("Error al cargar inventario");
-      const inventory: InventoryRow[] = await res.json();
+      const inventory = await fetchInventoryForExport();
       const headers = ["Sucursal", "Código", "Producto", "Categoría", "Talle", "Color", "SKU", "Cantidad"];
       const rows = inventory.map((row) => [
         row.branch.name,
@@ -178,14 +202,12 @@ export function useStock({ onMutated }: UseStockOptions = {}) {
     } finally {
       setExportExcelLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, fetchInventoryForExport]);
 
   const exportPdf = useCallback(async () => {
     setExportPdfLoading(true);
     try {
-      const res = await authFetch(`${API_BASE_URL}/inventory`, { headers: authHeaders() });
-      if (!res.ok) throw new Error("Error al cargar inventario");
-      const inventory: InventoryRow[] = await res.json();
+      const inventory = await fetchInventoryForExport();
       const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
       doc.setFontSize(14);
       doc.text("Stock por sucursal", 14, 12);
@@ -215,7 +237,7 @@ export function useStock({ onMutated }: UseStockOptions = {}) {
     } finally {
       setExportPdfLoading(false);
     }
-  }, []);
+  }, [fetchInventoryForExport]);
 
   return {
     result,

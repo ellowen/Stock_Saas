@@ -4,12 +4,9 @@
 
 ## Paleta
 
-`frontend/tailwind.config.cjs` sí extiende el theme — define un token `primary` (escala azul, `primary-600` = `#2563eb`) más `borderRadius.card/modal`, `boxShadow.card/modal` y animaciones `fade-in`/`slide-up`. **Pero la mayoría de las pantallas no lo usan**: usan `indigo-*` hardcodeado directamente (ver "Problema real" abajo).
-
-| Rol | Clase Tailwind realmente usada | Uso |
+| Rol | Clase Tailwind | Uso |
 |---|---|---|
-| Acento / marca (mayoría de pantallas) | `indigo-600` (hover `indigo-500`) | Botón primario, links activos, foco de inputs — `.btn-primary` en `index.css` usa `indigo-*` |
-| Acento / marca (algunas pantallas) | `primary-600` (token del config, azul `#2563eb`) | Botón "Nuevo" en `SuppliersPage`, `PromotionsPage` y otras páginas armadas con ese patrón |
+| Acento / marca | `indigo-600` (hover `indigo-500`) | Botón primario, links activos, foco de inputs — `.btn-primary` en `index.css` usa `indigo-*` |
 | Neutro de fondo | `slate-50` (claro) / `slate-900` (oscuro, body) | Fondo de página |
 | Neutro de superficie | `white` / `slate-800` | Cards, tablas, modales |
 | Neutro de borde | `slate-200`/`slate-300` (claro) / `slate-600` (oscuro) | Bordes de inputs, cards, tablas |
@@ -18,9 +15,9 @@
 | Alerta / advertencia | `amber-*` | Vuelto insuficiente, promo aplicada, stock bajo |
 | Error / peligro | `red-*` | Validaciones, botón eliminar, badges "Anulada" |
 
-### Problema real: dos sistemas de acento en paralelo
+### Unificado 2026-07-15: un solo sistema de acento
 
-`indigo-600` (usado directamente, sin pasar por el theme) y `primary-600` (token del config, que resuelve a un azul ligeramente distinto) conviven en la misma app. Un usuario atento notaría que el botón "Nueva promoción" es de un azul distinto al botón "Cobrar" del POS. No es intencional — es el resultado de páginas escritas en momentos distintos sin un lint/regla que fuerce usar el token. Antes de agregar una pantalla nueva, **conviene decidir uno de los dos y migrar el otro**, no sumar una tercera variante.
+Hasta esa fecha convivían dos sistemas: `indigo-600` (hardcodeado directamente, usado por la mayoría de las pantallas y por `.btn-primary` en `index.css`) y `primary-600` (un token azul distinto definido en `tailwind.config.cjs`, usado en `SuppliersPage`, `PromotionsPage` y otras ~15 pantallas/componentes, incluyendo piezas compartidas como `Button.tsx`/`Badge.tsx`/`PageHeader.tsx`). Se resolvió a favor de `indigo`, porque es el color de marca real: el `theme_color` del manifest PWA (`vite.config.ts`) ya declara `#4f46e5`, que es exactamente `indigo-600` — el token `primary` era config vestigial que nunca coincidió con la identidad visual ya establecida. Se migraron los ~59 usos de `primary-*` a `indigo-*` (mismo patrón numérico de stops, sin pérdida de shades) y se eliminó el token `primary` de `tailwind.config.cjs` para que no vuelva a aparecer como opción.
 
 Modo oscuro: clase `.dark` en el `<html>` (ver `ThemeContext`), cada componente define su variante con el prefijo `dark:` de Tailwind — no hay un segundo set de tokens, es literalmente el mismo componente con clases condicionales.
 
@@ -73,6 +70,6 @@ No hay un breakpoint system documentado más allá de los defaults de Tailwind (
 
 ## Deuda de diseño conocida
 
-- No existe un archivo de tokens central (`tailwind.config.js` con theme extendido) — los colores están hardcodeados como clases de Tailwind directamente en cada componente. Cambiar el color de marca hoy requeriría un find-and-replace, no editar un token.
+- Los colores siguen hardcodeados como clases de Tailwind directamente en cada componente (`indigo-600`, no un token semántico) — cambiar el color de marca hoy requiere un find-and-replace, no editar un valor central. `tailwind.config.cjs` ya no tiene ningún color propio desde la unificación del 2026-07-15; si se quiere un token real, habría que definir `indigo` (o un alias) ahí y migrar todo de nuevo, esta vez a favor del token.
 - No hay Storybook ni catálogo visual de componentes — `components/ui/` se descubre leyendo código, no hay documentación visual navegable.
 - Iconografía vendorizada a mano: agregar íconos es más trabajo que instalar un paquete, pero da control total y cero dependencia externa.

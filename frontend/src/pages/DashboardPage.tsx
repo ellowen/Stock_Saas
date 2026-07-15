@@ -102,7 +102,7 @@ function QuickActions() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
         </svg>
       ),
-      color: "bg-primary-600 hover:bg-primary-700 text-white",
+      color: "bg-indigo-600 hover:bg-indigo-700 text-white",
       onClick: () => navigate("/app/sales"),
     },
     {
@@ -162,7 +162,7 @@ function RecentSalesWidget({ sales }: { sales: RecentSale[] }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
         <p className="text-sm text-gray-400">Sin ventas registradas aun</p>
-        <Link to="/app/sales" className="mt-2 text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium">
+        <Link to="/app/sales" className="mt-2 text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
           Registrar primera venta
         </Link>
       </div>
@@ -372,7 +372,7 @@ export function DashboardPage() {
             {data.totalStockUnits.toLocaleString("es-AR")}
           </p>
           <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">unidades en inventario</p>
-          <Link to="/app/inventory" className="mt-2 inline-block text-xs text-primary-600 dark:text-primary-400 hover:underline">
+          <Link to="/app/inventory" className="mt-2 inline-block text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
             Ver inventario
           </Link>
         </div>
@@ -405,7 +405,7 @@ export function DashboardPage() {
         <div className="rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Sueldos del mes</h3>
-            <Link to="/app/payroll" className="text-xs text-primary-600 dark:text-primary-400 hover:underline">
+            <Link to="/app/payroll" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
               Ver liquidaciones
             </Link>
           </div>
@@ -487,7 +487,7 @@ export function DashboardPage() {
         <div className="rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-5 shadow-sm flex flex-col">
           <div className="flex items-center justify-between mb-1">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Ventas recientes</h3>
-            <Link to="/app/sales" className="text-xs text-primary-600 dark:text-primary-400 hover:underline">
+            <Link to="/app/sales" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
               Ver todas
             </Link>
           </div>
@@ -499,7 +499,7 @@ export function DashboardPage() {
             <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
               <Link
                 to="/app/sales"
-                className="flex items-center justify-center gap-1.5 w-full py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                className="flex items-center justify-center gap-1.5 w-full py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
               >
                 Ver historial completo
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

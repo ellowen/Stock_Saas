@@ -23,7 +23,7 @@ export function PageHeader({ title, subtitle, actions, breadcrumb }: PageHeaderP
               {item.onClick ? (
                 <button
                   onClick={item.onClick}
-                  className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                 >
                   {item.label}
                 </button>

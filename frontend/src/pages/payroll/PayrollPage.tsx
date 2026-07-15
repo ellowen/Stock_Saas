@@ -399,7 +399,7 @@ export default function PayrollPage() {
         {(["payrolls", "advances"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={["px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-              tab === t ? "border-primary-500 text-primary-600 dark:text-primary-400" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"].join(" ")}>
+              tab === t ? "border-indigo-500 text-indigo-600 dark:text-indigo-400" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"].join(" ")}>
             {t === "payrolls" ? "Liquidaciones" : "Anticipos"}
           </button>
         ))}
@@ -479,7 +479,7 @@ export default function PayrollPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2 justify-end flex-wrap">
-                      <button onClick={() => openReceipt(p.id)} className="text-xs text-primary-600 dark:text-primary-400 hover:underline">Ver recibo</button>
+                      <button onClick={() => openReceipt(p.id)} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Ver recibo</button>
                       {p.status === "DRAFT" && (
                         <>
                           <button onClick={() => handleAction(p.id, "confirm")} className="text-xs text-blue-600 hover:underline">Confirmar</button>

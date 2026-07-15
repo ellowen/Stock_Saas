@@ -165,7 +165,7 @@ export default function SuppliersPage() {
       <PageHeader
         title={t("suppliers.title")}
         subtitle={t("suppliers.subtitle")}
-        actions={<button type="button" onClick={openCreate} className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">{t("suppliers.new")}</button>}
+        actions={<button type="button" onClick={openCreate} className="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">{t("suppliers.new")}</button>}
       />
 
       <SearchInput
@@ -186,7 +186,7 @@ export default function SuppliersPage() {
           <p className="text-gray-500 dark:text-gray-400 font-medium">{t("suppliers.empty")}</p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 mb-4">{t("suppliers.emptyHint")}</p>
           <button type="button" onClick={openCreate}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors">
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
             {t("suppliers.new")}
           </button>
@@ -227,7 +227,7 @@ export default function SuppliersPage() {
                   ] as [keyof Supplier, string][]).map(([col, label]) => (
                     <th key={col}>
                       <button type="button" onClick={() => toggle(col)}
-                        className="group inline-flex items-center text-left font-semibold hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                        className="group inline-flex items-center text-left font-semibold hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                         {label}
                         <SortIcon active={sortKey === col} dir={sortDir} />
                       </button>

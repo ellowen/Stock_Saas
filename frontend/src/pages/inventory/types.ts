@@ -102,10 +102,13 @@ export type MovementsPaginated = {
 
 export const MOVEMENT_TYPE_LABELS: Record<string, string> = {
   SALE: "Venta",
+  SALE_RETURN: "Devolución de venta",
   MANUAL_ADJUST: "Ajuste",
   SET_QUANTITY: "Edición",
   TRANSFER_IN: "Traspaso (entrada)",
   TRANSFER_OUT: "Traspaso (salida)",
+  DOCUMENT_OUT: "Salida por documento",
+  PURCHASE_RECEIVE: "Recepción de compra",
 };
 
 export const DEFAULT_PAGE_SIZE = 15;

@@ -201,7 +201,7 @@ export default function PromotionsPage() {
         subtitle={t("promotions.subtitle")}
         actions={
           canManage && (
-            <button type="button" onClick={openCreate} className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">
+            <button type="button" onClick={openCreate} className="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">
               {t("promotions.new")}
             </button>
           )
