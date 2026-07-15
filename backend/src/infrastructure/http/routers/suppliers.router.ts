@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middleware/auth";
+import { requirePermission } from "../middleware/requirePermission";
 import { SupplierService } from "../../../application/suppliers/supplier.service";
 
 const router = Router();
@@ -14,7 +15,7 @@ router.get("/", async (req: Request, res: Response) => {
   res.json(suppliers);
 });
 
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requirePermission("SUPPLIERS_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const { name, taxId, address, city, email, phone, notes } = req.body;
   if (!name?.trim()) {
@@ -28,7 +29,7 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
-router.put("/:id", async (req: Request, res: Response) => {
+router.put("/:id", requirePermission("SUPPLIERS_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
@@ -40,7 +41,7 @@ router.put("/:id", async (req: Request, res: Response) => {
   }
 });
 
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requirePermission("SUPPLIERS_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });

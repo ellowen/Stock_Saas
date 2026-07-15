@@ -234,7 +234,7 @@ export class InventoryService {
       conditions.push(Prisma.sql`i.branch_id = ${filter.branchId}`);
     }
     if (filter.search !== undefined && filter.search.trim() !== "") {
-      conditions.push(Prisma.sql`p.name ILIKE ${"%" + filter.search.trim() + "%"}`);
+      conditions.push(Prisma.sql`p.name LIKE ${"%" + filter.search.trim() + "%"}`);
     }
     if (filter.category !== undefined && filter.category.trim() !== "") {
       conditions.push(Prisma.sql`p.category = ${filter.category.trim()}`);

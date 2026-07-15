@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middleware/auth";
+import { requirePermission } from "../middleware/requirePermission";
 import { CustomerService } from "../../../application/customers/customer.service";
 import { prisma } from "../../../config/database/prisma";
 
@@ -15,7 +16,7 @@ router.get("/", async (req: Request, res: Response) => {
   res.json(customers);
 });
 
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requirePermission("CUSTOMERS_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const { name, taxId, taxType, address, city, email, phone, notes } = req.body;
   if (!name?.trim()) {
@@ -29,7 +30,7 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
-router.put("/:id", async (req: Request, res: Response) => {
+router.put("/:id", requirePermission("CUSTOMERS_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
@@ -67,7 +68,7 @@ router.get("/:id/sales", async (req: Request, res: Response) => {
   return res.json({ totalSpent, count: sales.length, sales });
 });
 
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requirePermission("CUSTOMERS_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });

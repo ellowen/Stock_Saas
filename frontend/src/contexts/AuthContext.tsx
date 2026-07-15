@@ -58,7 +58,7 @@ const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
   MANAGER: [
     "PRODUCTS_WRITE", "PRODUCTS_DELETE", "INVENTORY_WRITE",
     "SALES_VOID", "SALES_HISTORY", "SALES_DISCOUNT", "SALES_PRICE_OVERRIDE", "TRANSFERS_APPROVE",
-    "EMPLOYEES_VIEW", "ACCOUNTING_VIEW", "REPORTS_VIEW",
+    "EMPLOYEES_VIEW", "ACCOUNTING_VIEW", "REPORTS_VIEW", "USERS_MANAGE", "SETTINGS_MANAGE",
     "CUSTOMERS_WRITE", "SUPPLIERS_WRITE", "DOCUMENTS_WRITE", "PURCHASES_MANAGE",
   ],
   SELLER: ["SALES_HISTORY", "CUSTOMERS_WRITE", "DOCUMENTS_WRITE"],
@@ -137,9 +137,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refetch();
   }, [refetch]);
 
-  const role = user?.auth?.role ?? "";
-  const canManageUsers = role === "OWNER" || role === "MANAGER";
-  const canManageBranches = role === "OWNER" || role === "MANAGER";
+  const canManageUsers = permissions.has("USERS_MANAGE");
+  const canManageBranches = permissions.has("SETTINGS_MANAGE");
   const canViewReports = permissions.has("REPORTS_VIEW");
   const canManageTransfers = permissions.has("TRANSFERS_APPROVE");
 

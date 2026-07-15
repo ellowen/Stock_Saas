@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
+import { requirePermission } from "../middleware/requirePermission";
 import {
   createProductController,
   deleteProductController,
@@ -16,12 +17,12 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get("/categories", listCategoriesController);
-router.post("/import-csv", uploadMiddleware, importCsvController);
 router.get("/brands", listBrandsController);
 router.get("/", listProductsController);
-router.post("/", checkProductLimit, createProductController);
-router.patch("/:id", updateProductController);
-router.delete("/:id", deleteProductController);
+router.post("/import-csv", requirePermission("PRODUCTS_WRITE"), uploadMiddleware, importCsvController);
+router.post("/", requirePermission("PRODUCTS_WRITE"), checkProductLimit, createProductController);
+router.patch("/:id", requirePermission("PRODUCTS_WRITE"), updateProductController);
+router.delete("/:id", requirePermission("PRODUCTS_DELETE"), deleteProductController);
 
 export const productsRouter = router;
 

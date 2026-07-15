@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
+import { requirePermission } from "../middleware/requirePermission";
 import {
   adjustInventoryController,
   bulkAdjustController,
@@ -14,9 +15,9 @@ router.use(authMiddleware);
 
 router.get("/", listInventoryController);
 router.get("/movements", listMovementsController);
-router.post("/bulk-adjust", bulkAdjustController);
-router.post("/adjust", adjustInventoryController);
-router.patch("/quantity", setQuantityController);
+router.post("/bulk-adjust", requirePermission("INVENTORY_WRITE"), bulkAdjustController);
+router.post("/adjust", requirePermission("INVENTORY_WRITE"), adjustInventoryController);
+router.patch("/quantity", requirePermission("INVENTORY_WRITE"), setQuantityController);
 
 export const inventoryRouter = router;
 

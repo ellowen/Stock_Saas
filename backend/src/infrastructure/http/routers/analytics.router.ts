@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middleware/auth";
-import { requireRole } from "../middleware/requireRole";
+import { requirePermission } from "../middleware/requirePermission";
 import { prisma } from "../../../config/database/prisma";
 import { StockForecastService } from "../../../application/analytics/stock-forecast.service";
 import type { Urgency } from "../../../application/analytics/stock-forecast.service";
@@ -126,7 +126,7 @@ router.get("/reorder-suggestions", async (req: Request, res: Response) => {
 
 // POST /analytics/reorder-suggestions/create-po
 // Body: { branchId, lines: [{ variantId, qty, supplierId, description, unitPrice }] }
-router.post("/reorder-suggestions/create-po", async (req: Request, res: Response) => {
+router.post("/reorder-suggestions/create-po", requirePermission("PURCHASES_MANAGE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const userId = req.auth!.userId;
   const { branchId, lines } = req.body;
@@ -142,8 +142,8 @@ router.post("/reorder-suggestions/create-po", async (req: Request, res: Response
   }
 });
 
-// Reportes completos: solo OWNER y MANAGER
-router.use(requireRole(["OWNER", "MANAGER"]));
+// Reportes completos: requiere el permiso granular REPORTS_VIEW (respeta overrides, no solo rol)
+router.use(requirePermission("REPORTS_VIEW"));
 router.get("/overview", analyticsOverviewController);
 router.get("/report-detail", analyticsReportDetailController);
 router.get("/products-without-movement", analyticsProductsWithoutMovementController);

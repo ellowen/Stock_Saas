@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { PurchaseOrderStatus } from "@prisma/client";
 import { authMiddleware } from "../middleware/auth";
+import { requirePermission } from "../middleware/requirePermission";
 import { PurchaseOrderService } from "../../../application/purchase-orders/purchase-order.service";
 import { autoJournal } from "../../../application/accounting/auto-journal.service";
 
@@ -30,7 +31,7 @@ router.get("/:id", async (req: Request, res: Response) => {
   res.json(order);
 });
 
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requirePermission("PURCHASES_MANAGE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const userId = req.auth!.userId;
   const { supplierId, branchId, expectedAt, notes, items } = req.body;
@@ -51,7 +52,7 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
-router.put("/:id", async (req: Request, res: Response) => {
+router.put("/:id", requirePermission("PURCHASES_MANAGE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
@@ -63,7 +64,7 @@ router.put("/:id", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/:id/receive", async (req: Request, res: Response) => {
+router.post("/:id/receive", requirePermission("PURCHASES_MANAGE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const userId = req.auth!.userId;
   const id = parseInt(req.params["id"] as string);
@@ -73,21 +74,24 @@ router.post("/:id/receive", async (req: Request, res: Response) => {
     return res.status(400).json({ message: "items requeridos" });
   }
   try {
-    const order = await service.receive(id, companyId, userId, items);
-    // Fire-and-forget auto journal for received purchase
-    autoJournal.onPurchaseReceived({
-      companyId,
-      createdBy: userId,
-      purchaseOrderId: id,
-      total: Number((order as any).total ?? 0),
-    }).catch(console.error);
+    const { order, receivedAmount } = await service.receive(id, companyId, userId, items);
+    // Fire-and-forget auto journal for the amount actually received in this call
+    // (no el total de la orden completa — evita duplicar el asiento en recepciones parciales)
+    if (receivedAmount > 0) {
+      autoJournal.onPurchaseReceived({
+        companyId,
+        createdBy: userId,
+        purchaseOrderId: id,
+        total: receivedAmount,
+      }).catch(console.error);
+    }
     res.json(order);
   } catch (err: any) {
     res.status(400).json({ message: err.message });
   }
 });
 
-router.post("/:id/cancel", async (req: Request, res: Response) => {
+router.post("/:id/cancel", requirePermission("PURCHASES_MANAGE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });

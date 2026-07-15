@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middleware/auth";
+import { requirePermission } from "../middleware/requirePermission";
 import { AttributeService } from "../../../application/attributes/attribute.service";
 import { INDUSTRY_PROFILES } from "../../../application/attributes/industry-profiles";
 
@@ -26,7 +27,7 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 // POST /attributes — crear atributo
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requirePermission("PRODUCTS_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const { name, type, options, sortOrder } = req.body;
   if (!name?.trim()) {
@@ -44,7 +45,7 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 // PUT /attributes/:id — actualizar atributo
-router.put("/:id", async (req: Request, res: Response) => {
+router.put("/:id", requirePermission("PRODUCTS_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
@@ -58,7 +59,7 @@ router.put("/:id", async (req: Request, res: Response) => {
 });
 
 // DELETE /attributes/:id — eliminar atributo
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requirePermission("PRODUCTS_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
@@ -72,7 +73,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
 });
 
 // POST /attributes/apply-profile — aplicar perfil de industria
-router.post("/apply-profile", async (req: Request, res: Response) => {
+router.post("/apply-profile", requirePermission("PRODUCTS_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const { profileKey } = req.body;
   if (!profileKey) return res.status(400).json({ message: "profileKey es requerido" });

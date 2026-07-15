@@ -95,12 +95,16 @@ export class PurchaseOrderService {
       if (!order) throw new Error("Purchase order not found");
       if (order.status === "CANCELLED") throw new Error("Order is cancelled");
 
+      let receivedAmount = 0;
+
       for (const recv of receivedItems) {
         const item = order.items.find((i) => i.id === recv.itemId);
         if (!item || !item.variantId) continue;
 
         const qty = Math.floor(recv.received);
         if (qty <= 0) continue;
+
+        receivedAmount += qty * Number(item.unitPrice);
 
         const inv = await tx.inventory.findFirst({
           where: {
@@ -164,11 +168,13 @@ export class PurchaseOrderService {
         ? "PARTIALLY_RECEIVED"
         : order.status;
 
-      return tx.purchaseOrder.update({
+      const updatedOrder = await tx.purchaseOrder.update({
         where: { id },
         data: { status: newStatus },
         include: { items: true, supplier: true, branch: true },
       });
+
+      return { order: updatedOrder, receivedAmount };
     });
   }
 

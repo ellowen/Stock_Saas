@@ -2,6 +2,7 @@ import { Router } from "express";
 import { Request, Response } from "express";
 import { z } from "zod";
 import { authMiddleware } from "../middleware/auth";
+import { requirePermission } from "../middleware/requirePermission";
 import { StockCountService } from "../../../application/stock-counts/stock-count.service";
 
 const router = Router();
@@ -10,7 +11,7 @@ router.use(authMiddleware);
 const service = new StockCountService();
 
 // POST /stock-counts — create new session
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requirePermission("INVENTORY_WRITE"), async (req: Request, res: Response) => {
   if (!req.auth) return res.status(401).json({ message: "Unauthorized" });
   const schema = z.object({
     branchId: z.number().int().positive(),
@@ -54,7 +55,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 });
 
 // PATCH /stock-counts/:id/items — batch update countedQty
-router.patch("/:id/items", async (req: Request, res: Response) => {
+router.patch("/:id/items", requirePermission("INVENTORY_WRITE"), async (req: Request, res: Response) => {
   if (!req.auth) return res.status(401).json({ message: "Unauthorized" });
   const schema = z.object({
     updates: z.array(z.object({
@@ -76,7 +77,7 @@ router.patch("/:id/items", async (req: Request, res: Response) => {
 });
 
 // POST /stock-counts/:id/apply
-router.post("/:id/apply", async (req: Request, res: Response) => {
+router.post("/:id/apply", requirePermission("INVENTORY_WRITE"), async (req: Request, res: Response) => {
   if (!req.auth) return res.status(401).json({ message: "Unauthorized" });
   try {
     const result = await service.apply(req.auth.companyId, Number(req.params.id), req.auth.userId);
@@ -91,7 +92,7 @@ router.post("/:id/apply", async (req: Request, res: Response) => {
 });
 
 // DELETE /stock-counts/:id — cancel
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requirePermission("INVENTORY_WRITE"), async (req: Request, res: Response) => {
   if (!req.auth) return res.status(401).json({ message: "Unauthorized" });
   try {
     await service.cancel(req.auth.companyId, Number(req.params.id));

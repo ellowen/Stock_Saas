@@ -51,7 +51,7 @@ export async function checkBranchLimit(req: Request, res: Response, next: NextFu
   const limit = PLANS[plan].branches;
   if (limit === Infinity) return next();
 
-  const count = await prisma.branch.count({ where: { companyId } });
+  const count = await prisma.branch.count({ where: { companyId, isActive: true } });
   if (count >= limit) {
     return res.status(402).json({
       code: "PLAN_LIMIT_REACHED",
@@ -135,7 +135,7 @@ export async function getPlanUsage(companyId: number) {
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
   const [branches, users, products, monthlySales] = await Promise.all([
-    prisma.branch.count({ where: { companyId } }),
+    prisma.branch.count({ where: { companyId, isActive: true } }),
     prisma.user.count({ where: { companyId, isActive: true } }),
     prisma.product.count({ where: { companyId, isActive: true } }),
     prisma.sale.count({ where: { companyId, createdAt: { gte: firstOfMonth } } }),
