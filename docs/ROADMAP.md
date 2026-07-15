@@ -52,12 +52,17 @@ Los tres tocaban `purchase-order.service.ts`, se hicieron juntos:
 - **Truncamiento de decimales en la recepción**: `receive()` ya no usa `Math.floor()` — acepta cantidades fraccionarias en `PurchaseOrderItem.received`. Se descubrió en el camino que `Inventory.quantity`/`InventoryMovement` son `Int` (no `Decimal`) — todo el ledger de stock de la app, no solo Compras, no soporta unidades fraccionarias — así que el stock real redondea al entero más cercano aunque `received` guarde el valor exacto. Cambiar eso sería una migración mucho más grande (toca Sales/Transfers/StockCounts), no se hizo.
 - **`PUT /purchase-orders/:id` permitía forzar `status` a `RECEIVED`**: ahora solo acepta `DRAFT`/`SENT`/`CANCELLED` por esa vía.
 
+## ✅ Completado 2026-07-15 — P2: cancelación real de traspasos + DocumentService.update()
+
+- **`StockTransferStatus.CANCELLED` inalcanzable**: se agregó `POST /stock-transfers/:id/cancel` (solo para `PENDING`, no toca inventario porque `PENDING` nunca lo tocó). Botón "Cancelar" agregado a `TransfersPage.tsx` para filas `PENDING`. **Verificado en el navegador**: canceló el traspaso #1 (`Pending` → `Cancelado`), botón desaparece correctamente después. `PurchaseOrderStatus.SENT` y `StockTransferStatus.IN_TRANSIT` quedan sin resolver — ver `modules/Transfers.md` y `modules/Purchases.md`, son decisiones de flujo de negocio, no bugs mecánicos.
+- **`DocumentService.update()` código muerto**: exigía `status==="DRAFT"` pero `create()` nunca deja un documento en `DRAFT` — inalcanzable. Se relajó a bloquear solo `CANCELLED` (los campos que edita — `notes`/`dueDate`/`customerId` — no afectan totales ni stock). **Verificado con script**: crear + editar un documento `ISSUED` funciona. Sigue sin existir ningún botón en `DocumentsPage.tsx` que llame a este endpoint — el fix corrige el código, no agrega la UI (nadie la pidió).
+
 ## P2 — Consistencia de producto / UX (sin resolver)
 
 - `size`/`color` de variante: Zod los exige pero el service nunca los persiste; el modal de UI con atributos flexibles activados no completa `ProductVariantAttribute` correctamente (solo la importación CSV lo hace bien) — ver `modules/Products.md`.
-- Estados de enum inalcanzables a limpiar o implementar: `PurchaseOrderStatus.SENT`, `StockTransferStatus.IN_TRANSIT`/`CANCELLED` (sin flujo ni endpoint de cancelación de traspaso).
-- `DocumentService.update()` es código muerto (guard `status==="DRAFT"` nunca se cumple porque `create()` fuerza `ISSUED`) — decidir si se habilita edición real de borradores o se elimina el endpoint.
 - No existe ninguna pantalla para administrar `TaxConfig` (crear/editar tasas de impuesto) — el CRUD backend existe pero ni Documents ni Purchases (ambos con selector de impuesto en la UI) tienen forma de cargar uno sin ir directo a la API.
+- `PurchaseOrderStatus.SENT` sigue sin ningún flujo que lo alcance.
+- `StockTransferStatus.IN_TRANSIT` sigue sin usarse (requeriría un paso intermedio real en el flujo de traspasos).
 
 ## P4 — Deuda de producto/negocio a decidir (no técnica)
 

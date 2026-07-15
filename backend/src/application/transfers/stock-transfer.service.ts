@@ -230,6 +230,23 @@ export class StockTransferService {
     });
   }
 
+  async cancel(companyId: number, transferId: number) {
+    const transfer = await prisma.stockTransfer.findFirst({
+      where: { id: transferId, companyId },
+    });
+    if (!transfer) throw new Error("TRANSFER_NOT_FOUND");
+    if (transfer.status !== StockTransferStatus.PENDING) {
+      // COMPLETED ya movio stock (revertirlo es una operacion distinta, no
+      // soportada); CANCELLED no se puede cancelar de nuevo.
+      throw new Error("INVALID_STATUS");
+    }
+    return prisma.stockTransfer.update({
+      where: { id: transferId },
+      data: { status: StockTransferStatus.CANCELLED },
+      include: { items: true },
+    });
+  }
+
   async list(companyId: number) {
     return prisma.stockTransfer.findMany({
       where: { companyId },

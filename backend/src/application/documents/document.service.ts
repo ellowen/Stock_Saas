@@ -170,8 +170,13 @@ export class DocumentService {
     const doc = await prisma.document.findFirst({
       where: { id, companyId },
     });
-    if (!doc || doc.status !== "DRAFT") {
-      throw new Error("Only DRAFT documents can be edited");
+    if (!doc) throw new Error("Document not found");
+    // create() siempre deja el documento en ISSUED (no en DRAFT, el default
+    // del schema) -- exigir DRAFT aca hacia que este metodo fuera inalcanzable
+    // en la practica. notes/dueDate/customerId no afectan totales ni stock,
+    // asi que son seguros de editar mientras el documento no este anulado.
+    if (doc.status === "CANCELLED") {
+      throw new Error("Cannot edit a cancelled document");
     }
     return prisma.document.update({
       where: { id },

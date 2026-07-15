@@ -14,6 +14,8 @@ Emitir comprobantes (presupuesto, remito, factura, nota de crédito) con numerac
 
 `create()` siempre pone el documento en `ISSUED` directamente (nunca `DRAFT`, pese a ser el default del schema) → opcionalmente `cancel()` (revierte stock si era REMITO/INVOICE) → un `QUOTE` puede convertirse en `INVOICE` (`/convert-to-invoice`, marca el quote `ACCEPTED`) → una `INVOICE` puede generar una `CREDIT_NOTE` ligada (`/credit-note`, con `relatedDocId`).
 
+**Resuelto 2026-07-15**: `update()` exigía `status==="DRAFT"` para editar, pero como `create()` nunca deja un documento en `DRAFT`, el endpoint siempre fallaba — código inalcanzable. Se relajó el guard para permitir editar `notes`/`dueDate`/`customerId` mientras el documento no esté `CANCELLED` (esos tres campos no afectan totales ni stock, son seguros de tocar en cualquier otro estado). Verificado con script: crear un documento (queda `ISSUED`) y editarlo funciona. **Sigue sin haber ningún botón/formulario en `DocumentsPage.tsx` que llame a este endpoint** — el fix hace que el método sea correcto y usable por API, pero la UI para editarlo no existe todavía (nadie lo pidió como feature, solo se corrigió que el código no fuera lógicamente inalcanzable).
+
 ## UX / Frontend
 
 `DocumentsPage.tsx`: tabs lista/nueva, selector de tipo, ítems con descuento por línea. Al crear, abre `DocumentPreviewModal` (toggle "mostrar precios", útil para imprimir un remito sin precios) con botones Imprimir/Descargar PDF. `DocumentTemplate.tsx` + `usePrintDocument.ts` (html2canvas + jsPDF, multi-página) es la plantilla real de impresión — reusable, y de hecho **debería** ser reusada por Purchases, que hoy tiene su propio modal ad-hoc.
@@ -24,7 +26,7 @@ Emitir comprobantes (presupuesto, remito, factura, nota de crédito) con numerac
 
 ## Permisos
 
-`DOCUMENTS_WRITE` gatea el menú, no se aplica en el backend. Ver `SECURITY.md`.
+`DOCUMENTS_WRITE` gatea el menú y, desde el 2026-07-15, también el backend (`requirePermission` en crear/editar/anular/convertir/nota de crédito). Ver `SECURITY.md`.
 
 ## Tablas / Modelo
 
@@ -40,9 +42,9 @@ Ver `ROADMAP.md`. Decidir si `Sale.documentId` se implementa de verdad (venta ge
 
 ## Problemas conocidos
 
-1. **`update()` es código muerto**: exige `status==="DRAFT"` para editar, pero `create()` nunca deja un documento en `DRAFT` — el endpoint `PUT /:id` siempre falla.
-2. `POST /` genérico permite crear una `CREDIT_NOTE` suelta, sin `relatedDocId`, sin pasar por el flujo dedicado — pierde trazabilidad a la factura de origen.
-3. Sin protección de permiso en backend.
+1. ~~**`update()` es código muerto**~~ — **resuelto 2026-07-15** (ver arriba). Sin UI todavía para usarlo.
+2. `POST /` genérico permite crear una `CREDIT_NOTE` suelta, sin `relatedDocId`, sin pasar por el flujo dedicado — pierde trazabilidad a la factura de origen (sin resolver).
+3. ~~Sin protección de permiso en backend~~ — **resuelto 2026-07-15**.
 
 ## Preguntas abiertas
 

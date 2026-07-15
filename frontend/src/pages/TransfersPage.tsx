@@ -34,6 +34,7 @@ export function TransfersPage() {
   ]);
   const [completeId, setCompleteId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -160,6 +161,23 @@ export function TransfersPage() {
     }
   };
 
+  const handleCancel = async (id: number) => {
+    setCancellingId(id);
+    try {
+      const res = await authFetch(`${API_BASE_URL}/stock-transfers/${id}/cancel`, {
+        method: "POST",
+        headers: authHeaders(),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "Error al cancelar traspaso");
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error");
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
   if (loading) return <p className="text-sm text-slate-500">{t("transfers.loading")}</p>;
   if (error) return <p className="text-sm text-red-400/90">{error}</p>;
 
@@ -184,12 +202,13 @@ export function TransfersPage() {
               <TableSortHeader label={t("transfers.to")} sortKey="to" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
               <TableSortHeader label={t("transfers.status")} sortKey="status" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
               <TableSortHeader label={t("transfers.date")} sortKey="date" currentSortKey={sortKey} currentSortDir={sortDir} onSort={handleSort} />
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {sortedTransfers.length === 0 ? (
               <tr>
-                <td colSpan={5} className="text-center text-slate-500 dark:text-slate-400 py-8">
+                <td colSpan={6} className="text-center text-slate-500 dark:text-slate-400 py-8">
                   {t("transfers.noTransfers")}
                 </td>
               </tr>
@@ -205,9 +224,26 @@ export function TransfersPage() {
                   <td>
                     {tr.toBranch ? `${tr.toBranch.name} (${tr.toBranch.code})` : tr.toBranchId}
                   </td>
-                  <td>{tr.status === "PENDING" ? t("transfers.pending") : tr.status === "COMPLETED" ? t("transfers.completed") : tr.status}</td>
+                  <td>
+                    {tr.status === "PENDING" ? t("transfers.pending")
+                      : tr.status === "COMPLETED" ? t("transfers.completed")
+                      : tr.status === "CANCELLED" ? t("transfers.cancelled", { defaultValue: "Cancelado" })
+                      : tr.status}
+                  </td>
                   <td>
                     {new Date(tr.createdAt).toLocaleString()}
+                  </td>
+                  <td>
+                    {tr.status === "PENDING" && (
+                      <button
+                        type="button"
+                        onClick={() => handleCancel(tr.id)}
+                        disabled={cancellingId === tr.id}
+                        className="text-xs text-red-500 dark:text-red-400 hover:underline disabled:opacity-50"
+                      >
+                        {cancellingId === tr.id ? "…" : t("transfers.cancelButton", { defaultValue: "Cancelar" })}
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))

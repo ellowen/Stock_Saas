@@ -113,6 +113,32 @@ export const completeTransferController = async (
   }
 };
 
+export const cancelTransferController = async (req: Request, res: Response) => {
+  if (!req.auth) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const id = parseInt(req.params["id"] as string, 10);
+  if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
+
+  try {
+    const transfer = await service.cancel(req.auth.companyId, id);
+    return res.json(transfer);
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "TRANSFER_NOT_FOUND") {
+        return res.status(404).json({ message: "Transfer not found" });
+      }
+      if (error.message === "INVALID_STATUS") {
+        return res.status(400).json({ message: "Only PENDING transfers can be cancelled" });
+      }
+    }
+    // eslint-disable-next-line no-console
+    console.error(error);
+    return res.status(500).json({ message: "Unexpected error" });
+  }
+};
+
 export const listTransfersController = async (req: Request, res: Response) => {
   if (!req.auth) {
     return res.status(401).json({ message: "Unauthorized" });
