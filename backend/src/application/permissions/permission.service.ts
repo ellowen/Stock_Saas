@@ -11,6 +11,7 @@ export const ROLE_DEFAULTS: Record<UserRole, PermissionKey[]> = {
     "ACCOUNTING_VIEW", "ACCOUNTING_WRITE",
     "REPORTS_VIEW", "USERS_MANAGE", "SETTINGS_MANAGE", "AUDIT_VIEW",
     "CUSTOMERS_WRITE", "SUPPLIERS_WRITE", "DOCUMENTS_WRITE", "PURCHASES_MANAGE",
+    "ACCOUNTS_RECEIVABLE_MANAGE",
   ],
   MANAGER: [
     "PRODUCTS_WRITE", "PRODUCTS_DELETE", "INVENTORY_WRITE",
@@ -19,11 +20,13 @@ export const ROLE_DEFAULTS: Record<UserRole, PermissionKey[]> = {
     "ACCOUNTING_VIEW",
     "REPORTS_VIEW", "USERS_MANAGE", "SETTINGS_MANAGE",
     "CUSTOMERS_WRITE", "SUPPLIERS_WRITE", "DOCUMENTS_WRITE", "PURCHASES_MANAGE",
+    "ACCOUNTS_RECEIVABLE_MANAGE",
   ],
   SELLER: [
     "SALES_HISTORY",
     "CUSTOMERS_WRITE",
     "DOCUMENTS_WRITE",
+    "ACCOUNTS_RECEIVABLE_MANAGE",
   ],
 };
 
@@ -35,6 +38,7 @@ export const ALL_PERMISSIONS: PermissionKey[] = [
   "ACCOUNTING_VIEW", "ACCOUNTING_WRITE",
   "REPORTS_VIEW", "USERS_MANAGE", "SETTINGS_MANAGE", "AUDIT_VIEW",
   "CUSTOMERS_WRITE", "SUPPLIERS_WRITE", "DOCUMENTS_WRITE", "PURCHASES_MANAGE",
+  "ACCOUNTS_RECEIVABLE_MANAGE",
 ];
 
 export const PERMISSION_LABELS: Record<PermissionKey, string> = {
@@ -58,13 +62,14 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   SUPPLIERS_WRITE: "Crear / editar proveedores",
   DOCUMENTS_WRITE: "Crear / editar documentos",
   PURCHASES_MANAGE: "Gestionar ordenes de compra",
+  ACCOUNTS_RECEIVABLE_MANAGE: "Gestionar cuentas por cobrar (crear, cobrar)",
 };
 
 export const PERMISSION_GROUPS: { label: string; keys: PermissionKey[] }[] = [
   { label: "Productos", keys: ["PRODUCTS_WRITE", "PRODUCTS_DELETE"] },
   { label: "Inventario", keys: ["INVENTORY_WRITE", "TRANSFERS_APPROVE"] },
   { label: "Ventas", keys: ["SALES_HISTORY", "SALES_VOID", "SALES_DISCOUNT", "SALES_PRICE_OVERRIDE"] },
-  { label: "Clientes / Documentos", keys: ["CUSTOMERS_WRITE", "DOCUMENTS_WRITE"] },
+  { label: "Clientes / Documentos", keys: ["CUSTOMERS_WRITE", "DOCUMENTS_WRITE", "ACCOUNTS_RECEIVABLE_MANAGE"] },
   { label: "Proveedores / Compras", keys: ["SUPPLIERS_WRITE", "PURCHASES_MANAGE"] },
   { label: "Empleados", keys: ["EMPLOYEES_VIEW", "EMPLOYEES_WRITE"] },
   { label: "Contabilidad", keys: ["ACCOUNTING_VIEW", "ACCOUNTING_WRITE"] },

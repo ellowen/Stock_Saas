@@ -19,8 +19,8 @@ El sistema de permisos (`PermissionKey`, 20 valores, ver `PERMISSIONS.md`) está
 ### Ya estaban bien protegidos (sin cambios)
 Empleados/Sueldos (`EMPLOYEES_VIEW`/`EMPLOYEES_WRITE`), Contabilidad (`ACCOUNTING_VIEW`), Promociones (`PRODUCTS_WRITE`), Ventas (`SALES_DISCOUNT`/`SALES_PRICE_OVERRIDE` inline en el controller).
 
-### Excepción que sigue sin `PermissionKey`
-**Cuentas por cobrar** no tiene ninguna clave de permiso definida en el sistema — a diferencia de los módulos de arriba, no había nada que reusar. Agregarla requiere una migración de schema (nuevo valor de enum `PermissionKey`), queda en `ROADMAP.md` P3.
+### Cuentas por cobrar — ✅ cerrado 2026-07-15 (P3)
+No tenía ninguna clave de permiso definida en el sistema — a diferencia de los módulos de arriba, no había nada que reusar. Se agregó `ACCOUNTS_RECEIVABLE_MANAGE` vía migración de schema (`20260715120206_add_accounts_receivable_permission`), default `true` en los 3 roles para preservar el acceso que ya existía, aplicado en `POST /` y `POST /:id/pay`.
 
 **Impacto de lo corregido**: antes, un `SELLER` autenticado sin overrides podía llamar directamente `POST /inventory/adjust`, `DELETE /customers/:id`, `POST /purchase-orders/:id/receive` o `POST /documents` vía API sin que el servidor lo bloqueara — la única barrera era que el frontend no mostraba el botón. Ahora el servidor rechaza esas llamadas con 403 si el permiso no está presente, cumpliendo el principio que el propio proyecto declara (`PROJECT.md`: "los permisos son server-authoritative... nunca es solo cosmético").
 

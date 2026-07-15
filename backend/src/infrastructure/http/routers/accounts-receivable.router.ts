@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middleware/auth";
+import { requirePermission } from "../middleware/requirePermission";
 import { prisma } from "../../../config/database/prisma";
 import {
   createARController,
@@ -13,9 +14,9 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get("/", listARController);
-router.post("/", createARController);
+router.post("/", requirePermission("ACCOUNTS_RECEIVABLE_MANAGE"), createARController);
 router.get("/summary", getARSummaryController);
-router.post("/:id/pay", addARPaymentController);
+router.post("/:id/pay", requirePermission("ACCOUNTS_RECEIVABLE_MANAGE"), addARPaymentController);
 
 // GET /accounts-receivable/aging — aging report: 0-30, 31-60, 61-90, 91+ days overdue
 router.get("/aging", async (req: Request, res: Response) => {

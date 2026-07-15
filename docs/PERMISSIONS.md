@@ -23,7 +23,7 @@ OWNER siempre tiene todo, ignora overrides (PermissionService.hasPermission earl
 | `MANAGER` | Encargado de sucursal/negocio. Casi todo excepto gestión de usuarios/empresa. |
 | `SELLER` | Cajero. Permisos mínimos por defecto: vender, ver clientes, generar documentos. |
 
-## Todos los permisos (`PermissionKey`, 20 claves)
+## Todos los permisos (`PermissionKey`, 21 claves)
 
 | Clave | Qué habilita | OWNER default | MANAGER default | SELLER default |
 |---|---|:-:|:-:|:-:|
@@ -47,8 +47,11 @@ OWNER siempre tiene todo, ignora overrides (PermissionService.hasPermission earl
 | `SUPPLIERS_WRITE` | Crear/editar proveedores | ✅ | ✅ | ❌ |
 | `DOCUMENTS_WRITE` | Crear/editar documentos (facturas/remitos) | ✅ | ✅ | ✅ |
 | `PURCHASES_MANAGE` | Gestionar órdenes de compra | ✅ | ✅ | ❌ |
+| `ACCOUNTS_RECEIVABLE_MANAGE` | Crear cuentas por cobrar y registrar cobros | ✅ | ✅ | ✅ |
 
 `SALES_DISCOUNT` y `SALES_PRICE_OVERRIDE` se agregaron el 2026-07-11 (rediseño del POS) — antes cualquier `SELLER` podía aplicar descuentos y no existía price override como feature.
+
+`ACCOUNTS_RECEIVABLE_MANAGE` se agregó el 2026-07-15 — antes Cuentas por Cobrar no tenía ningún `PermissionKey` propio y el módulo era de acceso libre para cualquier autenticado (ver `SECURITY.md`). Default `true` en los 3 roles a propósito: preserva el comportamiento que ya existía (cualquier usuario, incluido `SELLER`, podía crear/cobrar) mientras habilita que un `OWNER` pueda revocárselo puntualmente a un usuario si lo necesita — antes esa revocación no tenía ningún efecto real.
 
 ## Dónde se aplica
 

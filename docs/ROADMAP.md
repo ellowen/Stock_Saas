@@ -16,9 +16,11 @@ Usuarios/Sucursales fue el caso no trivial: `USERS_MANAGE`/`SETTINGS_MANAGE` no 
 - **`ARStatus.OVERDUE` inalcanzable** — ✅ resuelto 2026-07-15: nuevo cron diario (`accounts-receivable.service.ts#markOverdue`, corre 00:30) marca `OVERDUE` toda AR con `dueDate` vencido y saldo pendiente (`PENDING`/`PARTIAL`). El filtro "Vencida" de Cuentas corrientes ahora sí trae resultados.
 - **Falta de asiento contable al cobrar una cuenta por cobrar** — ✅ resuelto 2026-07-15: `AutoJournalService.onARPayment` (Debe Caja/Banco, Haber Deudores por Ventas) se dispara al confirmar un pago (`addARPaymentController`). Nota de implementación: `JournalSource` no tiene un valor dedicado para cobros de cuenta corriente — se reusó `SALE` con `reference: "AR-PAY-<id>"` para no requerir una migración de schema; si se necesita reportar cobros de cta. cte. por separado de ventas, ahí sí vale la pena agregar un valor `RECEIVABLE_PAYMENT` al enum.
 
-## P3 — Deuda pendiente identificada en esta ronda
+## P3 — ✅ COMPLETADO 2026-07-15
 
-- `accounts-receivable.router.ts` no tiene ningún `PermissionKey` propio ni `requirePermission` — a diferencia de los módulos corregidos en el P0 anterior, este no tenía una clave de permiso definida para reusar (agregarla requiere migración de schema: nuevo valor de `PermissionKey`). Evaluar si conviene agregar `ACCOUNTS_RECEIVABLE_MANAGE` en una futura migración.
+`accounts-receivable.router.ts` no tenía ningún `PermissionKey` propio ni `requirePermission`. Se agregó `ACCOUNTS_RECEIVABLE_MANAGE` (migración Prisma `20260715120206_add_accounts_receivable_permission`) y se aplicó en `POST /` y `POST /:id/pay`. Default `true` en los 3 roles (incluido SELLER) para preservar el comportamiento actual — antes cualquier autenticado podía operar sin restricción, ahora un OWNER puede revocarlo puntualmente y el override sí tiene efecto real. Documentado en `PERMISSIONS.md` y `modules/AccountsReceivable.md`.
+
+Con esto, todos los items del roadmap surgidos de la ronda de documentación completa (P0–P3) están resueltos. Lo único pendiente es la decisión de negocio de deploy a producción (`HOSTING-RECOMENDACIONES.md`) y las preguntas abiertas de diseño que quedaron marcadas en cada `docs/modules/*.md` (ej. si Documents debería integrarse con Sales, si vale la pena separar el permiso de Promotions del de Products, etc.) — esas no son bugs, son decisiones de producto que requieren input del dueño del proyecto.
 
 ## P2 — Consistencia de producto / UX
 

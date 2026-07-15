@@ -22,7 +22,7 @@ Una venta con `paymentMethod: CREDIT` + `customerId` genera automáticamente un 
 
 ## Permisos
 
-**No existe un `PermissionKey` dedicado para este módulo** — ni siquiera figura en el sistema de permisos granular. Solo protegido por estar autenticado. Agregar uno requiere migración de schema (nuevo valor de enum `PermissionKey`) — ver `ROADMAP.md` P3.
+`ACCOUNTS_RECEIVABLE_MANAGE` (agregado 2026-07-15, migración `add_accounts_receivable_permission`), aplicado con `requirePermission` en `POST /` (crear AR manual) y `POST /:id/pay` (cobrar). Default `true` en los 3 roles incluido SELLER — preserva el acceso libre que ya existía, pero ahora es revocable por usuario. La lectura (`GET /`, `/summary`, `/aging`) sigue sin gate propio, sólo `authMiddleware`, igual que el resto de los listados de la app.
 
 ## Componentes
 
@@ -38,14 +38,14 @@ Tabla de AR con historial de pagos inline, formulario de cobro, tabla de aging c
 
 ## Mejoras futuras
 
-Agregar `PermissionKey` dedicado (requiere migración). UI para crear AR manual. Completar el selector de método de pago con `MIXED`. Decidir si una venta CREDIT sin cliente debería bloquearse en el POS en vez de quedar sin trazabilidad.
+UI para crear AR manual (backend ya lo soporta). Completar el selector de método de pago con `MIXED`. Decidir si una venta CREDIT sin cliente debería bloquearse en el POS en vez de quedar sin trazabilidad. Evaluar si conviene diferenciar permisos de "crear cuenta" vs. "cobrar" (hoy `ACCOUNTS_RECEIVABLE_MANAGE` cubre ambos con una sola clave, igual que `PURCHASES_MANAGE`).
 
 ## Problemas conocidos
 
 1. ~~`ARStatus.OVERDUE` inalcanzable en base de datos~~ — **resuelto 2026-07-15**: cron diario marca `OVERDUE` toda AR vencida con saldo pendiente; el filtro "Vencida" ahora sí trae resultados.
 2. ~~Cobrar una AR no genera ningún asiento contable~~ — **resuelto 2026-07-15**: `onARPayment` reversa "Deudores por Ventas" contra Caja/Banco al confirmar el pago.
-3. Venta CREDIT sin cliente no genera ningún registro de deuda — sin resolver, es una decisión de producto (¿bloquear la combinación en el POS o permitirla intencionalmente?).
-4. Sin permiso de backend dedicado ni general — el módulo entero es de acceso libre para cualquier autenticado.
+3. ~~Sin permiso de backend dedicado~~ — **resuelto 2026-07-15**: `ACCOUNTS_RECEIVABLE_MANAGE`.
+4. Venta CREDIT sin cliente no genera ningún registro de deuda — sin resolver, es una decisión de producto (¿bloquear la combinación en el POS o permitirla intencionalmente?).
 5. Cálculo de deuda total duplicado (frontend suma manualmente, backend tiene `GET /summary` que la página ni siquiera consume).
 
 ## Preguntas abiertas
