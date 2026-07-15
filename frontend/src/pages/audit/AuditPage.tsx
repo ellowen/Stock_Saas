@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { Fragment, useEffect, useState, useCallback } from "react";
 import { authHeaders } from "../../lib/api";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -195,9 +195,8 @@ export default function AuditPage() {
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {logs.map((log) => (
-                  <>
+                  <Fragment key={log.id}>
                     <tr
-                      key={log.id}
                       className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer"
                       onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
                     >
@@ -257,7 +256,7 @@ export default function AuditPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

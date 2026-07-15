@@ -12,6 +12,10 @@ En viewport `<640px`, la regla adoptada es **colapsar información secundaria de
 - **POS**: mobile-first explícito, es el módulo con más trabajo responsive dedicado (commit `95767e6`).
 - **Resto de los módulos** (Inventory, Reports, Purchases, Documents, etc.): no se confirmó en esta ronda si tienen una vista mobile dedicada o dependen solo de `overflow-x-auto` en `.table-modern` (que permite scroll horizontal pero no es lo mismo que una vista pensada para mobile). A verificar módulo por módulo antes de asumir paridad.
 
+## Patrón corregido: no capar el ancho de escritorio (2026-07-15)
+
+El POS y otras 5 pantallas (Clientes, Documentos, Promociones, Compras, Proveedores) tenían su contenedor raíz con `max-w-2xl`/`max-w-5xl`/`max-w-6xl` + `mx-auto`, centrando y angostando toda la pantalla (tabla incluida) incluso en monitores anchos — dejaba espacio muerto en vez de aprovecharlo. Se corrigió en las 6: el contenedor raíz de una pantalla de lista/tabla no debería tener `max-w`, solo `space-y-6` (el padding ya lo pone `AppLayout` alrededor de `<Outlet />`) — es el patrón que Inventario/Sucursales/Usuarios ya usaban bien. Un `max-w` en un contenedor sigue siendo correcto para formularios angostos (mejor legibilidad), pero no para el contenedor que envuelve una tabla completa. Ver `ROADMAP.md`.
+
 ## Qué falta
 
 - No hay una guía escrita de "qué colapsar primero" más allá del ejemplo del POS — cada pantalla nueva decide esto ad-hoc.

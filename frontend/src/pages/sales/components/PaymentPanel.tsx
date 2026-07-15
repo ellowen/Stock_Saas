@@ -4,7 +4,6 @@ import { IconCurrency } from "../../../components/Icons";
 import { PAYMENT_METHODS, PAYMENT_METHOD_KEYS, type PaymentMethod } from "../types";
 
 type Props = {
-  itemCount: number;
   totalAmount: number;
   hasCustomer?: boolean;
   paymentMethod: PaymentMethod;
@@ -23,13 +22,11 @@ type Props = {
 };
 
 /**
- * Reemplaza el area del carrito in-place (no es un dialog flotante) para que
- * cobrar no tape el carrito recien armado. Se monta/desmonta desde POSTab
- * segun el estado de "mostrar pago" — logica de calculo sin cambios respecto
- * al PaymentModal original.
+ * Se monta como footer del mismo panel del carrito (no lo reemplaza): el
+ * carrito sigue visible arriba mientras se cobra. Logica de calculo sin
+ * cambios respecto al PaymentModal/PaymentPanel original.
  */
 export function PaymentPanel({
-  itemCount,
   totalAmount,
   hasCustomer = false,
   paymentMethod,
@@ -93,24 +90,19 @@ export function PaymentPanel({
   }, [submitting, mixedValid, cashValid, totalRounded, onPaymentMethodChange, onCashReceivedChange, onConfirm, onCancel]);
 
   return (
-    <div className="p-6 space-y-5" role="region" aria-labelledby="payment-panel-title">
-      {/* Resumen colapsado del carrito — sigue visible mientras se cobra */}
-      <button
-        type="button"
-        onClick={onCancel}
-        className="w-full flex items-center justify-between gap-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 px-4 py-2.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-      >
-        <span className="text-sm text-slate-500 dark:text-slate-400">
+    <div className="border-t border-slate-200 dark:border-slate-600 p-5 space-y-5" role="region" aria-labelledby="payment-panel-title">
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="payment-panel-title" className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+          {t("sales.paymentTitle")}
+        </h2>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+        >
           ← {t("sales.paymentBackToCart")}
-        </span>
-        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-          {t("sales.cartItems", { count: itemCount })} · ${totalRounded.toFixed(2)}
-        </span>
-      </button>
-
-      <h2 id="payment-panel-title" className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-        {t("sales.paymentTitle")}
-      </h2>
+        </button>
+      </div>
       <p className="text-lg font-bold text-slate-800 dark:text-slate-200">
         {t("sales.paymentTotal")} ${totalAmount.toFixed(2)}
       </p>

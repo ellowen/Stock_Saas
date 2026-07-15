@@ -12,7 +12,7 @@ El cálculo final (descuentos, promociones automáticas, cupones, total) **siemp
 
 1. **Búsqueda**: input único acepta tanto texto como `Barcode+ENTER` (el lector de código de barras se comporta como teclado). Match exacto de barcode prioritario sobre búsqueda de texto (fix del rediseño, commit `0010df3`). Resultados rankeados por relevancia.
 2. **Carrito**: edición inline de cantidad, descuento por línea (si `SALES_DISCOUNT`), override de precio (si `SALES_PRICE_OVERRIDE`) — todo inline en `CartItem`, sin modales, siguiendo el principio de "inline > panel > modal" (ver `DESIGN_SYSTEM.md`).
-3. **Pago**: `PaymentPanel` reemplaza el área del carrito in-place (no un modal flotante — reemplazó a `PaymentModal` explícitamente en el rediseño, ver caso de estudio en `DESIGN_SYSTEM.md`). Soporta métodos `CASH/CARD/MIXED/OTHER/CREDIT` (CREDIT requiere cliente seleccionado, deshabilitado con tooltip si no hay uno).
+3. **Pago**: desde el 2026-07-15, `PaymentPanel` ya **no reemplaza** el carrito — se agrega como sección debajo de la lista de ítems, dentro del mismo panel derecho fijo, así el carrito queda visible durante todo el cobro (antes reemplazaba `PaymentModal`, y luego reemplazaba el área del carrito entera; ambos enfoques hacían perder de vista qué se estaba vendiendo). Soporta métodos `CASH/CARD/MIXED/OTHER/CREDIT` (CREDIT requiere cliente seleccionado, deshabilitado con tooltip si no hay uno).
 4. **Completado**: recibo con opción de envío por email o WhatsApp (feature del rediseño).
 
 **Hold/resume**: pausar una venta en curso persiste el carrito server-side como `HeldSale` (JSON snapshot) — deliberadamente no en `localStorage`, para que un cajero pueda retomarla desde otro dispositivo/turno.
@@ -20,6 +20,8 @@ El cálculo final (descuentos, promociones automáticas, cupones, total) **siemp
 ## UX / Frontend
 
 Mobile-first real (no solo el layout desktop achicado) — en `<640px` colapsa detalle secundario de línea de carrito detrás de un toggle. Carga inicial de sucursal+inventario en paralelo (optimización del rediseño, antes era secuencial/waterfall).
+
+**Layout de escritorio (2026-07-15)**: hasta esa fecha, el módulo entero — mobile-first incluido — tenía un `max-w-2xl` fijo en el contenedor raíz, así que en pantallas grandes quedaba una columna angosta centrada con mucho espacio muerto al costado, y encima cobrar reemplazaba el carrito por la pantalla de pago (perdiendo de vista qué se estaba vendiendo). Se rediseñó a un layout de dos paneles en `lg+` (1024px): columna izquierda flexible (búsqueda/contexto) + panel derecho fijo de 400px (carrito + pago, siempre visible, nunca se reemplaza). Mobile/tablet sin cambios. Ver `ux/pos-ux.md` y `ROADMAP.md`.
 
 ## Navegación
 
@@ -43,7 +45,7 @@ Este es el módulo con más trabajo de UX ya invertido de toda la app — es la 
 
 ## Problemas conocidos
 
-Ninguno nuevo encontrado en esta ronda — el módulo fue auditado exhaustivamente durante su propio rediseño (Fase POS 2026-07-11), a diferencia de la mayoría de los otros módulos que recién se revisaron en esta ronda de documentación.
+El único encontrado (el layout de escritorio no usaba el ancho de pantalla y el pago tapaba el carrito) fue reportado por el usuario probando la app real y se resolvió el 2026-07-15 — ver arriba. Fuera de eso, ninguno nuevo: el módulo fue auditado exhaustivamente durante su propio rediseño (Fase POS 2026-07-11), a diferencia de la mayoría de los otros módulos que recién se revisaron en la ronda de documentación.
 
 ## Preguntas abiertas
 

@@ -487,14 +487,14 @@ export function POSTab({
   }, [branchId, lastSaleItems, branches, company, t, showToast, selectedCustomer]);
 
   return (
-    <div className="flex flex-col gap-6 sm:gap-8 w-full sm:max-w-2xl rounded-2xl p-4 sm:p-6 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-600">
-      {/* En mobile, sucursal/cliente/en-espera van colapsados detras de un
-          toggle para que la busqueda quede arriba de todo sin scroll —
-          en desktop siempre estan visibles (sm:block se impone al estado). */}
+    <div className="w-full rounded-2xl p-4 sm:p-6 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-600">
+      {/* En mobile/tablet, sucursal/cliente/en-espera van colapsados detras de
+          un toggle para que la busqueda quede arriba de todo sin scroll — en
+          desktop (lg+, panel derecho fijo) siempre estan visibles. */}
       <button
         type="button"
         onClick={() => setShowDetails((v) => !v)}
-        className="sm:hidden flex items-center justify-between text-sm font-medium text-slate-600 dark:text-slate-300 px-1"
+        className="lg:hidden flex items-center justify-between text-sm font-medium text-slate-600 dark:text-slate-300 px-1 mb-4"
       >
         <span>
           {branches.find((b) => b.id === branchId)?.name ?? t("sales.branchLabel")}
@@ -505,264 +505,266 @@ export function POSTab({
         </span>
       </button>
 
-      <div className={`${showDetails ? "flex" : "hidden"} sm:flex flex-col gap-4 sm:gap-6`}>
-        <Tooltip content={t("sales.branchTooltip")}>
-          <div>
-            <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
-              {t("sales.branchLabel")}
-            </label>
-            <select
-              value={branchId === "" ? "" : String(branchId)}
-              onChange={(e) => onBranchChange(e.target.value ? Number(e.target.value) : "")}
-              className="input-minimal w-full sm:max-w-xs text-base py-2.5 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
-            >
-              <option value="">{t("sales.selectBranchPlaceholder")}</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name} ({b.code})
-                </option>
-              ))}
-            </select>
-          </div>
-        </Tooltip>
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:items-start">
+        {/* Columna izquierda: busqueda + contexto, ancho flexible */}
+        <div className="flex-1 min-w-0 flex flex-col gap-6">
+          {inventoryError && (
+            <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-5 py-4 text-base text-red-700 dark:text-red-300">
+              {inventoryError}
+            </div>
+          )}
+          {error && (
+            <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-5 py-4 text-base text-red-700 dark:text-red-300">
+              {error}
+            </div>
+          )}
 
-        {typeof branchId === "number" && (
-          <HeldSalesPanel
-            heldSales={heldSales}
-            loading={heldSalesLoading}
-            onResume={handleResumeHeldSale}
-            onDiscard={handleDiscardHeldSale}
+          <ReceiptView
+            receipt={receipt}
+            lastSaleReceipt={lastSaleReceipt}
+            successMessage={success}
+            onGenerateDocument={handleGenerateDocument}
+            saleId={lastSaleId}
+            customerEmail={lastSaleCustomer?.email ?? null}
+            customerPhone={lastSaleCustomer?.phone ?? null}
+            onSendEmail={onSendReceiptEmail}
           />
-        )}
 
-        {typeof branchId === "number" && (
-          <div>
-            <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
-              {t("sales.customerLabel")}
-            </label>
-            <CustomerSearchInput
-              selectedCustomer={selectedCustomer}
-              onSelect={setSelectedCustomer}
-            />
+          <div className={`${showDetails ? "flex" : "hidden"} lg:flex flex-col gap-4 sm:gap-6`}>
+            <Tooltip content={t("sales.branchTooltip")}>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
+                  {t("sales.branchLabel")}
+                </label>
+                <select
+                  value={branchId === "" ? "" : String(branchId)}
+                  onChange={(e) => onBranchChange(e.target.value ? Number(e.target.value) : "")}
+                  className="input-minimal w-full sm:max-w-xs text-base py-2.5 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
+                >
+                  <option value="">{t("sales.selectBranchPlaceholder")}</option>
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name} ({b.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </Tooltip>
+
+            {typeof branchId === "number" && (
+              <HeldSalesPanel
+                heldSales={heldSales}
+                loading={heldSalesLoading}
+                onResume={handleResumeHeldSale}
+                onDiscard={handleDiscardHeldSale}
+              />
+            )}
+
+            {typeof branchId === "number" && (
+              <div>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
+                  {t("sales.customerLabel")}
+                </label>
+                <CustomerSearchInput
+                  selectedCustomer={selectedCustomer}
+                  onSelect={setSelectedCustomer}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="space-y-6">
-        {typeof branchId === "number" && (
-          <ProductSearch
-            variants={variantsWithStock}
-            searchInput={searchInput}
-            onSearchChange={setSearchInput}
-            showSuggestions={showSuggestions}
-            onShowSuggestionsChange={setShowSuggestions}
-            suggestionHighlightIndex={suggestionHighlightIndex}
-            onHighlightChange={setSuggestionHighlightIndex}
-            onAddVariant={(id) => addToCart(id, 1)}
-            inputRef={searchInputRef}
-          />
-        )}
-      </div>
-
-      {/* Cart */}
-      <div className="flex flex-col gap-5">
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-sm overflow-hidden">
-          {showPaymentModal ? (
-            <PaymentPanel
-              itemCount={totalItems}
-              totalAmount={totalAmount}
-              hasCustomer={!!selectedCustomer}
-              paymentMethod={paymentMethod}
-              onPaymentMethodChange={(m) => {
-                setPaymentMethod(m);
-                if (m === "CASH") setCashReceived(totalRounded.toFixed(2));
-              }}
-              cashReceived={cashReceived}
-              onCashReceivedChange={setCashReceived}
-              mixedCash={mixedCash}
-              onMixedCashChange={setMixedCash}
-              mixedCard={mixedCard}
-              onMixedCardChange={setMixedCard}
-              mixedCashReceived={mixedCashReceived}
-              onMixedCashReceivedChange={setMixedCashReceived}
-              submitting={submitting}
-              onConfirm={handleConfirmSale}
-              onCancel={closePaymentModal}
+          {typeof branchId === "number" && (
+            <ProductSearch
+              variants={variantsWithStock}
+              searchInput={searchInput}
+              onSearchChange={setSearchInput}
+              showSuggestions={showSuggestions}
+              onShowSuggestionsChange={setShowSuggestions}
+              suggestionHighlightIndex={suggestionHighlightIndex}
+              onHighlightChange={setSuggestionHighlightIndex}
+              onAddVariant={(id) => addToCart(id, 1)}
+              inputRef={searchInputRef}
             />
-          ) : (
-            <>
-              <div className="bg-slate-50 dark:bg-slate-700/50 px-5 py-4 border-b border-slate-200 dark:border-slate-600 flex items-center gap-3">
-                <IconShoppingCart className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-                <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{t("sales.cartTitle")}</h2>
-                {totalItems > 0 && (
-                  <span className="ml-auto text-base font-medium text-slate-500 dark:text-slate-400">
-                    {t("sales.cartItems", { count: totalItems })}
-                  </span>
-                )}
-              </div>
-              <div className="max-h-[320px] overflow-y-auto">
-                {cart.length === 0 ? (
-                  <div className="px-5 py-14 text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 mb-4">
-                      <IconShoppingCart className="w-8 h-8" />
-                    </div>
-                    <p className="text-base text-slate-500 dark:text-slate-400 leading-relaxed">
-                      {t("sales.emptyCartMessage")}
-                    </p>
-                  </div>
-                ) : (
-                  <ul className="divide-y divide-slate-100 dark:divide-slate-600">
-                    {cart.map((item, i) => {
-                      const v = variantsWithStock.find((x) => x.productVariantId === item.productVariantId);
-                      const price = v ? parseFloat(v.price) : 0;
-                      return (
-                        <CartItem
-                          key={`${item.productVariantId}-${i}`}
-                          productName={v ? v.productName : `ID ${item.productVariantId}`}
-                          sku={v?.sku ?? ""}
-                          attributeLabel={v ? formatAttributes(v.attributes) : ""}
-                          price={price}
-                          quantity={item.quantity}
-                          discount={item.discount ?? 0}
-                          priceOverride={item.unitPriceOverride}
-                          promoDiscount={autoDiscounts[item.productVariantId] ?? 0}
-                          canDiscount={canDiscount}
-                          canOverridePrice={canOverridePrice}
-                          onIncrease={() => updateCartQty(i, 1)}
-                          onDecrease={() => updateCartQty(i, -1)}
-                          onRemove={() => removeFromCart(i)}
-                          onDiscountChange={(d) => updateCartDiscount(i, d)}
-                          onPriceOverrideChange={(p) => updateCartPriceOverride(i, p)}
-                        />
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-
-              {cart.length > 0 && (
-                <>
-                  <div className="border-t border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 px-5 py-4 space-y-3">
-                    {/* Global discount — requiere permiso SALES_DISCOUNT */}
-                    {canDiscount && (
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-slate-500 dark:text-slate-400 flex-1">{t("sales.discountGlobalLabel")}</span>
-                        <span className="text-sm text-slate-400">$</span>
-                        <input
-                          type="number"
-                          min={0}
-                          step={0.01}
-                          value={globalDiscount}
-                          placeholder="0"
-                          onChange={(e) => setGlobalDiscount(e.target.value)}
-                          className="w-24 text-sm px-2 py-1 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                        />
-                      </div>
-                    )}
-                    {/* Cupon — cualquier cajero puede tomarlo, no requiere SALES_DISCOUNT */}
-                    {appliedCoupon ? (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-emerald-700 dark:text-emerald-400 font-medium">
-                          {t("sales.couponApplied", { amount: appliedCoupon.discount.toFixed(2) })}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => { setAppliedCoupon(null); setCouponInput(""); setCouponError(null); }}
-                          className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                        >
-                          {t("sales.customerDetach")}
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-500 dark:text-slate-400 flex-1">{t("sales.couponLabel")}</span>
-                        <input
-                          type="text"
-                          value={couponInput}
-                          onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleApplyCoupon(); } }}
-                          placeholder={t("sales.couponPlaceholder")}
-                          className="w-28 text-sm px-2 py-1 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleApplyCoupon}
-                          disabled={couponChecking || !couponInput.trim()}
-                          className="text-xs font-medium px-2.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 disabled:opacity-50"
-                        >
-                          {couponChecking ? "..." : t("sales.couponApply")}
-                        </button>
-                      </div>
-                    )}
-                    {couponError && !appliedCoupon && (
-                      <p className="text-xs text-red-600 dark:text-red-400">{couponError}</p>
-                    )}
-                    {globalDiscountNum > 0 && (
-                      <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
-                        <span>{t("sales.subtotal")}</span>
-                        <span>${subtotalBeforeGlobal.toFixed(2)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between items-baseline gap-4">
-                      <span className="text-base font-medium text-slate-600 dark:text-slate-400">
-                        {t("sales.totalToCharge")}
-                      </span>
-                      <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                        ${totalAmount.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="p-5 border-t border-slate-200 dark:border-slate-600 space-y-2">
-                    <Tooltip content={t("sales.checkoutTooltip")}>
-                      <button
-                        ref={cobrarButtonRef}
-                        type="button"
-                        onClick={openPaymentModal}
-                        disabled={submitting || cart.length === 0 || !branchId}
-                        className="btn-primary w-full py-4 text-lg font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        aria-keyshortcuts="F4"
-                      >
-                        <IconCurrency className="w-6 h-6" />
-                        {t("sales.chargeButton")}
-                      </button>
-                    </Tooltip>
-                    <button
-                      type="button"
-                      onClick={handleHoldSale}
-                      disabled={submitting || cart.length === 0}
-                      className="btn-secondary w-full py-2.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {t("sales.heldSaleHold")}
-                    </button>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 text-center">{t("sales.chargeKeyboardHint")}</p>
-                  </div>
-                </>
-              )}
-            </>
           )}
         </div>
 
-        {inventoryError && (
-          <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-5 py-4 text-base text-red-700 dark:text-red-300">
-            {inventoryError}
-          </div>
-        )}
-        {error && (
-          <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-5 py-4 text-base text-red-700 dark:text-red-300">
-            {error}
-          </div>
-        )}
+        {/* Columna derecha: carrito + pago, ancho fijo, siempre visible —
+            cobrar ya no reemplaza el carrito, solo agrega la seccion de pago
+            debajo de la lista. */}
+        <div className="w-full lg:w-[400px] lg:shrink-0 lg:sticky lg:top-6">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-sm overflow-hidden flex flex-col">
+            <div className="bg-slate-50 dark:bg-slate-700/50 px-5 py-4 border-b border-slate-200 dark:border-slate-600 flex items-center gap-3">
+              <IconShoppingCart className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+              <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{t("sales.cartTitle")}</h2>
+              {totalItems > 0 && (
+                <span className="ml-auto text-base font-medium text-slate-500 dark:text-slate-400">
+                  {t("sales.cartItems", { count: totalItems })}
+                </span>
+              )}
+            </div>
+            <div className="max-h-[280px] overflow-y-auto">
+              {cart.length === 0 ? (
+                <div className="px-5 py-14 text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 mb-4">
+                    <IconShoppingCart className="w-8 h-8" />
+                  </div>
+                  <p className="text-base text-slate-500 dark:text-slate-400 leading-relaxed">
+                    {t("sales.emptyCartMessage")}
+                  </p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-slate-100 dark:divide-slate-600">
+                  {cart.map((item, i) => {
+                    const v = variantsWithStock.find((x) => x.productVariantId === item.productVariantId);
+                    const price = v ? parseFloat(v.price) : 0;
+                    return (
+                      <CartItem
+                        key={`${item.productVariantId}-${i}`}
+                        productName={v ? v.productName : `ID ${item.productVariantId}`}
+                        sku={v?.sku ?? ""}
+                        attributeLabel={v ? formatAttributes(v.attributes) : ""}
+                        price={price}
+                        quantity={item.quantity}
+                        discount={item.discount ?? 0}
+                        priceOverride={item.unitPriceOverride}
+                        promoDiscount={autoDiscounts[item.productVariantId] ?? 0}
+                        canDiscount={canDiscount}
+                        canOverridePrice={canOverridePrice}
+                        onIncrease={() => updateCartQty(i, 1)}
+                        onDecrease={() => updateCartQty(i, -1)}
+                        onRemove={() => removeFromCart(i)}
+                        onDiscountChange={(d) => updateCartDiscount(i, d)}
+                        onPriceOverrideChange={(p) => updateCartPriceOverride(i, p)}
+                      />
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
 
-        <ReceiptView
-          receipt={receipt}
-          lastSaleReceipt={lastSaleReceipt}
-          successMessage={success}
-          onGenerateDocument={handleGenerateDocument}
-          saleId={lastSaleId}
-          customerEmail={lastSaleCustomer?.email ?? null}
-          customerPhone={lastSaleCustomer?.phone ?? null}
-          onSendEmail={onSendReceiptEmail}
-        />
+            {cart.length > 0 && showPaymentModal && (
+              <PaymentPanel
+                totalAmount={totalAmount}
+                hasCustomer={!!selectedCustomer}
+                paymentMethod={paymentMethod}
+                onPaymentMethodChange={(m) => {
+                  setPaymentMethod(m);
+                  if (m === "CASH") setCashReceived(totalRounded.toFixed(2));
+                }}
+                cashReceived={cashReceived}
+                onCashReceivedChange={setCashReceived}
+                mixedCash={mixedCash}
+                onMixedCashChange={setMixedCash}
+                mixedCard={mixedCard}
+                onMixedCardChange={setMixedCard}
+                mixedCashReceived={mixedCashReceived}
+                onMixedCashReceivedChange={setMixedCashReceived}
+                submitting={submitting}
+                onConfirm={handleConfirmSale}
+                onCancel={closePaymentModal}
+              />
+            )}
+
+            {cart.length > 0 && !showPaymentModal && (
+              <>
+                <div className="border-t border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 px-5 py-4 space-y-3">
+                  {/* Global discount — requiere permiso SALES_DISCOUNT */}
+                  {canDiscount && (
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-slate-500 dark:text-slate-400 flex-1">{t("sales.discountGlobalLabel")}</span>
+                      <span className="text-sm text-slate-400">$</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={globalDiscount}
+                        placeholder="0"
+                        onChange={(e) => setGlobalDiscount(e.target.value)}
+                        className="w-24 text-sm px-2 py-1 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                      />
+                    </div>
+                  )}
+                  {/* Cupon — cualquier cajero puede tomarlo, no requiere SALES_DISCOUNT */}
+                  {appliedCoupon ? (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+                        {t("sales.couponApplied", { amount: appliedCoupon.discount.toFixed(2) })}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => { setAppliedCoupon(null); setCouponInput(""); setCouponError(null); }}
+                        className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      >
+                        {t("sales.customerDetach")}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-slate-500 dark:text-slate-400 flex-1">{t("sales.couponLabel")}</span>
+                      <input
+                        type="text"
+                        value={couponInput}
+                        onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleApplyCoupon(); } }}
+                        placeholder={t("sales.couponPlaceholder")}
+                        className="w-28 text-sm px-2 py-1 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyCoupon}
+                        disabled={couponChecking || !couponInput.trim()}
+                        className="text-xs font-medium px-2.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 disabled:opacity-50"
+                      >
+                        {couponChecking ? "..." : t("sales.couponApply")}
+                      </button>
+                    </div>
+                  )}
+                  {couponError && !appliedCoupon && (
+                    <p className="text-xs text-red-600 dark:text-red-400">{couponError}</p>
+                  )}
+                  {globalDiscountNum > 0 && (
+                    <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
+                      <span>{t("sales.subtotal")}</span>
+                      <span>${subtotalBeforeGlobal.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-baseline gap-4">
+                    <span className="text-base font-medium text-slate-600 dark:text-slate-400">
+                      {t("sales.totalToCharge")}
+                    </span>
+                    <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                      ${totalAmount.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-5 border-t border-slate-200 dark:border-slate-600 space-y-2">
+                  <Tooltip content={t("sales.checkoutTooltip")}>
+                    <button
+                      ref={cobrarButtonRef}
+                      type="button"
+                      onClick={openPaymentModal}
+                      disabled={submitting || cart.length === 0 || !branchId}
+                      className="btn-primary w-full py-4 text-lg font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-keyshortcuts="F4"
+                    >
+                      <IconCurrency className="w-6 h-6" />
+                      {t("sales.chargeButton")}
+                    </button>
+                  </Tooltip>
+                  <button
+                    type="button"
+                    onClick={handleHoldSale}
+                    disabled={submitting || cart.length === 0}
+                    className="btn-secondary w-full py-2.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {t("sales.heldSaleHold")}
+                  </button>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 text-center">{t("sales.chargeKeyboardHint")}</p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Document preview modal (post-sale) */}

@@ -161,7 +161,7 @@ export default function SuppliersPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6">
       <PageHeader
         title={t("suppliers.title")}
         subtitle={t("suppliers.subtitle")}
