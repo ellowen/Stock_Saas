@@ -1,0 +1,3 @@
+# Business Rules — Sales
+
+Ver `modules/POS.md` y `modules/Sales.md`. Regla central: todo cálculo de dinero de una venta (subtotal, descuentos, promociones, impuestos, total) se recalcula server-side al confirmar, nunca se confía en lo que mostró el preview del frontend. Una venta puede pagarse con un único método o combinado (`MIXED`, con montos separados de efectivo/tarjeta) o quedar "a crédito" (genera cuenta por cobrar si hay cliente). El vínculo con Documents (facturación formal) no existe hoy pese al campo `documentId` en el schema — ver `modules/Documents.md` para la implicancia de esto.

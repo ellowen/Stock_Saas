@@ -1,0 +1,3 @@
+# Business Rules — Accounting
+
+Ver `modules/Accounting.md`. La contabilidad sigue partida doble clásica (plan de cuentas FACPCE-like, asientos con líneas débito/crédito balanceadas) y es enteramente opt-in por empresa. El diseño asume que la mayoría de los asientos se generan automáticamente por eventos de negocio (venta, compra recibida, sueldo pagado) — el usuario no necesita saber contabilidad para operar, pero un contador que sí la entienda puede auditar/ajustar directamente el libro diario. El hueco real (falta de reversa al cobrar una cuenta por cobrar) rompe parcialmente esta promesa de automatización completa — ver `modules/AccountsReceivable.md`.

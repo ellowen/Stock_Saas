@@ -1,0 +1,3 @@
+# Business Rules — Promotions
+
+Ver `modules/Promotions.md` para el detalle técnico. Regla de negocio central: una promoción se define sobre el modelo genérico (`scope: ALL/PRODUCT/CATEGORY`, `type: PERCENT_OFF/BUY_X_GET_Y_FREE`), nunca hardcodeada a un producto específico en código — agregar una promoción es un registro de datos. Un cupón (`couponCode`) es opt-in del cajero, nunca automático, a diferencia de una promoción sin cupón que sí se aplica sola si las condiciones se cumplen. No hay límite de uso por cupón ni por cliente confirmado en esta investigación (¿un cupón es de un solo uso o ilimitado hasta que se desactive?) — pendiente de confirmar si se necesita esa granularidad.

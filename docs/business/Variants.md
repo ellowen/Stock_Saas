@@ -1,0 +1,3 @@
+# Business Rules — Variants
+
+La variante es la unidad real de negocio: tiene SKU único por empresa, código de barras único por empresa, precio, costo, y es la que tiene stock (nunca el producto). El sistema de atributos configurables (`Attribute`/`ProductVariantAttribute`) permite que cada empresa defina sus propias dimensiones de variante (talle, color, u otras según el rubro — ver perfiles de industria en `modules/Settings.md`), en vez de un esquema fijo de "talle+color" para todos los rubros. Ver el bug real de esta parte del sistema (campos legacy `size`/`color` que se validan pero no se persisten) en `modules/Products.md`.

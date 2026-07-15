@@ -1,0 +1,3 @@
+# Business Rules — Inventory
+
+Ver `modules/Inventory.md`. Regla de negocio central: el stock es por variante×sucursal (`Inventory`, unique compuesto), nunca agregado a nivel de producto o de empresa directamente — el "stock total" de un producto es siempre una suma calculada. Todo movimiento de stock (venta, ajuste manual, transferencia, recepción de compra, salida por documento) queda registrado en `InventoryMovement` con snapshot de cantidad antes/después — es, en teoría, un historial completo y auditable, aunque su cobertura de labels en la UI está incompleta (ver bug en `modules/Inventory.md`).
