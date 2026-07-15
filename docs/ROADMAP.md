@@ -13,7 +13,12 @@ Usuarios/Sucursales fue el caso no trivial: `USERS_MANAGE`/`SETTINGS_MANAGE` no 
 - **Doble asiento contable en recepción parcial de OC**: corregido. `PurchaseOrderService.receive()` ahora calcula y devuelve `receivedAmount` (suma de `qty × unitPrice` de los ítems recibidos en esa llamada específica), y el router pasa ese monto a `onPurchaseReceived` en vez de `order.total`.
 - **`ILIKE` en query MySQL** (`inventory.service.ts`): cambiado a `LIKE` (case-insensitive por default en las collations típicas de MySQL, equivalente en la práctica).
 - **Límite de sucursales no libera cupo al eliminar**: `checkBranchLimit` y `getPlanUsage` ahora filtran `isActive: true`, igual que `checkUserLimit`.
-- **`ARStatus.OVERDUE` inalcanzable** y **falta de asiento contable al cobrar una cuenta por cobrar**: no resueltos todavía — quedan en el roadmap, requieren más diseño (job de background para lo primero, nuevo hook `onARPayment` en `AutoJournalService` para lo segundo) en vez de ser fixes mecánicos de una línea.
+- **`ARStatus.OVERDUE` inalcanzable** — ✅ resuelto 2026-07-15: nuevo cron diario (`accounts-receivable.service.ts#markOverdue`, corre 00:30) marca `OVERDUE` toda AR con `dueDate` vencido y saldo pendiente (`PENDING`/`PARTIAL`). El filtro "Vencida" de Cuentas corrientes ahora sí trae resultados.
+- **Falta de asiento contable al cobrar una cuenta por cobrar** — ✅ resuelto 2026-07-15: `AutoJournalService.onARPayment` (Debe Caja/Banco, Haber Deudores por Ventas) se dispara al confirmar un pago (`addARPaymentController`). Nota de implementación: `JournalSource` no tiene un valor dedicado para cobros de cuenta corriente — se reusó `SALE` con `reference: "AR-PAY-<id>"` para no requerir una migración de schema; si se necesita reportar cobros de cta. cte. por separado de ventas, ahí sí vale la pena agregar un valor `RECEIVABLE_PAYMENT` al enum.
+
+## P3 — Deuda pendiente identificada en esta ronda
+
+- `accounts-receivable.router.ts` no tiene ningún `PermissionKey` propio ni `requirePermission` — a diferencia de los módulos corregidos en el P0 anterior, este no tenía una clave de permiso definida para reusar (agregarla requiere migración de schema: nuevo valor de `PermissionKey`). Evaluar si conviene agregar `ACCOUNTS_RECEIVABLE_MANAGE` en una futura migración.
 
 ## P2 — Consistencia de producto / UX
 

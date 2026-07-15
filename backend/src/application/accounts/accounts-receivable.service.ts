@@ -81,6 +81,28 @@ export class AccountsReceivableService {
     });
   }
 
+  /**
+   * Marca como OVERDUE toda cuenta por cobrar con dueDate vencido y saldo pendiente
+   * (PENDING o PARTIAL). Sin esto, ARStatus.OVERDUE nunca se persiste y el filtro
+   * "Vencida" de la pantalla de Cuentas corrientes nunca trae resultados — el aging
+   * report ya calcula la mora al vuelo, pero el status guardado quedaba desincronizado.
+   * Pensado para correr diariamente vía cron.
+   */
+  async markOverdue(): Promise<number> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const result = await prisma.accountReceivable.updateMany({
+      where: {
+        status: { in: [ARStatus.PENDING, ARStatus.PARTIAL] },
+        dueDate: { not: null, lt: today },
+      },
+      data: { status: ARStatus.OVERDUE },
+    });
+
+    return result.count;
+  }
+
   async getTotalPending(companyId: number) {
     const result = await prisma.accountReceivable.aggregate({
       where: {

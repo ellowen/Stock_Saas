@@ -28,7 +28,7 @@ Gestionar el ciclo de compra a proveedores: crear una orden, recibirla (total o 
 
 ## Permisos
 
-`PURCHASES_MANAGE` existe y gatea el menú, **pero no se aplica en el backend** (`purchase-orders.router.ts` solo tiene `authMiddleware`) — cualquier usuario autenticado puede crear/recibir/cancelar OC vía API. Ver `SECURITY.md`.
+`PURCHASES_MANAGE` gatea el menú y, desde el 2026-07-15, también el backend (`requirePermission("PURCHASES_MANAGE")` en crear/editar/recibir/cancelar, incluye también el endpoint de creación de OC desde sugerencias de reposición en Reports). Ver `SECURITY.md`.
 
 ## Componentes
 
@@ -44,15 +44,15 @@ Página única sin subcomponentes compartidos documentados aparte — modal de r
 
 ## Mejoras futuras
 
-Ver `ROADMAP.md` P0 (permisos) y P1 (bug de doble asiento). Además: permitir recepción fraccionaria, implementar o eliminar `SENT`, unificar impresión con el sistema de Documents.
+Permitir recepción fraccionaria, implementar o eliminar `SENT`, unificar impresión con el sistema de Documents.
 
 ## Problemas conocidos (confirmados en código)
 
-1. **Doble contabilización**: `onPurchaseReceived` se llama con `order.total` (total completo) en cada `/receive`, no con el monto de esa entrega — una OC recibida en 2 tandas genera 2 asientos completos.
-2. `taxAmount` nunca se pasa al asiento — la línea de IVA Crédito Fiscal en `auto-journal.service.ts` es código muerto en la práctica.
-3. `PUT /:id` permite forzar `status` a `RECEIVED` sin pasar por `/receive`, sin tocar inventario ni disparar el asiento — puede dejar una OC "recibida" sin stock real.
-4. Sin permisos de backend (ver arriba).
-5. Truncamiento de decimales en la recepción.
+1. ~~**Doble contabilización**~~ — **resuelto 2026-07-15**: `PurchaseOrderService.receive()` ahora calcula `receivedAmount` (suma real de lo recibido en esa llamada) y el router lo pasa a `onPurchaseReceived` en vez de `order.total`.
+2. `taxAmount` nunca se pasa al asiento — la línea de IVA Crédito Fiscal en `auto-journal.service.ts` sigue siendo código muerto en la práctica (sin resolver).
+3. `PUT /:id` permite forzar `status` a `RECEIVED` sin pasar por `/receive`, sin tocar inventario ni disparar el asiento — puede dejar una OC "recibida" sin stock real (sin resolver).
+4. ~~Sin permisos de backend~~ — **resuelto 2026-07-15** (ver arriba).
+5. Truncamiento de decimales en la recepción (sin resolver).
 
 ## Preguntas abiertas
 

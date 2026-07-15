@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { ARStatus, PaymentMethod } from "@prisma/client";
 import { z } from "zod";
 import { AccountsReceivableService } from "../../../application/accounts/accounts-receivable.service";
+import { autoJournal } from "../../../application/accounting/auto-journal.service";
 
 const createSchema = z.object({
   customerId: z.number().int().positive(),
@@ -59,6 +60,14 @@ export const addARPaymentController = async (req: Request, res: Response) => {
   if (!parsed.success) return res.status(400).json({ message: "Invalid body", errors: parsed.error.flatten() });
   try {
     const result = await service.addPayment(req.auth.companyId, id, parsed.data);
+    // Fire-and-forget: reversa contable del cobro (Deudores por Ventas → Caja/Banco)
+    autoJournal.onARPayment({
+      companyId: req.auth.companyId,
+      createdBy: req.auth.userId,
+      receivableId: id,
+      amount: parsed.data.amount,
+      paymentMethod: parsed.data.method,
+    }).catch(console.error);
     return res.json(result);
   } catch (e) {
     if (e instanceof Error) {

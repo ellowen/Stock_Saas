@@ -2,27 +2,27 @@
 
 Este documento es el más importante del set: durante la investigación de todos los módulos (ver `docs/modules/`) apareció el mismo patrón una y otra vez. Se documenta acá de forma centralizada porque es un problema transversal, no de un módulo aislado.
 
-## Hallazgo principal: los permisos granulares son cosméticos en la mayoría del backend
+## Hallazgo principal: los permisos granulares eran cosméticos en la mayoría del backend — ✅ cerrado 2026-07-15
 
-El sistema de permisos (`PermissionKey`, 20 valores, ver `PERMISSIONS.md`) está bien diseñado: roles + overrides por usuario, con una UI de gestión completa (`UsersPage.tsx` → modal de permisos). El problema es la **cobertura de enforcement en el backend**, verificado leyendo cada router:
+El sistema de permisos (`PermissionKey`, 20 valores, ver `PERMISSIONS.md`) está bien diseñado: roles + overrides por usuario, con una UI de gestión completa (`UsersPage.tsx` → modal de permisos). El problema detectado al documentar cada módulo era la **cobertura de enforcement en el backend** — resuelto agregando `requirePermission(key)` en cada router que le faltaba, usando el mismo patrón ya correcto de `employees.router.ts`/`promotions.router.ts`:
 
-### Correctamente protegidos con `requirePermission(key)` (autoritativo, server-side)
-- Empleados/Sueldos: `EMPLOYEES_VIEW`/`EMPLOYEES_WRITE` (`employees.router.ts`, `payrolls.router.ts`)
-- Contabilidad: `ACCOUNTING_VIEW` (`journal.router.ts`, `accounting-reports.router.ts`)
-- Promociones: `PRODUCTS_WRITE` (`promotions.router.ts`)
-- Ventas: `SALES_DISCOUNT`/`SALES_PRICE_OVERRIDE` chequeados **inline** en el controller, condicionados al contenido del request (correcto, ver `PERMISSIONS.md`)
+### Corregidos en esta ronda (antes solo `authMiddleware` o `requireRole` genérico)
+- Productos/Atributos: `PRODUCTS_WRITE`/`PRODUCTS_DELETE`
+- Inventario y conteos de stock: `INVENTORY_WRITE`
+- Clientes: `CUSTOMERS_WRITE` · Proveedores: `SUPPLIERS_WRITE`
+- Compras: `PURCHASES_MANAGE` (incluye también el endpoint de creación de OC desde sugerencias de reposición en Reports)
+- Documentos: `DOCUMENTS_WRITE`
+- Traspasos: `requireRole` → `requirePermission("TRANSFERS_APPROVE")`
+- Reportes: `requireRole` → `requirePermission("REPORTS_VIEW")`
+- Usuarios/Sucursales: `requireRole` → `requirePermission("USERS_MANAGE"/"SETTINGS_MANAGE")` — este caso no fue mecánico: esos dos permisos no estaban en los defaults de MANAGER pese a que `requireRole(["OWNER","MANAGER"])` ya le daba acceso. Se agregaron a `ROLE_DEFAULTS.MANAGER` (backend y su espejo `AuthContext.tsx`) antes de exigir el permiso, para no revocarle el acceso a todo MANAGER existente de golpe.
 
-### Protegidos solo por rol (`requireRole`), no por el permiso granular que la UI expone
-- Usuarios, Sucursales: `requireRole(["OWNER","MANAGER"])`, ignoran cualquier override de `USERS_MANAGE`/`SETTINGS_MANAGE`
-- Traspasos: `requireRole(["OWNER","MANAGER"])`, ignora `TRANSFERS_APPROVE` — un SELLER con el permiso concedido no puede operar; un MANAGER con el permiso revocado igual puede
-- Reportes: `requireRole(["OWNER","MANAGER"])`, ignora `REPORTS_VIEW`
+### Ya estaban bien protegidos (sin cambios)
+Empleados/Sueldos (`EMPLOYEES_VIEW`/`EMPLOYEES_WRITE`), Contabilidad (`ACCOUNTING_VIEW`), Promociones (`PRODUCTS_WRITE`), Ventas (`SALES_DISCOUNT`/`SALES_PRICE_OVERRIDE` inline en el controller).
 
-### Sin ninguna protección más allá de estar logueado (`authMiddleware` solo)
-Productos (`PRODUCTS_WRITE`/`PRODUCTS_DELETE`), Inventario y conteos de stock (`INVENTORY_WRITE`), Clientes (`CUSTOMERS_WRITE`), Proveedores (`SUPPLIERS_WRITE`), Compras (`PURCHASES_MANAGE`), Documentos (`DOCUMENTS_WRITE`), Atributos/perfiles de industria, Cuentas por cobrar (ni siquiera tiene `PermissionKey` propio).
+### Excepción que sigue sin `PermissionKey`
+**Cuentas por cobrar** no tiene ninguna clave de permiso definida en el sistema — a diferencia de los módulos de arriba, no había nada que reusar. Agregarla requiere una migración de schema (nuevo valor de enum `PermissionKey`), queda en `ROADMAP.md` P3.
 
-**Impacto concreto**: hoy, un usuario `SELLER` autenticado — sin ningún override — puede llamar directamente `POST /inventory/adjust`, `DELETE /customers/:id`, `POST /purchase-orders/:id/receive` o `POST /documents` vía API (curl, Postman, devtools), sin que el servidor lo bloquee. La única barrera es que el frontend no muestra el botón. Esto no es un problema teórico: es la definición exacta de "seguridad solo del lado del cliente", que este mismo proyecto declara como principio a evitar (`PROJECT.md`: "los permisos son server-authoritative... nunca es solo cosmético" — hoy ese principio **no se cumple** para la mayoría de los módulos).
-
-**Prioridad de remediación sugerida** (no implementado, solo documentado — el mega-brief pide documentar antes de tocar código): agregar `requirePermission(key)` en cada router listado arriba, usando exactamente el mismo patrón que ya existe y funciona en `employees.router.ts`/`promotions.router.ts`. Es mecánico, bajo riesgo, y cierra la brecha real más grande del sistema.
+**Impacto de lo corregido**: antes, un `SELLER` autenticado sin overrides podía llamar directamente `POST /inventory/adjust`, `DELETE /customers/:id`, `POST /purchase-orders/:id/receive` o `POST /documents` vía API sin que el servidor lo bloqueara — la única barrera era que el frontend no mostraba el botón. Ahora el servidor rechaza esas llamadas con 403 si el permiso no está presente, cumpliendo el principio que el propio proyecto declara (`PROJECT.md`: "los permisos son server-authoritative... nunca es solo cosmético").
 
 ## Multi-tenancy: aislamiento por código, no por base de datos
 

@@ -10,7 +10,7 @@ Una venta con `paymentMethod: CREDIT` + `customerId` genera automáticamente un 
 
 ## Workflow
 
-`PENDING → PARTIAL → PAID` según pagos acumulados. `OVERDUE` **nunca se persiste** — el aging se calcula al vuelo comparando `dueDate` contra hoy, sin ningún cron que actualice el `status` en base de datos.
+`PENDING → PARTIAL → PAID` según pagos acumulados. `OVERDUE` se marca vía cron diario (`AccountsReceivableService.markOverdue`, corre 00:30) sobre toda AR con `dueDate` vencido y saldo pendiente — antes de esto (resuelto 2026-07-15) el status nunca se persistía y el aging se calculaba solo al vuelo.
 
 ## UX / Frontend
 
@@ -22,7 +22,7 @@ Una venta con `paymentMethod: CREDIT` + `customerId` genera automáticamente un 
 
 ## Permisos
 
-**No existe un `PermissionKey` dedicado para este módulo** — ni siquiera figura en el sistema de permisos granular. Solo protegido por estar autenticado.
+**No existe un `PermissionKey` dedicado para este módulo** — ni siquiera figura en el sistema de permisos granular. Solo protegido por estar autenticado. Agregar uno requiere migración de schema (nuevo valor de enum `PermissionKey`) — ver `ROADMAP.md` P3.
 
 ## Componentes
 
@@ -34,20 +34,20 @@ Tabla de AR con historial de pagos inline, formulario de cobro, tabla de aging c
 
 ## Relaciones
 
-`Sale → AccountReceivable` (creación automática en venta a crédito). `Customer.accountsReceivable` (1-N).
+`Sale → AccountReceivable` (creación automática en venta a crédito). `Customer.accountsReceivable` (1-N). Un pago dispara `AutoJournalService.onARPayment` (Debe Caja/Banco, Haber Deudores por Ventas) si `accountingEnabled` — ver `modules/Accounting.md`.
 
 ## Mejoras futuras
 
-Agregar `PermissionKey` dedicado. Agregar `onARPayment` a `AutoJournalService` para reversar contablemente "Deudores por Ventas" cuando el cliente paga. Job que marque `OVERDUE` real (o eliminar el status persistido y dejar todo como cálculo dinámico, siendo honesto con lo que el dato realmente representa). UI para crear AR manual. Completar el selector de método de pago con `MIXED`.
+Agregar `PermissionKey` dedicado (requiere migración). UI para crear AR manual. Completar el selector de método de pago con `MIXED`. Decidir si una venta CREDIT sin cliente debería bloquearse en el POS en vez de quedar sin trazabilidad.
 
 ## Problemas conocidos
 
-1. `ARStatus.OVERDUE` inalcanzable en base de datos — el filtro "Vencida" en la vista de Cuentas corrientes nunca trae resultados.
-2. Cobrar una AR no genera ningún asiento contable — hueco contable si `accountingEnabled` está activo (se debitó Deudores al vender, nunca se revierte al cobrar).
-3. Venta CREDIT sin cliente no genera ningún registro de deuda.
+1. ~~`ARStatus.OVERDUE` inalcanzable en base de datos~~ — **resuelto 2026-07-15**: cron diario marca `OVERDUE` toda AR vencida con saldo pendiente; el filtro "Vencida" ahora sí trae resultados.
+2. ~~Cobrar una AR no genera ningún asiento contable~~ — **resuelto 2026-07-15**: `onARPayment` reversa "Deudores por Ventas" contra Caja/Banco al confirmar el pago.
+3. Venta CREDIT sin cliente no genera ningún registro de deuda — sin resolver, es una decisión de producto (¿bloquear la combinación en el POS o permitirla intencionalmente?).
 4. Sin permiso de backend dedicado ni general — el módulo entero es de acceso libre para cualquier autenticado.
 5. Cálculo de deuda total duplicado (frontend suma manualmente, backend tiene `GET /summary` que la página ni siquiera consume).
 
 ## Preguntas abiertas
 
-¿`OVERDUE` debería ser un status real perseguido por un cron, o el modelo debería directamente no tener ese campo y calcular todo dinámicamente (como ya hace `/aging`)? Mantener un campo que nunca refleja la realidad es peor que no tenerlo.
+¿Vale la pena agregar un valor `RECEIVABLE_PAYMENT` al enum `JournalSource` para poder reportar cobros de cuenta corriente separados de ventas? Hoy `onARPayment` reusa `sourceType: "SALE"` para evitar una migración de schema — funciona para el balance contable pero mezcla ambos orígenes en cualquier reporte que filtre por `sourceType`.

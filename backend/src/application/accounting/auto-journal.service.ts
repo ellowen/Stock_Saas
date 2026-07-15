@@ -177,6 +177,66 @@ export class AutoJournalService {
   }
 
   /**
+   * Create journal entry when a payment is registered against an AccountReceivable.
+   * DEBE: Caja (cash) / Banco (card/other) → monto cobrado
+   * HABER: Deudores por Ventas → monto cobrado
+   *
+   * Reversa el "Deudores por Ventas" que onSaleCreated debitó al registrar la venta
+   * a crédito original — sin esto, cobrar una cuenta corriente nunca se reflejaba
+   * contablemente (el saldo de Deudores quedaba inflado para siempre).
+   */
+  async onARPayment(params: {
+    companyId: number;
+    createdBy: number;
+    receivableId: number;
+    amount: number;
+    paymentMethod: PaymentMethod;
+    description?: string;
+  }) {
+    try {
+      if (!(await this.isEnabled(params.companyId))) return;
+
+      const accs = await this.accounts(params.companyId, ["1.1.01", "1.1.02", "1.1.06"]);
+
+      const cajaId = accs.get("1.1.01");
+      const bancoId = accs.get("1.1.02");
+      const deudoresId = accs.get("1.1.06");
+
+      if (!deudoresId) return;
+
+      const amount = round2(params.amount);
+      if (amount <= 0) return;
+
+      const debitAccountId =
+        params.paymentMethod === "CARD" ? (bancoId ?? cajaId) : (cajaId ?? bancoId);
+
+      if (!debitAccountId) return;
+
+      const lines: { accountId: number; debit: number; credit: number; description?: string }[] = [
+        { accountId: debitAccountId, debit: amount, credit: 0, description: `Cobro cta. cte. #${params.receivableId}` },
+        { accountId: deudoresId, debit: 0, credit: amount, description: "Deudores por Ventas" },
+      ];
+
+      await prisma.journalEntry.create({
+        data: {
+          companyId: params.companyId,
+          createdBy: params.createdBy,
+          date: new Date(),
+          description: params.description ?? `Cobro cuenta por cobrar #${params.receivableId}`,
+          reference: `AR-PAY-${params.receivableId}`,
+          sourceType: "SALE",
+          sourceId: params.receivableId,
+          isAutomatic: true,
+          status: "POSTED",
+          lines: { create: lines },
+        },
+      });
+    } catch (err) {
+      console.error("[AutoJournal] onARPayment error:", err);
+    }
+  }
+
+  /**
    * Create journal entry when a payroll is marked as PAID.
    * DEBE: Sueldos y Jornales → bruto
    * HABER: Sueldos a Pagar → neto

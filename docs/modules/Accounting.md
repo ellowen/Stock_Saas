@@ -10,7 +10,7 @@ Contabilidad es **opt-in por empresa** (`Company.accountingEnabled`) — si est�
 
 ## Workflow
 
-`AutoJournalService` genera asientos automáticos en 3 puntos confirmados: `onSaleCreated` (venta), `onPurchaseReceived` (recepción de OC), `onPayrollPaid` (pago de sueldo). **No existe** un `onARPayment` — cobrar una cuenta por cobrar no genera reversa contable (hueco documentado en `modules/AccountsReceivable.md`).
+`AutoJournalService` genera asientos automáticos en 4 puntos: `onSaleCreated` (venta), `onPurchaseReceived` (recepción de OC, ahora por el monto recibido en cada llamada, no el total de la orden — fix 2026-07-15), `onPayrollPaid` (pago de sueldo), `onARPayment` (cobro de cuenta por cobrar, agregado 2026-07-15: reversa "Deudores por Ventas" contra Caja/Banco).
 
 ## UX / Frontend
 
@@ -30,15 +30,15 @@ Vista de plan de cuentas, libro diario (con filtro por período), libro IVA, rep
 
 ## Relaciones
 
-Alimentado automáticamente por Sales, Purchases y Payroll. Ver el bug de doble contabilización en recepciones parciales de OC (`modules/Purchases.md`) y el hueco de AccountsReceivable.
+Alimentado automáticamente por Sales, Purchases, Payroll y AccountsReceivable. `onARPayment` reusa `sourceType: "SALE"` (el enum `JournalSource` no tiene un valor dedicado a cobros de cuenta corriente — agregar uno requeriría migración de schema).
 
 ## Mejoras futuras
 
-Implementar `onARPayment`. Corregir el bug de doble asiento en recepción parcial de compras (pasar el monto de la entrega, no el total de la orden). Confirmar si `taxAmount` se propaga correctamente a los asientos de venta (se confirmó que en Purchases no se propaga — verificar si Sales tiene el mismo problema).
+Confirmar si `taxAmount` se propaga correctamente a los asientos de venta (se confirmó que en Purchases no se propaga — verificar si Sales tiene el mismo problema). Evaluar agregar `RECEIVABLE_PAYMENT` a `JournalSource` si se necesita reportar cobros de cta. cte. separados de ventas.
 
 ## Problemas conocidos
 
-Ver el detalle completo en `modules/Purchases.md` (doble asiento) y `modules/AccountsReceivable.md` (falta de reversa al cobrar). Ambos son huecos reales de integridad contable si `accountingEnabled` está activo, no solo detalles cosméticos.
+Ninguno pendiente de los dos huecos de integridad contable encontrados en la documentación inicial (doble asiento en OC, falta de reversa al cobrar AR) — ambos resueltos 2026-07-15, ver `modules/Purchases.md` y `modules/AccountsReceivable.md`.
 
 ## Preguntas abiertas
 
