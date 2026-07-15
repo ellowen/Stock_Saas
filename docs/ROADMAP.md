@@ -2,11 +2,11 @@
 
 Consolidado desde `MEJORAS-FUTURAS.md` (histórico) más los hallazgos de la ronda de documentación completa y de las pruebas end-to-end de los 20 módulos hechas en el navegador real (2026-07-15). Prioridad asignada por impacto real, no por preferencia estética.
 
-## Pendiente — P0: Compras no mueve stock ni contabilidad si se crea a mano
+## ✅ Completado 2026-07-15 — Compras no movía stock ni contabilidad si se creaba a mano
 
-**Confirmado end-to-end el 2026-07-15**, probando el módulo en el navegador con datos reales: el formulario "Nueva orden" de Compras arma cada ítem solo con `description`/`quantity`/`unitPrice` — **nunca asigna `variantId`** (no hay buscador de producto, es texto libre real). `PurchaseOrderService.receive()` ignora en silencio cualquier ítem sin `variantId`. Resultado: una OC creada por ese formulario, al "recibirse", devuelve `200 OK`, la UI no muestra ningún error, pero **no actualiza inventario ni genera asiento contable** — se verificó creando una OC de $1.000 y recibiéndola dos veces: `received` quedó en `0` en la base, sin `InventoryMovement` ni `JournalEntry`.
+**Confirmado end-to-end** probando el módulo en el navegador con datos reales: el formulario "Nueva orden" armaba cada ítem solo con `description`/`quantity`/`unitPrice` — **nunca asignaba `variantId`** (no había buscador de producto, era texto libre real). `PurchaseOrderService.receive()` ignora en silencio cualquier ítem sin `variantId`. Resultado: una OC creada por ese formulario, al "recibirse", devolvía `200 OK`, la UI no mostraba ningún error, pero **no actualizaba inventario ni generaba asiento contable** — se verificó creando una OC de $1.000 y recibiéndola dos veces: `received` quedó en `0` en la base, sin `InventoryMovement` ni `JournalEntry`.
 
-La única vía que sí liga `variantId` correctamente es "Sugerencias de reposición" (Inventario → Reposición → crear OC). Fix sugerido: agregar un buscador de producto real al formulario de "Nueva orden" (mismo componente que ya existe en el POS), y que `receive()` avise si un ítem se salteó por falta de `variantId` en vez de fallar en silencio. Ver `modules/Purchases.md`.
+**Fix**: se agregó un buscador de producto real al campo de descripción de cada ítem (debounced, mismo patrón que `CustomerSearchInput` del POS), que liga `variantId` de verdad y avisa visualmente si un ítem quedó sin vincular. De paso se encontró y corrigió un bug de API: `GET /products?search=X` ignora el filtro `search` si no se manda también `page` (cae a la rama sin filtrar). **Re-verificado end-to-end tras el fix**: OC de $400 (8 unidades) vinculada a una variante real, recibida, generó correctamente el movimiento de inventario (stock 55→63) y el asiento contable ($400/$400). Ver `modules/Purchases.md`.
 
 ## ✅ Completado 2026-07-15 — P0: Seguridad (server-authoritative real)
 
@@ -61,4 +61,4 @@ Rediseño de `POSTab.tsx` (Opción A del comparativo de layouts): panel derecho 
 
 ## Cómo se prioriza en este roadmap
 
-El item de Compras (arriba) es P0 porque, igual que la brecha de permisos, es una promesa de arquitectura incumplida: el módulo existe específicamente para mover stock y contabilidad, y su flujo más obvio no lo hace, en silencio. La brecha de permisos y los bugs de integridad ya resueltos eran P0/P1 por la misma razón (no features faltantes, comportamiento que contradice lo que el sistema declara hacer). P2 es consistencia que mejora mantenibilidad pero no rompe nada hoy. P4 requiere una decisión de negocio antes de tener sentido técnico.
+Todo lo marcado "P0"/"P1" y ya resuelto lo era por la misma razón: no features faltantes, sino comportamiento que contradice lo que el sistema declara hacer (permisos que no se exigen, plata mal contabilizada, un módulo que no mueve stock pese a que existe para eso). P2 es consistencia que mejora mantenibilidad pero no rompe nada hoy. P4 requiere una decisión de negocio antes de tener sentido técnico. **Con el fix de Compras, no queda ningún item P0/P1 abierto** — todo lo pendiente en este documento es P2 (consistencia) o P4 (decisión de negocio).

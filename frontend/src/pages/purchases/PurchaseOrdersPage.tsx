@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { getAccessToken } from "../../lib/api";
 import { formatCurrency, formatDate } from "../../lib/format";
 import { useTranslation } from "react-i18next";
@@ -56,6 +56,13 @@ interface ItemRow {
   description: string;
   quantity: string;
   unitPrice: string;
+}
+
+interface VariantOption {
+  variantId: number;
+  label: string;
+  sku: string;
+  price: number;
 }
 
 const STATUS_LABELS: Record<POStatus, string> = {
@@ -179,6 +186,51 @@ export default function PurchaseOrdersPage() {
   function removeItem(idx: number) { setItems((prev) => prev.filter((_, i) => i !== idx)); }
   function updateItem(idx: number, field: keyof ItemRow, value: string) {
     setItems((prev) => prev.map((item, i) => i === idx ? { ...item, [field]: value } : item));
+  }
+  function linkItemVariant(idx: number, option: VariantOption) {
+    setItems((prev) => prev.map((item, i) => i === idx ? { ...item, variantId: option.variantId, description: option.label } : item));
+    setSearchOpenIdx(null);
+    setSearchResults([]);
+  }
+  function unlinkItemVariant(idx: number) {
+    setItems((prev) => prev.map((item, i) => i === idx ? { ...item, variantId: undefined } : item));
+  }
+
+  // Product/variant search — reusado por fila de item, un dropdown activo a la vez
+  const [searchOpenIdx, setSearchOpenIdx] = useState<number | null>(null);
+  const [searchResults, setSearchResults] = useState<VariantOption[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function searchVariants(idx: number, q: string) {
+    setSearchOpenIdx(idx);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    if (!q.trim()) { setSearchResults([]); return; }
+    searchDebounceRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const res = await fetch(`${API}/products?page=1&pageSize=8&search=${encodeURIComponent(q.trim())}`, {
+          headers: { Authorization: `Bearer ${getAccessToken()}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const products = Array.isArray(data) ? data : (data.data ?? []);
+        const options: VariantOption[] = [];
+        for (const p of products) {
+          for (const v of p.variants ?? []) {
+            const attrs = (v.attributes ?? []).map((a: { value: string }) => a.value).filter(Boolean).join(" / ");
+            options.push({
+              variantId: v.id,
+              label: `${p.name}${attrs ? ` (${attrs})` : ""} — ${v.sku}`,
+              sku: v.sku,
+              price: Number(v.price),
+            });
+          }
+        }
+        setSearchResults(options.slice(0, 8));
+      } catch { /* silencioso, es solo autocomplete */ }
+      finally { setSearchLoading(false); }
+    }, 300);
   }
 
   const total = items.reduce((s, item) => s + parseFloat(item.unitPrice || "0") * parseFloat(item.quantity || "0"), 0);
@@ -461,6 +513,9 @@ export default function PurchaseOrdersPage() {
           {/* Items */}
           <div>
             <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{t("purchases.itemsLabel")}</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">
+              Buscá el producto por nombre para vincularlo — solo los ítems vinculados a un producto actualizan stock y contabilidad al recibir la orden.
+            </p>
             <div className="space-y-2">
               <div className="grid grid-cols-12 gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 px-1">
                 <span className="col-span-6">{t("purchases.colItemDesc")}</span>
@@ -469,11 +524,49 @@ export default function PurchaseOrdersPage() {
                 <span className="col-span-1" />
               </div>
               {items.map((item, idx) => (
-                <div key={idx} className="grid grid-cols-12 gap-2 items-center">
-                  <input type="text" value={item.description} onChange={(e) => updateItem(idx, "description", e.target.value)} placeholder={t("purchases.itemDescPlaceholder")} className="input-minimal text-sm col-span-6" />
-                  <input type="number" value={item.quantity} onChange={(e) => updateItem(idx, "quantity", e.target.value)} min={0.001} step={0.001} className="input-minimal text-sm col-span-2 text-right" />
-                  <input type="number" value={item.unitPrice} onChange={(e) => updateItem(idx, "unitPrice", e.target.value)} min={0} step={0.01} className="input-minimal text-sm col-span-3 text-right" />
-                  <button type="button" onClick={() => removeItem(idx)} disabled={items.length === 1} className="col-span-1 text-red-500 hover:text-red-700 text-lg leading-none disabled:opacity-30">×</button>
+                <div key={idx}>
+                  <div className="grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-6 relative">
+                      <input
+                        type="text"
+                        value={item.description}
+                        onChange={(e) => {
+                          updateItem(idx, "description", e.target.value);
+                          if (item.variantId) unlinkItemVariant(idx);
+                          searchVariants(idx, e.target.value);
+                        }}
+                        onFocus={() => { if (!item.variantId) searchVariants(idx, item.description); }}
+                        onBlur={() => setTimeout(() => setSearchOpenIdx((cur) => (cur === idx ? null : cur)), 150)}
+                        placeholder={t("purchases.itemDescPlaceholder")}
+                        className={`input-minimal text-sm w-full ${item.variantId ? "border-emerald-300 dark:border-emerald-700" : ""}`}
+                      />
+                      {searchOpenIdx === idx && (searchResults.length > 0 || searchLoading) && (
+                        <div className="absolute z-30 top-full left-0 right-0 mt-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-xl overflow-hidden max-h-64 overflow-y-auto">
+                          {searchLoading && <p className="px-3 py-2 text-sm text-slate-400">...</p>}
+                          {!searchLoading && searchResults.map((opt) => (
+                            <button
+                              key={opt.variantId}
+                              type="button"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => linkItemVariant(idx, opt)}
+                              className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-slate-100 dark:border-slate-700 last:border-0"
+                            >
+                              <p className="text-sm text-slate-800 dark:text-slate-200">{opt.label}</p>
+                              <p className="text-xs text-slate-400">{formatCurrency(opt.price)}</p>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <input type="number" value={item.quantity} onChange={(e) => updateItem(idx, "quantity", e.target.value)} min={0.001} step={0.001} className="input-minimal text-sm col-span-2 text-right" />
+                    <input type="number" value={item.unitPrice} onChange={(e) => updateItem(idx, "unitPrice", e.target.value)} min={0} step={0.01} className="input-minimal text-sm col-span-3 text-right" />
+                    <button type="button" onClick={() => removeItem(idx)} disabled={items.length === 1} className="col-span-1 text-red-500 hover:text-red-700 text-lg leading-none disabled:opacity-30">×</button>
+                  </div>
+                  {item.description.trim() && !item.variantId && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 ml-1">
+                      No vinculado a un producto — no va a sumar stock ni generar asiento al recibir.
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
