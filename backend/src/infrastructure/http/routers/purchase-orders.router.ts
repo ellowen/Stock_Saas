@@ -74,7 +74,7 @@ router.post("/:id/receive", requirePermission("PURCHASES_MANAGE"), async (req: R
     return res.status(400).json({ message: "items requeridos" });
   }
   try {
-    const { order, receivedAmount } = await service.receive(id, companyId, userId, items);
+    const { order, receivedAmount, receivedTaxAmount } = await service.receive(id, companyId, userId, items);
     // Fire-and-forget auto journal for the amount actually received in this call
     // (no el total de la orden completa — evita duplicar el asiento en recepciones parciales)
     if (receivedAmount > 0) {
@@ -83,6 +83,7 @@ router.post("/:id/receive", requirePermission("PURCHASES_MANAGE"), async (req: R
         createdBy: userId,
         purchaseOrderId: id,
         total: receivedAmount,
+        taxAmount: receivedTaxAmount,
       }).catch(console.error);
     }
     res.json(order);

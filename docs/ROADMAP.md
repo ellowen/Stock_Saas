@@ -40,18 +40,24 @@ Rediseño de `POSTab.tsx` (Opción A del comparativo de layouts): panel derecho 
 
 `AuditPage.tsx` usaba un fragment `<>...</>` sin `key` dentro de un `.map()` (el `key` estaba puesto en el `<tr>` hijo, no en el fragment en sí) — generaba un warning de React en cada carga de la pantalla. Cambiado a `<Fragment key={log.id}>`. Encontrado durante la prueba en vivo de todos los módulos, no en la lectura de código original.
 
+## ✅ Completado 2026-07-15 — P2: labels, export filtrado, authFetch, color único
+
+Ver commit correspondiente: `MOVEMENT_TYPE_LABELS` completo, exportar Stock respeta filtros (`lowStockOnly` aplicado client-side), `CustomersPage`/`AuditPage` migradas a `authFetch`, y el color de acento unificado a `indigo-*` (se eliminó el token `primary-*` de `tailwind.config.cjs`, usado en ~17 archivos incluyendo componentes compartidos). Ver `DESIGN_SYSTEM.md`.
+
+## ✅ Completado 2026-07-15 — P2: impuesto en compras, recepción fraccionaria, status restringido
+
+Los tres tocaban `purchase-order.service.ts`, se hicieron juntos:
+
+- **`taxAmount` nunca se pasaba al asiento de compra**: no era solo un bug de wiring — `PurchaseOrderItem` no tenía ningún campo de impuesto en el schema (a diferencia de `DocumentItem`, que sí). Se agregó `taxConfigId`/`taxAmount` (migración `20260715172844_add_purchase_order_item_tax`), se agregó un selector de impuesto al formulario "Nueva orden" (oculto si la empresa no tiene ningún `TaxConfig` cargado — no existe pantalla para crear uno, es un hueco de UX que queda pendiente), y `create()`/`receive()` calculan el impuesto real. **Verificado end-to-end**: OC de $1.000 + IVA 21% ($210) = $1.210, recibida parcialmente (4.5 de 10 unidades), generó un asiento con 3 líneas balanceadas (Mercaderías $450, IVA CF $94.5, Proveedores $544.5).
+- **Truncamiento de decimales en la recepción**: `receive()` ya no usa `Math.floor()` — acepta cantidades fraccionarias en `PurchaseOrderItem.received`. Se descubrió en el camino que `Inventory.quantity`/`InventoryMovement` son `Int` (no `Decimal`) — todo el ledger de stock de la app, no solo Compras, no soporta unidades fraccionarias — así que el stock real redondea al entero más cercano aunque `received` guarde el valor exacto. Cambiar eso sería una migración mucho más grande (toca Sales/Transfers/StockCounts), no se hizo.
+- **`PUT /purchase-orders/:id` permitía forzar `status` a `RECEIVED`**: ahora solo acepta `DRAFT`/`SENT`/`CANCELLED` por esa vía.
+
 ## P2 — Consistencia de producto / UX (sin resolver)
 
-- Unificar el sistema de color de acento (`indigo-*` vs `primary-*`, ver `DESIGN_SYSTEM.md`).
 - `size`/`color` de variante: Zod los exige pero el service nunca los persiste; el modal de UI con atributos flexibles activados no completa `ProductVariantAttribute` correctamente (solo la importación CSV lo hace bien) — ver `modules/Products.md`.
-- Exportaciones de Inventario deberían respetar los filtros activos de pantalla.
-- Migrar `CustomersPage.tsx`/`AuditPage.tsx` a `authFetch` (hoy usan `fetch()` crudo, sin manejo de sesión expirada).
-- Completar labels faltantes de `InventoryMovementType` (`SALE_RETURN`, `DOCUMENT_OUT`, `PURCHASE_RECEIVE`).
 - Estados de enum inalcanzables a limpiar o implementar: `PurchaseOrderStatus.SENT`, `StockTransferStatus.IN_TRANSIT`/`CANCELLED` (sin flujo ni endpoint de cancelación de traspaso).
 - `DocumentService.update()` es código muerto (guard `status==="DRAFT"` nunca se cumple porque `create()` fuerza `ISSUED`) — decidir si se habilita edición real de borradores o se elimina el endpoint.
-- `taxAmount` nunca se pasa al asiento de compra — la línea de IVA Crédito Fiscal en `auto-journal.service.ts` es código muerto en la práctica.
-- `PUT /purchase-orders/:id` permite forzar `status` a `RECEIVED` sin pasar por `/receive`, sin tocar inventario ni disparar el asiento.
-- Truncamiento de decimales en la recepción de OC (`Math.floor`), pese a que el schema soporta cantidades fraccionarias.
+- No existe ninguna pantalla para administrar `TaxConfig` (crear/editar tasas de impuesto) — el CRUD backend existe pero ni Documents ni Purchases (ambos con selector de impuesto en la UI) tienen forma de cargar uno sin ir directo a la API.
 
 ## P4 — Deuda de producto/negocio a decidir (no técnica)
 

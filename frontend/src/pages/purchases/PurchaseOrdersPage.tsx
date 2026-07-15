@@ -50,12 +50,14 @@ interface PODetail extends PurchaseOrder {
 
 interface Branch { id: number; name: string; code: string }
 interface Supplier { id: number; name: string }
+interface TaxConfig { id: number; name: string; rate: number | string }
 
 interface ItemRow {
   variantId?: number;
   description: string;
   quantity: string;
   unitPrice: string;
+  taxConfigId?: number;
 }
 
 interface VariantOption {
@@ -98,6 +100,7 @@ export default function PurchaseOrdersPage() {
   // New order form
   const [branches, setBranches] = useState<Branch[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [taxConfigs, setTaxConfigs] = useState<TaxConfig[]>([]);
 
   const DRAFT_KEY = "oc_draft";
   const loadDraft = () => {
@@ -176,9 +179,11 @@ export default function PurchaseOrdersPage() {
     Promise.all([
       fetch(`${API}/branches`, { headers: h }).then((r) => r.json()),
       fetch(`${API}/suppliers`, { headers: h }).then((r) => r.json()),
-    ]).then(([b, s]) => {
+      fetch(`${API}/tax-configs`, { headers: h }).then((r) => (r.ok ? r.json() : [])),
+    ]).then(([b, s, tx]) => {
       setBranches(Array.isArray(b) ? b : []);
       setSuppliers(Array.isArray(s) ? s : []);
+      setTaxConfigs(Array.isArray(tx) ? tx : []);
     }).catch(() => {});
   }, []);
 
@@ -233,7 +238,14 @@ export default function PurchaseOrdersPage() {
     }, 300);
   }
 
-  const total = items.reduce((s, item) => s + parseFloat(item.unitPrice || "0") * parseFloat(item.quantity || "0"), 0);
+  const taxRateById = new Map(taxConfigs.map((tc) => [tc.id, Number(tc.rate)]));
+  const subtotal = items.reduce((s, item) => s + parseFloat(item.unitPrice || "0") * parseFloat(item.quantity || "0"), 0);
+  const taxTotal = items.reduce((s, item) => {
+    const lineNet = parseFloat(item.unitPrice || "0") * parseFloat(item.quantity || "0");
+    const rate = item.taxConfigId ? (taxRateById.get(item.taxConfigId) ?? 0) : 0;
+    return s + lineNet * rate;
+  }, 0);
+  const total = subtotal + taxTotal;
 
   async function handleSubmit() {
     if (!branchId || !supplierId) { showToast(t("purchases.suppBranchRequired"), "error"); return; }
@@ -253,6 +265,7 @@ export default function PurchaseOrdersPage() {
             description: item.description,
             quantity: parseFloat(item.quantity) || 1,
             unitPrice: parseFloat(item.unitPrice) || 0,
+            taxConfigId: item.taxConfigId,
           })),
         }),
       });
@@ -567,6 +580,21 @@ export default function PurchaseOrdersPage() {
                       No vinculado a un producto — no va a sumar stock ni generar asiento al recibir.
                     </p>
                   )}
+                  {taxConfigs.length > 0 && (
+                    <div className="flex items-center gap-2 mt-1 ml-1">
+                      <span className="text-xs text-slate-400">Impuesto</span>
+                      <select
+                        value={item.taxConfigId ?? ""}
+                        onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, taxConfigId: e.target.value ? Number(e.target.value) : undefined } : it))}
+                        className="text-xs rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5"
+                      >
+                        <option value="">Sin impuesto</option>
+                        {taxConfigs.map((tc) => (
+                          <option key={tc.id} value={tc.id}>{tc.name} ({(Number(tc.rate) * 100).toFixed(0)}%)</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -576,7 +604,19 @@ export default function PurchaseOrdersPage() {
           </div>
 
           <div className="flex justify-end">
-            <div className="w-44 text-sm space-y-1">
+            <div className="w-52 text-sm space-y-1">
+              {taxTotal > 0 && (
+                <>
+                  <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                    <span>{t("purchases.subtotal", { defaultValue: "Subtotal" })}</span>
+                    <span>{formatCurrency(subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                    <span>Impuestos</span>
+                    <span>{formatCurrency(taxTotal)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between border-t border-slate-200 dark:border-slate-600 pt-1">
                 <span className="font-semibold">{t("purchases.total")}</span>
                 <span className="font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(total)}</span>
