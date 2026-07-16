@@ -43,9 +43,35 @@ function parseVariantAttributes(variant: any) {
   };
 }
 
+/**
+ * ProductVariantAttribute no tiene companyId propio (solo variantId/attributeId) —
+ * sin este chequeo, una empresa podría referenciar el attributeId de otra
+ * (cross-tenant) y terminar viendo su nombre/tipo/opciones al listar la variante.
+ */
+async function assertAttributesBelongToCompany(
+  tx: Prisma.TransactionClient,
+  companyId: number,
+  variants: Array<{ attributes?: VariantAttributeInput[] }>
+) {
+  const attributeIds = Array.from(
+    new Set(variants.flatMap((v) => (v.attributes ?? []).map((a) => a.attributeId)))
+  );
+  if (attributeIds.length === 0) return;
+
+  const owned = await tx.attribute.findMany({
+    where: { id: { in: attributeIds }, companyId },
+    select: { id: true },
+  });
+  if (owned.length !== attributeIds.length) {
+    throw new Error("INVALID_ATTRIBUTE");
+  }
+}
+
 export class ProductService {
   async createProductWithVariants(companyId: number, data: CreateProductInput) {
     return prisma.$transaction(async (tx) => {
+      await assertAttributesBelongToCompany(tx, companyId, data.variants);
+
       const product = await tx.product.create({
         data: {
           companyId,
@@ -219,6 +245,10 @@ export class ProductService {
     if (!product) return null;
 
     return prisma.$transaction(async (tx) => {
+      if (data.variants && data.variants.length > 0) {
+        await assertAttributesBelongToCompany(tx, companyId, data.variants);
+      }
+
       const updateData: Prisma.ProductUpdateInput = {};
       if (data.name !== undefined) updateData.name = data.name;
       if (data.description !== undefined) updateData.description = data.description;

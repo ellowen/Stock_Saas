@@ -26,6 +26,7 @@ type ProdTx = {
   product: { create: jest.Mock; update: jest.Mock; findUnique: jest.Mock };
   productVariant: { create: jest.Mock; update: jest.Mock };
   productVariantAttribute: { createMany: jest.Mock; deleteMany: jest.Mock };
+  attribute: { findMany: jest.Mock };
 };
 
 function makeTx(overrides: Partial<ProdTx> = {}): ProdTx {
@@ -42,6 +43,15 @@ function makeTx(overrides: Partial<ProdTx> = {}): ProdTx {
     productVariantAttribute: {
       createMany: jest.fn().mockResolvedValue({}),
       deleteMany: jest.fn().mockResolvedValue({}),
+    },
+    // por defecto, "posee" todos los attributeId que se le pidan (mismo companyId)
+    attribute: {
+      findMany: jest
+        .fn()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .mockImplementation(async ({ where }: any) =>
+          (where.id.in as number[]).map((id) => ({ id }))
+        ),
     },
     ...overrides,
   };
@@ -213,6 +223,43 @@ describe("ProductService", () => {
       const result = await service.updateProduct(1, 999, { name: "X" });
       expect(result).toBeNull();
       expect(mTx).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── aislamiento multi-tenant de atributos ────────────────────────────────────
+
+  describe("aislamiento de attributeId entre empresas", () => {
+    it("rechaza crear una variante con un attributeId que no pertenece a la empresa", async () => {
+      setupTx({
+        attribute: { findMany: jest.fn().mockResolvedValue([]) }, // ningún id es de esta empresa
+      });
+      await expect(
+        service.createProductWithVariants(1, {
+          name: "Remera",
+          variants: [{ sku: "SKU-1", price: 100, attributes: [{ attributeId: 999, value: "M" }] }],
+        })
+      ).rejects.toThrow("INVALID_ATTRIBUTE");
+    });
+
+    it("rechaza editar una variante con un attributeId de otra empresa", async () => {
+      mProductFindFirst.mockResolvedValue({ id: 1, variants: [{ id: 100 }] });
+      setupTx({
+        attribute: { findMany: jest.fn().mockResolvedValue([]) },
+      });
+      await expect(
+        service.updateProduct(1, 1, {
+          variants: [{ id: 100, sku: "SKU-1", price: 100, attributes: [{ attributeId: 999, value: "M" }] }],
+        })
+      ).rejects.toThrow("INVALID_ATTRIBUTE");
+    });
+
+    it("acepta cuando todos los attributeId pertenecen a la empresa", async () => {
+      const tx = setupTx(); // default: findMany "posee" todos los ids pedidos
+      await service.createProductWithVariants(1, {
+        name: "Remera",
+        variants: [{ sku: "SKU-1", price: 100, attributes: [{ attributeId: 5, value: "M" }] }],
+      });
+      expect(tx.productVariantAttribute.createMany).toHaveBeenCalled();
     });
   });
 });

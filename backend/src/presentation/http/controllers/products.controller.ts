@@ -61,6 +61,9 @@ export const createProductController = async (req: Request, res: Response) => {
     );
     return res.status(201).json(product);
   } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_ATTRIBUTE") {
+      return res.status(400).json({ message: "Invalid attributeId" });
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2002") {
         return res.status(409).json({
@@ -183,6 +186,9 @@ export const updateProductController = async (req: Request, res: Response) => {
     }
     return res.json(product);
   } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_ATTRIBUTE") {
+      return res.status(400).json({ message: "Invalid attributeId" });
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return res.status(409).json({ message: "Duplicate value for unique field (probably SKU or barcode)" });
     }

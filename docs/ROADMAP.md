@@ -61,6 +61,17 @@ Los tres tocaban `purchase-order.service.ts`, se hicieron juntos:
 
 `size`/`color` pasaron a opcionales en Zod y `ProductService` ahora los persiste de verdad (antes la validación los exigía pero el service nunca los escribía a la base). `VariantManager.tsx`/`ProductFormModal.tsx` se reescribieron para manejar `attributes` como array real (`{attributeId, value}[]`) en vez del blob JSON metido en el campo `size` que nunca llegaba a la base. Se encontró y corrigió además un segundo bug: `updateProductController` omitía `attributes` al armar el payload hacia el service (sí lo pasaba en creación, no en edición) — el `PATCH` devolvía `200 OK` pero no guardaba el atributo. **Verificado end-to-end en el navegador + query directa a la base** los 4 casos (crear/editar × legacy/flexible). Ver `modules/Products.md` para el detalle y una nota de UX encontrada en vivo (el modo legacy/flexible es una decisión a nivel empresa, no por producto).
 
+## ✅ Completado 2026-07-16 — aislamiento multi-tenant de atributos + suite de regresión
+
+Tras cerrar el fix de `size`/`color`/atributos del día anterior, se auditaron explícitamente los huecos de cobertura que habían quedado pendientes de verificar:
+
+- **Gap de seguridad real encontrado**: `ProductVariantAttribute` no tiene `companyId` propio — nada validaba que el `attributeId` recibido en `POST`/`PATCH /products` perteneciera a la empresa del usuario autenticado. Un `attributeId` de otra empresa se aceptaba igual (cross-tenant). Fix: `assertAttributesBelongToCompany()` en `product.service.ts`, verificado con dos empresas reales en la base de dev.
+- Casos borde de atributos (múltiples por variante, vaciar uno ya cargado, reemplazar una variante) probados explícitamente — reveló y corrigió un bug menor: soft-eliminar una variante dejaba sus `ProductVariantAttribute` huérfanas para siempre.
+- Se agregó una suite de tests automatizados donde antes solo había verificación manual con scripts descartables: `product.service.test.ts` (23 tests: persistencia, atributos, aislamiento multi-tenant), `products.permissions.test.ts` (supertest + DB real: `SELLER` sin `PRODUCTS_WRITE` recibe `403`, `OWNER` puede crear), `VariantManager.test.tsx` (13 tests de componente, RTL, incluye atributo tipo `NUMBER`), `purchase-order.service.test.ts` (10 tests: impuesto, recepción fraccionaria, status), `stock-transfer.service.test.ts` (cancelación), `document.service.test.ts` (`update()`), `auto-journal.service.test.ts` (asiento de cobro de AR).
+- Se corrigió información desactualizada en `modules/Products.md` sobre permisos (`PRODUCTS_WRITE`/`PRODUCTS_DELETE` ya estaban protegidos desde el batch P0, el doc no se había actualizado).
+
+Ver `modules/Products.md` para el detalle completo de cada caso probado.
+
 ## P2 — Consistencia de producto / UX (sin resolver)
 
 - No existe ninguna pantalla para administrar `TaxConfig` (crear/editar tasas de impuesto) — el CRUD backend existe pero ni Documents ni Purchases (ambos con selector de impuesto en la UI) tienen forma de cargar uno sin ir directo a la API.
