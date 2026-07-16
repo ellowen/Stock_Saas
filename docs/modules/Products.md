@@ -22,7 +22,7 @@ No tiene ítem de sidebar propio — vive como tab dentro de `/app/inventory`.
 
 ## Permisos
 
-`products.router.ts`: **ni `PRODUCTS_WRITE` ni `PRODUCTS_DELETE` se verifican en el backend** — solo `authMiddleware` + `checkProductLimit` en la creación. Contraste: `promotions.router.ts` sí usa `requirePermission("PRODUCTS_WRITE")` correctamente para el mismo permiso, aplicado de forma inconsistente entre ambos módulos.
+`products.router.ts`: `POST /`, `PATCH /:id`, `DELETE /:id` y `POST /import-csv` usan `requirePermission("PRODUCTS_WRITE"/"PRODUCTS_DELETE")` (agregado en el batch P0 de seguridad, commit `e0c8711`). `GET` (listar/categorías/marcas) solo exige `authMiddleware`, sin permiso dedicado — igual que el resto de los módulos de solo lectura.
 
 ## Componentes
 
@@ -34,11 +34,11 @@ No tiene ítem de sidebar propio — vive como tab dentro de `/app/inventory`.
 
 ## Mejoras futuras
 
-Ver `ROADMAP.md`. Agregar `requirePermission` en el router (sigue pendiente).
+Ver `ROADMAP.md`.
 
 ## Problemas conocidos
 
-1. Sin protección de permiso en el backend, inconsistente con Promotions que usa el mismo `PermissionKey` correctamente.
+Ninguno abierto por el momento (ver histórico de fixes abajo).
 
 ## Fix 2026-07-15 — `size`/`color`/atributos flexibles no se persistían
 
@@ -53,3 +53,16 @@ Se encontró un segundo bug en el camino: `updateProductController` (`products.c
 - Crear con atributo flexible (`Attribute` "Talle" tipo SELECT): generó `ProductVariantAttribute{attributeId, value: "L"}` real (antes nunca llegaba a la base).
 - Editar variante existente cambiando un atributo flexible: falló la primera vez por el bug de `updateProductController` descrito arriba (el `PATCH` devolvía `200 OK` pero no guardaba nada); tras el fix, persiste correctamente.
 - Nota de UX confirmada en vivo: el modo legacy/flexible es una decisión a nivel empresa (según `attributeDefs.length > 0`), no por producto — si una empresa configura un solo `Attribute`, todos sus productos (incluidos los que ya tenían `size`/`color` cargado) pasan a mostrar los campos flexibles en el modal de edición. Los valores legacy ya guardados no se pierden en la base, pero dejan de ser editables desde la UI.
+
+## Fix 2026-07-16 — casos borde de atributos + tests automatizados
+
+Tras el fix del día anterior, se probaron explícitamente los casos borde que habían quedado sin cubrir:
+
+- **Múltiples atributos por variante**: crear/editar con 2+ atributos a la vez — ok.
+- **Vaciar un atributo ya cargado**: al editar una variante con 2 atributos y enviar solo 1 (omitiendo el otro), `updateProduct` hace `deleteMany` + `createMany` reemplazando el set completo — el atributo omitido se borra correctamente, no queda huérfano.
+- **Reemplazar una variante** (editar el producto quitando una variante y agregando una nueva sin `id`): la variante vieja se soft-elimina (`isActive: false`) correctamente y la nueva se crea con sus atributos.
+- **Bug encontrado**: al soft-eliminar una variante, sus filas de `ProductVariantAttribute` quedaban huérfanas para siempre (la variante nunca vuelve a aparecer por el filtro `isActive: true`, pero las filas de atributo seguían en la base sin ningún propósito). **Fix**: `updateProduct` ahora borra `ProductVariantAttribute` de la variante al soft-eliminarla.
+- **Importación CSV**: no se tocó ningún código de `csv-import.service.ts` en ninguno de los dos fixes — es un path completamente separado. Se hizo un smoke test end-to-end (crear producto vía CSV con atributos + stock inicial) para confirmar que sigue sin regresión.
+- **Permiso `PRODUCTS_WRITE`/`PRODUCTS_DELETE`**: se había documentado como gap abierto en una versión vieja de este archivo — es información desactualizada, el router ya los exige desde el batch P0 de seguridad (commit `e0c8711`). Corregido en la sección "Permisos" arriba.
+
+Se agregó `src/__tests__/product.service.test.ts` (10 tests) cubriendo `createProductWithVariants`/`updateProduct`: persistencia de `size`/`color`, creación/reemplazo/vaciado de atributos, alta de variante nueva en edición, y soft-delete con limpieza de atributos huérfanos — para que estos casos queden como regresión automatizada y no dependan de verificación manual futura.

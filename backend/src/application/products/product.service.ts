@@ -243,6 +243,9 @@ export class ProductService {
               where: { id: v.id },
               data: { isActive: false },
             });
+            await tx.productVariantAttribute.deleteMany({
+              where: { variantId: v.id },
+            });
           }
         }
 
