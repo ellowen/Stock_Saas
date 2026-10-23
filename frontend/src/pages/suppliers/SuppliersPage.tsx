@@ -131,8 +131,8 @@ export default function SuppliersPage() {
       showToast(editing ? t("suppliers.updated") : t("suppliers.created"), "success");
       setModalOpen(false);
       load(search || undefined);
-    } catch (e: any) {
-      showToast(e.message ?? t("suppliers.saveError"), "error");
+    } catch (e) {
+      showToast((e as Error).message ?? t("suppliers.saveError"), "error");
     } finally {
       setSaving(false);
     }

@@ -128,7 +128,7 @@ export function InventoryPage() {
     try {
       await products.deleteProduct(productToDelete);
       setProductToDelete(null);
-    } catch (e) {
+    } catch {
       // error already toasted inside deleteProduct
     } finally {
       setDeleting(false);
@@ -212,10 +212,6 @@ export function InventoryPage() {
           {...products}
           categories={categories}
           brands={brands}
-          onOpenCreate={() => {
-            setEditProduct(null);
-            setShowCreate(true);
-          }}
           onOpenEdit={(p) => {
             setEditProduct(p);
             setShowCreate(true);
@@ -256,7 +252,6 @@ export function InventoryPage() {
         <ProductFormModal
           editProduct={editProduct}
           categories={categories}
-          brands={brands}
           onClose={() => {
             setShowCreate(false);
             setEditProduct(null);

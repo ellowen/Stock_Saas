@@ -190,7 +190,7 @@ export default function PayrollPage() {
       setAdvanceOpen(false);
       setAdvForm({ employeeId: "", amount: "", date: new Date().toISOString().slice(0, 10), notes: "" });
       loadAdvances();
-    } catch (err: any) { showToast(err.message ?? "Error", "error"); }
+    } catch (err) { showToast((err as Error).message ?? "Error", "error"); }
     finally { setAdvSaving(false); }
   };
 
@@ -200,7 +200,7 @@ export default function PayrollPage() {
       if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
       showToast("Anticipo eliminado", "success");
       loadAdvances();
-    } catch (err: any) { showToast(err.message ?? "Error", "error"); }
+    } catch (err) { showToast((err as Error).message ?? "Error", "error"); }
   };
 
   const handleFinalPreview = async () => {
@@ -220,7 +220,7 @@ export default function PayrollPage() {
       const data = await res.json();
       const emp = employees.find((e) => e.id === Number(finalForm.employeeId));
       setFinalPreview({ ...data, employee: emp ?? { id: Number(finalForm.employeeId), firstName: "", lastName: "", cuil: null, position: null, grossSalary: "0", cbu: null } });
-    } catch (err: any) { showToast(err.message ?? "Error", "error"); }
+    } catch (err) { showToast((err as Error).message ?? "Error", "error"); }
     finally { setFinalPreviewing(false); }
   };
 
@@ -241,7 +241,7 @@ export default function PayrollPage() {
       showToast("Liquidación final guardada", "success");
       setFinalOpen(false); setFinalPreview(null);
       loadPayrolls(period); loadPeriods();
-    } catch (err: any) { showToast(err.message ?? "Error", "error"); }
+    } catch (err) { showToast((err as Error).message ?? "Error", "error"); }
     finally { setFinalSaving(false); }
   };
 
@@ -272,8 +272,8 @@ export default function PayrollPage() {
       // Enrich with employee info for display
       const emp = employees.find((e) => e.id === Number(newForm.employeeId));
       setPreview({ ...data, employee: emp ?? { id: Number(newForm.employeeId), firstName: "", lastName: "", cuil: null, position: null, grossSalary: "0", cbu: null } });
-    } catch (err: any) {
-      showToast(err.message ?? "Error al calcular", "error");
+    } catch (err) {
+      showToast((err as Error).message ?? "Error al calcular", "error");
     } finally {
       setPreviewing(false);
     }
@@ -305,8 +305,8 @@ export default function PayrollPage() {
       setNewForm({ employeeId: "", period: currentPeriod(), periodType: "MONTHLY", extraHours: "", bonus: "", otherEarnings: "", sindicatoRate: "", artRate: "", notes: "" });
       loadPayrolls(period);
       loadPeriods();
-    } catch (err: any) {
-      showToast(err.message ?? "Error al guardar", "error");
+    } catch (err) {
+      showToast((err as Error).message ?? "Error al guardar", "error");
     } finally {
       setSaving(false);
     }
@@ -348,8 +348,8 @@ export default function PayrollPage() {
       const msgs = { confirm: "Liquidación confirmada", pay: "Marcada como pagada", delete: "Liquidación eliminada" };
       showToast(msgs[action], "success");
       loadPayrolls(period);
-    } catch (err: any) {
-      showToast(err.message ?? "Error", "error");
+    } catch (err) {
+      showToast((err as Error).message ?? "Error", "error");
     }
   };
 

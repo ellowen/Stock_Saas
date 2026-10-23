@@ -64,6 +64,9 @@ const STATUS_VARIANTS: Record<DocStatus, "neutral" | "info" | "success" | "dange
 
 const EMPTY_ITEM: ItemRow = { description: "", quantity: "1", unitPrice: "0", discount: "0" };
 
+
+type ApiDocItem = { description: string; quantity: number | string; unitPrice: number | string; discount?: number | string; taxAmount?: number | string; totalPrice: number | string; variant?: { sku?: string; attributes?: { value: string }[] } };
+
 export default function DocumentsPage() {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -200,7 +203,7 @@ export default function DocumentsPage() {
           total: Number(created.total),
           customer: selectedCustomer ?? null,
           branch: selectedBranch,
-          items: (created.items ?? []).map((item: any): DocumentItemRow => ({
+          items: (created.items ?? []).map((item: ApiDocItem): DocumentItemRow => ({
             description: item.description,
             quantity: Number(item.quantity),
             unitPrice: Number(item.unitPrice),
@@ -220,8 +223,8 @@ export default function DocumentsPage() {
           currency: company?.currency ?? "ARS",
         },
       });
-    } catch (e: any) {
-      showToast(e.message ?? t("documents.saveError"), "error");
+    } catch (e) {
+      showToast((e as Error).message ?? t("documents.saveError"), "error");
     } finally {
       setSubmitting(false);
     }
@@ -295,10 +298,10 @@ export default function DocumentsPage() {
           total: Number(d.total),
           customer: d.customer ?? null,
           branch: d.branch,
-          items: (d.items ?? []).map((item: any): DocumentItemRow => ({
+          items: (d.items ?? []).map((item: ApiDocItem): DocumentItemRow => ({
             description: item.description,
             sku: item.variant?.sku,
-            attributeLabel: item.variant?.attributes?.map((a: any) => a.value).join(" / "),
+            attributeLabel: item.variant?.attributes?.map((a) => a.value).join(" / "),
             quantity: Number(item.quantity),
             unitPrice: Number(item.unitPrice),
             discount: Number(item.discount),

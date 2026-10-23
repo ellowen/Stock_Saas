@@ -22,6 +22,16 @@ interface Props {
   previousPeriod: ReportDetail;
 }
 
+function Pct({ v }: { v: number | null }) {
+  const { t } = useTranslation();
+  if (v === null) return null;
+  return (
+    <span className={v >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}>
+      {" "}{t("reports.vsPreviousPct", { pct: (v >= 0 ? "+" : "") + v })}
+    </span>
+  );
+}
+
 export function PeriodComparison({ from, to, detail, previousPeriod }: Props) {
   const { t } = useTranslation();
   const fromDate = new Date(from + "T12:00:00");
@@ -39,15 +49,6 @@ export function PeriodComparison({ from, to, detail, previousPeriod }: Props) {
     { name: t("reports.sales"), Actual: detail.summary.totalSales, Anterior: prev.totalSales },
     { name: t("reports.revenue"), Actual: Math.round(Number(detail.summary.totalRevenue)), Anterior: Math.round(Number(prev.totalRevenue)) },
   ];
-
-  function Pct({ v }: { v: number | null }) {
-    if (v === null) return null;
-    return (
-      <span className={v >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}>
-        {" "}{t("reports.vsPreviousPct", { pct: (v >= 0 ? "+" : "") + v })}
-      </span>
-    );
-  }
 
   return (
     <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-900/20 p-5">

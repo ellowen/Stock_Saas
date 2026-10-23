@@ -106,7 +106,7 @@ export function ReorderTab({ branches }: { branches: Branch[] }) {
     fetch("/suppliers", { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.ok ? r.json() : [])
       .then((data: Supplier[]) => {
-        setSuppliers(data.filter((s: any) => s.isActive !== false));
+        setSuppliers(data.filter((s) => (s as { isActive?: boolean }).isActive !== false));
       })
       .catch(() => {});
     if (branches.length > 0 && !targetBranchId) {
@@ -170,8 +170,8 @@ export function ReorderTab({ branches }: { branches: Branch[] }) {
       const total = created.reduce((s, c) => s + c.itemCount, 0);
       showToast(`${created.length} OC${created.length !== 1 ? "s" : ""} creada${created.length !== 1 ? "s" : ""} con ${total} items. Ver en Compras.`, "success");
       setSelected(new Set());
-    } catch (err: any) {
-      showToast(err.message ?? "Error al crear OC", "error");
+    } catch (err) {
+      showToast((err as Error).message ?? "Error al crear OC", "error");
     } finally {
       setCreatingPO(false);
     }

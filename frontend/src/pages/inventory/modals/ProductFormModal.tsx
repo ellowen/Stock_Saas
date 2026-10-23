@@ -9,7 +9,6 @@ import { VariantManager } from "./VariantManager";
 type Props = {
   editProduct: Product | null;
   categories: string[];
-  brands: string[];
   onClose: () => void;
   onSuccess: (opts?: { isNew: boolean }) => void;
 };
@@ -17,7 +16,6 @@ type Props = {
 export function ProductFormModal({
   editProduct,
   categories,
-  brands: _brands,
   onClose,
   onSuccess,
 }: Props) {

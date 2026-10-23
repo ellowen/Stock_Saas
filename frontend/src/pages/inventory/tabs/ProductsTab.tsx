@@ -10,7 +10,6 @@ import type { UseProductsReturn } from "./types";
 type Props = UseProductsReturn & {
   categories: string[];
   brands: string[];
-  onOpenCreate: () => void;
   onOpenEdit: (p: Product) => void;
   onOpenDelete: (p: Product) => void;
 };
@@ -44,7 +43,6 @@ export function ProductsTab({
   exportPdfLoading,
   categories,
   brands,
-  onOpenCreate: _onOpenCreate,
   onOpenEdit,
   onOpenDelete,
 }: Props) {

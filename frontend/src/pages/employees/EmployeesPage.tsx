@@ -182,8 +182,8 @@ export default function EmployeesPage() {
       showToast(t("employees.saveSuccess"), "success");
       setModalOpen(false);
       load();
-    } catch (err: any) {
-      showToast(err.message ?? "Error al guardar", "error");
+    } catch (err) {
+      showToast((err as Error).message ?? "Error al guardar", "error");
     } finally {
       setSaving(false);
     }

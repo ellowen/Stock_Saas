@@ -467,7 +467,7 @@ export function POSTab({
           discountTotal: Number(created.discountTotal),
           total: Number(created.total),
           branch,
-          items: (created.items ?? lastSaleItems).map((item: any) => ({
+          items: ((created.items ?? lastSaleItems) as { description: string; quantity: number | string; unitPrice: number | string; discount?: number | string; taxAmount?: number | string; totalPrice?: number | string }[]).map((item) => ({
             description: item.description,
             quantity: Number(item.quantity),
             unitPrice: Number(item.unitPrice),
@@ -487,8 +487,8 @@ export function POSTab({
           currency: company?.currency ?? "ARS",
         },
       });
-    } catch (e: any) {
-      showToast(e.message ?? t("documents.saveError"), "error");
+    } catch (e) {
+      showToast((e as Error).message ?? t("documents.saveError"), "error");
     }
   }, [branchId, lastSaleItems, branches, company, t, showToast, selectedCustomer]);
 

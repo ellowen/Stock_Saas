@@ -274,8 +274,8 @@ export default function PurchaseOrdersPage() {
       setTab("list");
       loadOrders();
       clearDraft();
-    } catch (e: any) {
-      showToast(e.message ?? t("purchases.saveError"), "error");
+    } catch (e) {
+      showToast((e as Error).message ?? t("purchases.saveError"), "error");
     } finally {
       setSubmitting(false);
     }
@@ -318,8 +318,8 @@ export default function PurchaseOrdersPage() {
       showToast(t("purchases.received"), "success");
       setReceiveOrder(null);
       loadOrders();
-    } catch (e: any) {
-      showToast(e.message ?? t("purchases.receiveError"), "error");
+    } catch (e) {
+      showToast((e as Error).message ?? t("purchases.receiveError"), "error");
     } finally {
       setReceiving(false);
     }

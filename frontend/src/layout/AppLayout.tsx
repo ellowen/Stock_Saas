@@ -316,9 +316,10 @@ export function AppLayout() {
   const [sidebarOpen, setSidebarOpen]       = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  const [now] = useState(() => Date.now());
   const trialEndsAt   = company?.trialEndsAt ? new Date(company.trialEndsAt) : null;
-  const isTrialing    = company?.subscriptionStatus === "trialing" && trialEndsAt && trialEndsAt > new Date();
-  const trialDaysLeft = trialEndsAt ? Math.max(0, Math.ceil((trialEndsAt.getTime() - Date.now()) / 86400000)) : 0;
+  const isTrialing    = company?.subscriptionStatus === "trialing" && trialEndsAt && trialEndsAt.getTime() > now;
+  const trialDaysLeft = trialEndsAt ? Math.max(0, Math.ceil((trialEndsAt.getTime() - now) / 86400000)) : 0;
 
   useEffect(() => {
     document.title = "GIRO";

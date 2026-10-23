@@ -165,8 +165,8 @@ export default function CustomersPage() {
       showToast(editing ? t("customers.updated") : t("customers.created"), "success");
       setModalOpen(false);
       load(search || undefined);
-    } catch (e: any) {
-      showToast(e.message ?? t("customers.saveError"), "error");
+    } catch (e) {
+      showToast((e as Error).message ?? t("customers.saveError"), "error");
     } finally {
       setSaving(false);
     }
@@ -318,7 +318,7 @@ export default function CustomersPage() {
                     <td>
                       <input type="checkbox" className="rounded border-slate-300 dark:border-slate-600"
                         checked={selected.has(c.id)}
-                        onChange={(e) => setSelected((s) => { const n = new Set(s); e.target.checked ? n.add(c.id) : n.delete(c.id); return n; })}
+                        onChange={(e) => setSelected((s) => { const n = new Set(s); if (e.target.checked) n.add(c.id); else n.delete(c.id); return n; })}
                       />
                     </td>
                     <td className="font-medium">{c.name}</td>

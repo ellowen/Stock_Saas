@@ -150,8 +150,8 @@ function AccountModal({
       showToast(editing ? "Cuenta actualizada" : "Cuenta creada", "success");
       onSaved();
       onClose();
-    } catch (err: any) {
-      showToast(err.message, "error");
+    } catch (err) {
+      showToast((err as Error).message, "error");
     } finally {
       setSaving(false);
     }
@@ -305,8 +305,8 @@ function PlanDeContasTab({
       if (!res.ok) throw new Error((await res.json()).message);
       showToast("Plan de cuentas base generado", "success");
       onRefresh();
-    } catch (err: any) {
-      showToast(err.message, "error");
+    } catch (err) {
+      showToast((err as Error).message, "error");
     } finally {
       setSeeding(false);
     }
@@ -496,8 +496,8 @@ function JournalModal({
       showToast("Asiento creado", "success");
       onSaved();
       onClose();
-    } catch (err: any) {
-      showToast(err.message, "error");
+    } catch (err) {
+      showToast((err as Error).message, "error");
     } finally {
       setSaving(false);
     }
@@ -688,8 +688,8 @@ function LibroDiarioTab({ accounts }: { accounts: Account[] }) {
       showToast("Asiento confirmado", "success");
       setDetail(null);
       load();
-    } catch (err: any) {
-      showToast(err.message, "error");
+    } catch (err) {
+      showToast((err as Error).message, "error");
     }
   };
 
@@ -710,8 +710,8 @@ function LibroDiarioTab({ accounts }: { accounts: Account[] }) {
       showToast("Contra-asiento creado", "success");
       setDetail(null);
       load();
-    } catch (err: any) {
-      showToast(err.message, "error");
+    } catch (err) {
+      showToast((err as Error).message, "error");
     }
   };
 
@@ -732,8 +732,8 @@ function LibroDiarioTab({ accounts }: { accounts: Account[] }) {
       showToast("Asiento eliminado", "success");
       setDetail(null);
       load();
-    } catch (err: any) {
-      showToast(err.message, "error");
+    } catch (err) {
+      showToast((err as Error).message, "error");
     }
   };
 
@@ -1269,7 +1269,7 @@ function ReportesTab({ accounts }: { accounts: Account[] }) {
           <select aria-label="Reporte"
             className="input text-sm"
             value={report}
-            onChange={(e) => setReport(e.target.value as any)}
+            onChange={(e) => setReport(e.target.value as typeof report)}
           >
             {reportOptions.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>

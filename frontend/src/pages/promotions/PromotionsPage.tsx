@@ -41,7 +41,7 @@ const EMPTY_FORM = {
   isActive: true,
 };
 
-function describe(p: Promotion, t: (k: string, opts?: any) => string): string {
+function describe(p: Promotion, t: (k: string, opts?: Record<string, unknown>) => string): string {
   if (p.type === "PERCENT_OFF") {
     return t("promotions.descPercent", { pct: Math.round((p.percentOff ?? 0) * 100) });
   }
@@ -90,7 +90,7 @@ export default function PromotionsPage() {
     const token = getAccessToken();
     fetch(`${API}/products`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => (r.ok ? r.json() : []))
-      .then((data) => setProducts(Array.isArray(data) ? data.map((p: any) => ({ id: p.id, name: p.name })) : []))
+      .then((data) => setProducts(Array.isArray(data) ? data.map((p: { id: number; name: string }) => ({ id: p.id, name: p.name })) : []))
       .catch(() => {});
     fetch(`${API}/products/categories`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => (r.ok ? r.json() : []))
@@ -168,8 +168,8 @@ export default function PromotionsPage() {
       showToast(editing ? t("promotions.updated") : t("promotions.created"), "success");
       setModalOpen(false);
       load();
-    } catch (e: any) {
-      showToast(e.message ?? t("promotions.saveError"), "error");
+    } catch (e) {
+      showToast((e as Error).message ?? t("promotions.saveError"), "error");
     } finally {
       setSaving(false);
     }

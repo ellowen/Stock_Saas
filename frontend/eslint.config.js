@@ -19,5 +19,12 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Flags the fetch-on-mount pattern (useEffect(() => { load() }, [load])) used across pages.
+      // Kept visible as a warning until data loading moves to a data-fetching hook.
+      'react-hooks/set-state-in-effect': 'warn',
+      // Context files export their Provider and its use* hook together on purpose.
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+    },
   },
 ])
