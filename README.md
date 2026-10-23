@@ -91,6 +91,8 @@ cd frontend && npm test    # Vitest
 cd e2e && npm install && npx playwright install chromium && npm test   # Playwright end-to-end
 ```
 
+En GitHub corren automáticamente en cada push/PR (`.github/workflows/ci.yml`: backend, frontend con lint+build, y e2e con MySQL).
+
 El e2e necesita MySQL arriba, la base sembrada (`npm run seed`) y levanta backend/frontend solo si no están corriendo. Detalle en [e2e/README.md](e2e/README.md).
 
 ## Estructura
