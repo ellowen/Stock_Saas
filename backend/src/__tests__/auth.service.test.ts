@@ -135,6 +135,7 @@ describe("AuthService", () => {
         const tx = {
           company: { create: jest.fn().mockResolvedValue({ id: 10 }) },
           user: { create: jest.fn().mockResolvedValue({ id: 1 }) },
+          branch: { create: jest.fn().mockResolvedValue({ id: 5 }) },
         };
         return fn(tx);
       });
@@ -165,6 +166,7 @@ describe("AuthService", () => {
             }),
           },
           user: { create: jest.fn().mockResolvedValue({ id: 1 }) },
+          branch: { create: jest.fn().mockResolvedValue({ id: 5 }) },
         };
         return fn(tx);
       });

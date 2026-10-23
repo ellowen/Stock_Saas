@@ -112,7 +112,7 @@ export function VariantManager({ variants, attributeDefs, onAdd, onUpdate, onUpd
                     <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                       {t("inventory.variantTalleLabel")}
                     </label>
-                    <input
+                    <input aria-label={t("inventory.variantTalleLabel")}
                       placeholder={t("inventory.variantTallePlaceholder")}
                       value={v.size}
                       onChange={(e) => onUpdate(i, "size", e.target.value)}
@@ -123,7 +123,7 @@ export function VariantManager({ variants, attributeDefs, onAdd, onUpdate, onUpd
                     <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                       {t("inventory.variantColorLabel")}
                     </label>
-                    <input
+                    <input aria-label={t("inventory.variantColorLabel")}
                       placeholder={t("inventory.variantColorPlaceholder")}
                       value={v.color}
                       onChange={(e) => onUpdate(i, "color", e.target.value)}
@@ -138,7 +138,7 @@ export function VariantManager({ variants, attributeDefs, onAdd, onUpdate, onUpd
                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                   {t("inventory.variantSkuLabel")}
                 </label>
-                <input
+                <input aria-label={t("inventory.variantSkuLabel")}
                   placeholder={t("inventory.variantSkuPlaceholder")}
                   value={v.sku}
                   onChange={(e) => onUpdate(i, "sku", e.target.value)}
@@ -149,7 +149,7 @@ export function VariantManager({ variants, attributeDefs, onAdd, onUpdate, onUpd
                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                   {t("inventory.variantBarcodeLabel")}
                 </label>
-                <input
+                <input aria-label={t("inventory.variantBarcodeLabel")}
                   placeholder={t("inventory.variantBarcodePlaceholder")}
                   value={v.barcode}
                   onChange={(e) => onUpdate(i, "barcode", e.target.value)}
@@ -161,7 +161,7 @@ export function VariantManager({ variants, attributeDefs, onAdd, onUpdate, onUpd
                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                   {t("inventory.variantPriceLabel")}
                 </label>
-                <input
+                <input aria-label={t("inventory.variantPriceLabel")}
                   type="number"
                   step="0.01"
                   min="0"
@@ -175,7 +175,7 @@ export function VariantManager({ variants, attributeDefs, onAdd, onUpdate, onUpd
                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                   {t("inventory.variantCostLabel")}
                 </label>
-                <input
+                <input aria-label={t("inventory.variantCostLabel")}
                   type="number"
                   step="0.01"
                   min="0"

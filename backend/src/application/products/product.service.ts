@@ -67,6 +67,24 @@ async function assertAttributesBelongToCompany(
   }
 }
 
+// New variants start with a 0-quantity inventory row in every branch so stock can be
+// loaded from the Stock tab / bulk adjust right after creating the product.
+async function createEmptyInventoryRows(
+  tx: Prisma.TransactionClient,
+  companyId: number,
+  variantIds: number[],
+) {
+  if (variantIds.length === 0) return;
+  const branches = await tx.branch.findMany({ where: { companyId }, select: { id: true } });
+  if (branches.length === 0) return;
+  await tx.inventory.createMany({
+    data: branches.flatMap((b) =>
+      variantIds.map((productVariantId) => ({ companyId, branchId: b.id, productVariantId, quantity: 0 })),
+    ),
+    skipDuplicates: true,
+  });
+}
+
 export class ProductService {
   async createProductWithVariants(companyId: number, data: CreateProductInput) {
     return prisma.$transaction(async (tx) => {
@@ -82,6 +100,7 @@ export class ProductService {
         },
       });
 
+      const variantIds: number[] = [];
       for (const variant of data.variants) {
         const created = await tx.productVariant.create({
           data: {
@@ -99,6 +118,8 @@ export class ProductService {
           },
         });
 
+        variantIds.push(created.id);
+
         if (variant.attributes?.length) {
           await tx.productVariantAttribute.createMany({
             data: variant.attributes.map((a) => ({
@@ -109,6 +130,8 @@ export class ProductService {
           });
         }
       }
+
+      await createEmptyInventoryRows(tx, companyId, variantIds);
 
       return tx.product.findUnique({
         where: { id: product.id },
@@ -337,6 +360,7 @@ export class ProductService {
                 })),
               });
             }
+            await createEmptyInventoryRows(tx, companyId, [created.id]);
           }
         }
       }

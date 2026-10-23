@@ -45,7 +45,9 @@ type Branch = { id: number; name: string; code: string };
 
 export function UsersPage() {
   const { t } = useTranslation();
-  const { canManageUsers } = useAuth();
+  const { canManageUsers, user: me } = useAuth();
+  // Only owners can assign the OWNER role (enforced server-side too).
+  const assignableRoles = me?.auth.role === "OWNER" ? ROLES : ROLES.filter((r) => r.value !== "OWNER");
   const [users, setUsers] = useState<User[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -368,39 +370,39 @@ export function UsersPage() {
 
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+          <div className="w-full max-w-md rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-sm p-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold">{t("users.createTitle")}</h3>
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t("users.createTitle")}</h3>
               <button type="button" onClick={() => setShowCreate(false)} className="text-slate-500 hover:text-slate-800">✕</button>
             </div>
             <form onSubmit={handleCreate} className="space-y-3">
               <div>
-                <label className="block text-xs text-slate-600 mb-1">{t("users.fullName")} *</label>
-                <input value={fullName} onChange={(e) => setFullName(e.target.value)} className="input-minimal" required />
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("users.fullName")} *</label>
+                <input aria-label={t("users.fullName")} value={fullName} onChange={(e) => setFullName(e.target.value)} className="input-minimal" required />
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">{t("users.username")} *</label>
-                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="input-minimal" required placeholder="ej. jperez" />
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("users.username")} *</label>
+                <input aria-label={t("users.username")} type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="input-minimal" required placeholder="ej. jperez" />
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">{t("users.email")}</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-minimal" placeholder="opcional" />
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("users.email")}</label>
+                <input aria-label={t("users.email")} type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-minimal" placeholder="opcional" />
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">{t("users.passwordMinLabel")}</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="input-minimal" required minLength={6} />
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("users.passwordMinLabel")}</label>
+                <input aria-label={t("users.password")} type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="input-minimal" required minLength={6} />
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">{t("users.role")}</label>
-                <select value={role} onChange={(e) => setRole(e.target.value)} className="input-minimal">
-                  {ROLES.map((r) => (
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("users.role")}</label>
+                <select aria-label={t("users.role")} value={role} onChange={(e) => setRole(e.target.value)} className="input-minimal">
+                  {assignableRoles.map((r) => (
                     <option key={r.value} value={r.value}>{t(r.labelKey)}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">{t("users.branchOptional")}</label>
-                <select value={branchId} onChange={(e) => setBranchId(e.target.value)} className="input-minimal">
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("users.branchOptional")}</label>
+                <select aria-label={t("users.branch")} value={branchId} onChange={(e) => setBranchId(e.target.value)} className="input-minimal">
                   <option value="">{t("users.allBranches")}</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
@@ -421,31 +423,31 @@ export function UsersPage() {
 
       {editUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+          <div className="w-full max-w-md rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-sm p-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold">{t("users.editUser")}</h3>
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t("users.editUser")}</h3>
               <button type="button" onClick={() => setEditUser(null)} className="text-slate-500 hover:text-slate-800">✕</button>
             </div>
             <p className="text-sm text-slate-500 mb-3">Usuario: {editUser.username}</p>
             <form onSubmit={handleUpdate} className="space-y-3">
               <div>
-                <label className="block text-xs text-slate-600 mb-1">{t("users.fullName")} *</label>
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("users.fullName")} *</label>
                 <input value={editFullName} onChange={(e) => setEditFullName(e.target.value)} className="input-minimal" required />
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">{t("users.email")}</label>
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("users.email")}</label>
                 <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="input-minimal" placeholder="opcional" />
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">{t("users.role")}</label>
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("users.role")}</label>
                 <select value={editRole} onChange={(e) => setEditRole(e.target.value)} className="input-minimal">
-                  {ROLES.map((r) => (
+                  {assignableRoles.map((r) => (
                     <option key={r.value} value={r.value}>{t(r.labelKey)}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">{t("users.branchOptional")}</label>
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("users.branchOptional")}</label>
                 <select value={editBranchId} onChange={(e) => setEditBranchId(e.target.value)} className="input-minimal">
                   <option value="">{t("users.allBranches")}</option>
                   {branches.map((b) => (
@@ -461,10 +463,10 @@ export function UsersPage() {
                   onChange={(e) => setEditIsActive(e.target.checked)}
                   className="rounded border-slate-300"
                 />
-                <label htmlFor="edit-isActive" className="text-sm text-slate-600">{t("users.userActive")}</label>
+                <label htmlFor="edit-isActive" className="text-sm text-slate-600 dark:text-slate-400">{t("users.userActive")}</label>
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1">{t("users.newPasswordLabel")}</label>
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("users.newPasswordLabel")}</label>
                 <input
                   type="password"
                   value={editPassword}

@@ -324,6 +324,22 @@ export function AppLayout() {
     document.title = "GIRO";
   }, []);
 
+  // Chrome/Edge/Android fire this when the PWA is installable; keep it to offer an "Instalar app" button.
+  const [installEvent, setInstallEvent] = useState<(Event & { prompt: () => Promise<void> }) | null>(null);
+  useEffect(() => {
+    const onPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallEvent(e as Event & { prompt: () => Promise<void> });
+    };
+    const onInstalled = () => setInstallEvent(null);
+    window.addEventListener("beforeinstallprompt", onPrompt);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onPrompt);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, []);
+
   const handleLogout = () => {
     setAccessToken(null);
     window.location.href = "/login";
@@ -490,6 +506,18 @@ export function AppLayout() {
           </div>
 
           <div className="flex items-center gap-1">
+            {installEvent && (
+              <button
+                type="button"
+                onClick={async () => { await installEvent.prompt(); setInstallEvent(null); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-indigo-500 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors mr-1"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" />
+                </svg>
+                {t("nav.installApp", "Instalar app")}
+              </button>
+            )}
             {/* Botón Nueva Venta */}
             <button
               type="button"

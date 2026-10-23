@@ -27,6 +27,8 @@ type ProdTx = {
   productVariant: { create: jest.Mock; update: jest.Mock };
   productVariantAttribute: { createMany: jest.Mock; deleteMany: jest.Mock };
   attribute: { findMany: jest.Mock };
+  branch: { findMany: jest.Mock };
+  inventory: { createMany: jest.Mock };
 };
 
 function makeTx(overrides: Partial<ProdTx> = {}): ProdTx {
@@ -53,6 +55,8 @@ function makeTx(overrides: Partial<ProdTx> = {}): ProdTx {
           (where.id.in as number[]).map((id) => ({ id }))
         ),
     },
+    branch: { findMany: jest.fn().mockResolvedValue([{ id: 1 }, { id: 2 }]) },
+    inventory: { createMany: jest.fn().mockResolvedValue({}) },
     ...overrides,
   };
 }
@@ -77,6 +81,21 @@ describe("ProductService", () => {
   // ── createProductWithVariants ────────────────────────────────────────────────
 
   describe("createProductWithVariants", () => {
+    it("crea una fila de inventario en 0 por sucursal para cada variante nueva", async () => {
+      const tx = setupTx();
+      await service.createProductWithVariants(1, {
+        name: "Remera",
+        variants: [{ sku: "SKU-1", price: 100 }],
+      });
+      expect(tx.inventory.createMany).toHaveBeenCalledWith({
+        data: [
+          { companyId: 1, branchId: 1, productVariantId: 100, quantity: 0 },
+          { companyId: 1, branchId: 2, productVariantId: 100, quantity: 0 },
+        ],
+        skipDuplicates: true,
+      });
+    });
+
     it("persiste size/color legacy en la variante", async () => {
       const tx = setupTx();
       await service.createProductWithVariants(1, {

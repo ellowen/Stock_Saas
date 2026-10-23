@@ -1,40 +1,44 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
-import { PlanPage } from "./pages/PlanPage";
 import { AppLayout } from "./layout/AppLayout";
-import { DashboardPage } from "./pages/DashboardPage";
-import { InventoryPage } from "./pages/InventoryPage";
-import { SalesPage } from "./pages/SalesPage";
-import { TransfersPage } from "./pages/TransfersPage";
-import { BranchesPage } from "./pages/BranchesPage";
-import { UsersPage } from "./pages/UsersPage";
-import { ReportsPage } from "./pages/reports/ReportsPage";
-import { SettingsPage } from "./pages/settings/SettingsPage";
-import CustomersPage from "./pages/customers/CustomersPage";
-import SuppliersPage from "./pages/suppliers/SuppliersPage";
-import DocumentsPage from "./pages/documents/DocumentsPage";
-import PurchaseOrdersPage from "./pages/purchases/PurchaseOrdersPage";
-import { AccountsPage } from "./pages/accounts/AccountsPage";
-import EmployeesPage from "./pages/employees/EmployeesPage";
-import PayrollPage from "./pages/payroll/PayrollPage";
-import AccountingPage from "./pages/accounting/AccountingPage";
-import AuditPage from "./pages/audit/AuditPage";
-import PromotionsPage from "./pages/promotions/PromotionsPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./contexts/ToastContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
+// App pages are code-split so the landing/login load fast (the full bundle is >2 MB).
+const PlanPage = lazy(() => import("./pages/PlanPage").then((m) => ({ default: m.PlanPage })));
+const DashboardPage = lazy(() => import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
+const InventoryPage = lazy(() => import("./pages/InventoryPage").then((m) => ({ default: m.InventoryPage })));
+const SalesPage = lazy(() => import("./pages/SalesPage").then((m) => ({ default: m.SalesPage })));
+const TransfersPage = lazy(() => import("./pages/TransfersPage").then((m) => ({ default: m.TransfersPage })));
+const BranchesPage = lazy(() => import("./pages/BranchesPage").then((m) => ({ default: m.BranchesPage })));
+const UsersPage = lazy(() => import("./pages/UsersPage").then((m) => ({ default: m.UsersPage })));
+const ReportsPage = lazy(() => import("./pages/reports/ReportsPage").then((m) => ({ default: m.ReportsPage })));
+const SettingsPage = lazy(() => import("./pages/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })));
+const AccountsPage = lazy(() => import("./pages/accounts/AccountsPage").then((m) => ({ default: m.AccountsPage })));
+const CustomersPage = lazy(() => import("./pages/customers/CustomersPage"));
+const SuppliersPage = lazy(() => import("./pages/suppliers/SuppliersPage"));
+const DocumentsPage = lazy(() => import("./pages/documents/DocumentsPage"));
+const PurchaseOrdersPage = lazy(() => import("./pages/purchases/PurchaseOrdersPage"));
+const EmployeesPage = lazy(() => import("./pages/employees/EmployeesPage"));
+const PayrollPage = lazy(() => import("./pages/payroll/PayrollPage"));
+const AccountingPage = lazy(() => import("./pages/accounting/AccountingPage"));
+const AuditPage = lazy(() => import("./pages/audit/AuditPage"));
+const PromotionsPage = lazy(() => import("./pages/promotions/PromotionsPage"));
+
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
       <ToastProvider>
+      <Suspense fallback={<div className="min-h-screen bg-slate-50 dark:bg-slate-900" />}>
       <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
@@ -74,6 +78,7 @@ function App() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
       </ToastProvider>
       </ThemeProvider>
     </ErrorBoundary>

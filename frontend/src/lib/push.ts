@@ -82,7 +82,8 @@ export async function getCurrentPushSubscription(): Promise<PushSubscription | n
 export async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
   try {
-    await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    // In production vite-plugin-pwa registers /sw.js (Workbox + push handlers); dev has no Workbox SW.
+    if (import.meta.env.DEV) await navigator.serviceWorker.register("/giro-push-sw.js", { scope: "/" });
   } catch (e) {
     console.warn("[Push] Service worker registration failed:", e);
   }

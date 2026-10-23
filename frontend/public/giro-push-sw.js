@@ -1,7 +1,5 @@
-// GIRO Service Worker — Push Notifications
-
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+// GIRO push notification handlers. Imported by the Workbox service worker in
+// production (vite.config.ts importScripts) and registered directly in dev.
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;
@@ -13,14 +11,14 @@ self.addEventListener("push", (event) => {
     data = { title: "GIRO", body: event.data.text() };
   }
 
-  const { title = "GIRO", body = "", icon = "/vite.svg", url = "/app/dashboard", tag } = data;
+  const { title = "GIRO", body = "", icon = "/pwa-192x192.png", url = "/app/dashboard", tag } = data;
 
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
       icon,
       tag: tag ?? "giro-notification",
-      badge: "/vite.svg",
+      badge: "/pwa-192x192.png",
       data: { url },
       requireInteraction: false,
     })

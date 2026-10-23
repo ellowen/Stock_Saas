@@ -165,7 +165,7 @@ describe("LoginPage", () => {
 
     await waitFor(() => {
       // While loading, the button text changes to "Signing in…" and becomes disabled
-      const btn = screen.getByRole("button", { name: /signing in|cargando|entrar|sign in|iniciar/i });
+      const btn = screen.getByRole("button", { name: /signing in|cargando|entrar|entrando|sign in|iniciar/i });
       expect(btn).toBeDisabled();
     });
   });

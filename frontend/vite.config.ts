@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 
+const TUNNEL_HOSTS = ['.ngrok-free.app', '.ngrok.app', '.ngrok.io', '.lhr.life', '.localhost.run', '.trycloudflare.com']
+
 // https://vite.dev/config/
 export default defineConfig({
   test: {
@@ -16,25 +18,45 @@ export default defineConfig({
     ...(process.env.NO_SSL ? [] : [basicSsl()]),
     VitePWA({
       registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       workbox: {
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MiB
+        // Push handlers live in public/giro-push-sw.js; Workbox owns /sw.js.
+        importScripts: ['/giro-push-sw.js'],
       },
       manifest: {
         name: 'GIRO - Stock y Ventas',
         short_name: 'GIRO',
         description: 'Gestión de inventario y punto de venta',
+        lang: 'es-AR',
         theme_color: '#4f46e5',
-        background_color: '#f8fafc',
+        background_color: '#0f172a',
         display: 'standalone',
-        start_url: '/',
+        orientation: 'any',
+        start_url: '/app/dashboard',
+        scope: '/',
+        categories: ['business', 'productivity'],
         icons: [
-          { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
+          { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+        ],
+        shortcuts: [
+          { name: 'Nueva venta', short_name: 'Vender', url: '/app/sales', icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }] },
+          { name: 'Inventario', short_name: 'Stock', url: '/app/inventory', icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }] },
         ],
       },
     }),
   ],
+  // Tunnels used to show the app to clients (see docs/MOSTRAR-A-CLIENTE.md).
+  preview: {
+    host: true,
+    allowedHosts: TUNNEL_HOSTS,
+  },
   server: {
     host: true,
+    allowedHosts: TUNNEL_HOSTS,
     proxy: {
       // Generic /api/* → backend (strips /api prefix)
       '/api': { target: 'http://localhost:4000', changeOrigin: true, rewrite: (path: string) => path.replace(/^\/api/, '') },

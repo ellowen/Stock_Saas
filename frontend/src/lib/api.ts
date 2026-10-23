@@ -1,4 +1,5 @@
-export const API_BASE_URL = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL || "http://localhost:4000");
+// Without VITE_API_URL the API is same-origin (Vite proxy in dev/preview, or a reverse proxy in production).
+export const API_BASE_URL = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL || "");
 
 const TOKEN_KEY = "access_token";
 

@@ -1,11 +1,15 @@
 import webpush from "web-push";
 import { prisma } from "../../config/database/prisma";
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT ?? "mailto:admin@giro.app",
-  process.env.VAPID_PUBLIC_KEY ?? "",
-  process.env.VAPID_PRIVATE_KEY ?? "",
-);
+// Without VAPID keys push is disabled instead of crashing the server at import time.
+const pushEnabled = !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
+if (pushEnabled) {
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT || "mailto:admin@giro.app",
+    process.env.VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PRIVATE_KEY!,
+  );
+}
 
 export interface PushPayload {
   title: string;
@@ -48,6 +52,7 @@ class PushService {
 
   /** Send a push notification to all subscriptions of a company. */
   async sendToCompany(companyId: number, payload: PushPayload) {
+    if (!pushEnabled) return;
     const subs = await prisma.pushSubscription.findMany({
       where: { companyId },
     });
@@ -70,6 +75,7 @@ class PushService {
 
   /** Send a push notification to a single user. */
   async sendToUser(userId: number, payload: PushPayload) {
+    if (!pushEnabled) return;
     const subs = await prisma.pushSubscription.findMany({ where: { userId } });
     await Promise.allSettled(
       subs.map((sub) =>

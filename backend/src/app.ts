@@ -42,12 +42,18 @@ export const createApp = (): Application => {
   app.use(json());
   app.use(urlencoded({ extended: true }));
 
-  // Rate limit global (desactivado en test para no bloquear tests)
+  // Detrás de un proxy (Render, Railway, Nginx) hace falta para que el rate limit vea la IP real.
+  if (process.env.TRUST_PROXY) {
+    app.set("trust proxy", Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY);
+  }
+
+  // Rate limit global (desactivado en test para no bloquear tests).
+  // Generoso: varias cajas de un mismo local comparten IP y cada pantalla hace varias llamadas.
   if (env.nodeEnv !== "test") {
     app.use(
       rateLimit({
-        windowMs: 15 * 60 * 1000,
-        max: env.nodeEnv === "production" ? 100 : 500,
+        windowMs: 60 * 1000,
+        max: env.nodeEnv === "production" ? 600 : 5000,
         message: { message: "Demasiadas solicitudes. Probá de nuevo en unos minutos." },
         standardHeaders: true,
         legacyHeaders: false,
@@ -56,6 +62,20 @@ export const createApp = (): Application => {
   }
 
   app.use(checkSubscription);
+  // Límite estricto solo para endpoints de autenticación (fuerza bruta de contraseñas).
+  if (env.nodeEnv !== "test") {
+    app.use(
+      "/auth",
+      rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: env.nodeEnv === "production" ? 30 : 1000,
+        skipSuccessfulRequests: true,
+        message: { message: "Demasiados intentos. Probá de nuevo en 15 minutos." },
+        standardHeaders: true,
+        legacyHeaders: false,
+      })
+    );
+  }
   app.use("/auth", authRouter);
   app.use("/protected", protectedRouter);
   app.use("/products", productsRouter);

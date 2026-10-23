@@ -4,17 +4,41 @@
     {
       "name": "backend",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "cwd": "backend",
       "port": 4000
     },
     {
       "name": "frontend",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "cwd": "frontend",
-      "env": { "NO_SSL": "1" },
+      "env": {
+        "NO_SSL": "1"
+      },
       "port": 5173
+    },
+    {
+      "name": "frontend-prod",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--port",
+        "4173",
+        "--strictPort"
+      ],
+      "cwd": "frontend",
+      "env": {
+        "NO_SSL": "1"
+      },
+      "port": 4173
     }
   ]
 }

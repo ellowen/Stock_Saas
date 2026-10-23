@@ -42,6 +42,22 @@ export async function createBranchController(req: Request, res: Response) {
         phone: parsed.data.phone,
       },
     });
+    // Give the new branch a 0-quantity row for every existing variant so stock can be loaded from the UI.
+    const variants = await prisma.productVariant.findMany({
+      where: { companyId: req.auth.companyId, isActive: true },
+      select: { id: true },
+    });
+    if (variants.length > 0) {
+      await prisma.inventory.createMany({
+        data: variants.map((v) => ({
+          companyId: req.auth!.companyId,
+          branchId: branch.id,
+          productVariantId: v.id,
+          quantity: 0,
+        })),
+        skipDuplicates: true,
+      });
+    }
     return res.status(201).json(branch);
   } catch (error: unknown) {
     if (error && typeof error === "object" && "code" in error && (error as { code: string }).code === "P2002") {

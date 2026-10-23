@@ -67,6 +67,10 @@ export async function createUserController(req: Request, res: Response) {
         return res.status(400).json({ message: "La sucursal no pertenece a tu empresa" });
       }
     }
+    // Only an OWNER may create another OWNER (USERS_MANAGE alone must not allow privilege escalation).
+    if (parsed.data.role === "OWNER" && req.auth.role !== "OWNER") {
+      return res.status(403).json({ message: "Solo un dueño puede crear, editar o eliminar dueños" });
+    }
     const passwordHash = await bcrypt.hash(parsed.data.password, 10);
     const user = await prisma.user.create({
       data: {
@@ -121,6 +125,9 @@ export async function updateUserController(req: Request, res: Response) {
     });
     if (!user) {
       return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+    if (req.auth.role !== "OWNER" && (user.role === "OWNER" || parsed.data.role === "OWNER")) {
+      return res.status(403).json({ message: "Solo un dueño puede crear, editar o eliminar dueños" });
     }
     const updateData: { fullName?: string; email?: string | null; role?: UserRole; branchId?: number | null; isActive?: boolean; password?: string } = {};
     if (parsed.data.fullName != null) updateData.fullName = parsed.data.fullName;
@@ -182,6 +189,9 @@ export async function deleteUserController(req: Request, res: Response) {
     });
     if (!user) {
       return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+    if (user.role === "OWNER" && req.auth.role !== "OWNER") {
+      return res.status(403).json({ message: "Solo un dueño puede crear, editar o eliminar dueños" });
     }
     if (user.role === "OWNER") {
       const ownersCount = await prisma.user.count({

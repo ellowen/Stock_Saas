@@ -216,6 +216,21 @@ async function seedDemoRopa(companyId: number, branches: { id: number }[], userI
   console.log(`Seed demo ropa: ${PRODUCTOS_ROPA.length} productos, variantes, stock en ${branchIds.length} sucursales, ${salesToCreate.length} ventas.`);
 }
 
+// Demo staff to show roles: manager sees everything but billing/users, seller only sells in one branch.
+async function seedStaff(companyId: number, sellerBranchId: number, passwordHash: string) {
+  const staff = [
+    { username: "encargado", fullName: "Martín Encargado", role: UserRole.MANAGER, branchId: null },
+    { username: "vendedor", fullName: "Sofía Vendedora", role: UserRole.SELLER, branchId: sellerBranchId },
+  ];
+  for (const s of staff) {
+    await prisma.user.upsert({
+      where: { username: s.username },
+      update: { companyId, fullName: s.fullName, role: s.role, branchId: s.branchId, password: passwordHash, isActive: true },
+      create: { companyId, ...s, password: passwordHash },
+    });
+  }
+}
+
 async function main() {
   const username = "owner";
   const passwordHash = await bcrypt.hash("password123", 10);
@@ -243,8 +258,9 @@ async function main() {
       branches = await prisma.branch.findMany({ where: { companyId }, select: { id: true } });
     }
     await seedDemoRopa(companyId, branches, existingUser.id, true);
+    await seedStaff(companyId, branches[0]!.id, passwordHash);
     // eslint-disable-next-line no-console
-    console.log("Seed: usuario owner actualizado. Demo solo ropa. Credenciales: usuario 'owner', password 'password123'");
+    console.log("Seed: usuario owner actualizado. Demo solo ropa. Credenciales: owner / encargado / vendedor, password 'password123'");
     return;
   }
 
@@ -282,9 +298,10 @@ async function main() {
   });
 
   await seedDemoRopa(company.id, branches, user.id, false);
+  await seedStaff(company.id, branch1.id, passwordHash);
 
   // eslint-disable-next-line no-console
-  console.log("Seed completed. Compañía solo ropa. Credenciales: usuario 'owner', password 'password123'");
+  console.log("Seed completed. Compañía solo ropa. Credenciales: owner / encargado / vendedor, password 'password123'");
 }
 
 main()

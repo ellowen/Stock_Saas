@@ -104,6 +104,11 @@ export class AuthService {
         },
       });
 
+      // Default branch so a new company can load stock and sell right away (FREE plan allows 1).
+      await tx.branch.create({
+        data: { companyId: company.id, name: "Casa Central", code: "CENTRAL" },
+      });
+
       const user = await tx.user.create({
         data: {
           companyId: company.id,

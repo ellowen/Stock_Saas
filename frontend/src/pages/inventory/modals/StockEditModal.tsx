@@ -44,7 +44,7 @@ export function StockEditModal({
           <label className="block text-sm font-medium text-slate-600 dark:text-slate-400">
             {t("inventory.editStockQuantityLabel")}
           </label>
-          <input
+          <input aria-label={t("inventory.editStockQuantityLabel")}
             type="number"
             min={0}
             value={editStock.quantity}
@@ -57,7 +57,7 @@ export function StockEditModal({
             <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
               {t("inventory.editStockMinLabel")}
             </label>
-            <input
+            <input aria-label={t("inventory.editStockMinLabel")}
               type="number"
               min={0}
               placeholder={t("inventory.editStockMinPlaceholder")}
@@ -78,7 +78,7 @@ export function StockEditModal({
             <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
               {t("inventory.location")}
             </label>
-            <input
+            <input aria-label={t("inventory.location")}
               type="text"
               maxLength={100}
               placeholder={t("inventory.locationPlaceholder")}

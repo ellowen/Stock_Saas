@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "seed": "ts-node-dev prisma/seed.ts",
     "test": "cross-env NODE_ENV=test jest --runInBand",
-    "test:watch": "cross-env NODE_ENV=test jest --watch"
+    "test:watch": "cross-env NODE_ENV=test jest --watch",
+    "db:reset-demo": "prisma migrate reset --force"
   },
   "keywords": [],
   "author": "",

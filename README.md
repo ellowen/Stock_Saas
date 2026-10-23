@@ -37,7 +37,11 @@ npm run dev
 
 - API: **http://localhost:4000**
 - Health: http://localhost:4000/health
-- Usuario de prueba (después del seed): usuario `owner`, contraseña `password123` (login por username, no por email)
+- Usuarios de prueba (después del seed), todos con contraseña `password123` (login por username):
+  - `owner` - dueño (todo)
+  - `encargado` - MANAGER (stock, ventas, reportes, usuarios no-dueño)
+  - `vendedor` - SELLER (solo POS en Sucursal Centro)
+- Resetear la base de demo (borra todo y vuelve a sembrar): `npm run db:reset-demo`
 
 ### 2. Frontend (React)
 
@@ -58,6 +62,36 @@ Si necesitás correr el dev server sin HTTPS (por ejemplo para probarlo con una 
 cd frontend
 NO_SSL=1 npm run dev
 ```
+
+### MySQL rápido con Docker (opcional)
+
+```bash
+docker run -d --name giro-mysql -e MYSQL_ROOT_PASSWORD=giro_dev_pw -e MYSQL_DATABASE=clothing_stock_saas -p 3307:3306 --restart unless-stopped mysql:8.0
+```
+
+y en `backend/.env`: `DATABASE_URL="mysql://root:giro_dev_pw@localhost:3307/clothing_stock_saas"`.
+
+## Webapp (PWA)
+
+La app es instalable en celular, tablet y PC (Chrome/Edge/Android: botón **Instalar app** en la barra superior; iPhone: Compartir -> "Agregar a inicio").
+El service worker solo existe en el build de producción:
+
+```bash
+cd frontend
+NO_SSL=1 npm run demo    # build + preview en http://localhost:4173 (usa el proxy al backend)
+```
+
+La instalación requiere HTTPS (o localhost). Para mostrarla en el celular de un cliente ver [docs/MOSTRAR-A-CLIENTE.md](docs/MOSTRAR-A-CLIENTE.md).
+
+## Tests
+
+```bash
+cd backend && npm test     # Jest (unitarios + API)
+cd frontend && npm test    # Vitest
+cd e2e && npm install && npx playwright install chromium && npm test   # Playwright end-to-end
+```
+
+El e2e necesita MySQL arriba, la base sembrada (`npm run seed`) y levanta backend/frontend solo si no están corriendo. Detalle en [e2e/README.md](e2e/README.md).
 
 ## Estructura
 

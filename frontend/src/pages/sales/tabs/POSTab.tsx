@@ -103,7 +103,13 @@ export function POSTab({
         productName: row.variant.product.name,
         sku: row.variant.sku,
         barcode: row.variant.barcode,
-        attributes: row.variant.attributes ?? [],
+        // Inventory rows only carry legacy size/color; show them so variants are distinguishable.
+        attributes: row.variant.attributes?.length
+          ? row.variant.attributes
+          : [
+              ...(row.variant.size ? [{ id: -1, name: "Talle", type: "TEXT", value: row.variant.size }] : []),
+              ...(row.variant.color ? [{ id: -2, name: "Color", type: "TEXT", value: row.variant.color }] : []),
+            ],
         price:
           typeof row.variant.price === "object" &&
           row.variant.price !== null &&

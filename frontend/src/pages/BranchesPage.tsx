@@ -196,24 +196,24 @@ export function BranchesPage() {
             <form onSubmit={handleCreate} className="space-y-3">
               <div>
                 <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t("branches.name")} *</label>
-                <input value={name} onChange={(e) => setName(e.target.value)} className="input-minimal" required />
+                <input aria-label={t("branches.name")} value={name} onChange={(e) => setName(e.target.value)} className="input-minimal" required />
               </div>
               <div>
                 <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t("branches.code")} (ej. SUC2) *</label>
-                <input value={code} onChange={(e) => setCode(e.target.value)} className="input-minimal" required />
+                <input aria-label={t("branches.code")} value={code} onChange={(e) => setCode(e.target.value)} className="input-minimal" required />
               </div>
               <div>
                 <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t("branches.address")}</label>
-                <input value={address} onChange={(e) => setAddress(e.target.value)} className="input-minimal" />
+                <input aria-label={t("branches.address")} value={address} onChange={(e) => setAddress(e.target.value)} className="input-minimal" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t("branches.city")}</label>
-                  <input value={city} onChange={(e) => setCity(e.target.value)} className="input-minimal" />
+                  <input aria-label={t("branches.city")} value={city} onChange={(e) => setCity(e.target.value)} className="input-minimal" />
                 </div>
                 <div>
                   <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t("branches.phone")}</label>
-                  <input value={phone} onChange={(e) => setPhone(e.target.value)} className="input-minimal" />
+                  <input aria-label={t("branches.phone")} value={phone} onChange={(e) => setPhone(e.target.value)} className="input-minimal" />
                 </div>
               </div>
               {createError && <p className="text-sm text-red-600">{createError}</p>}

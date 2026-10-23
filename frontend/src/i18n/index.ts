@@ -15,7 +15,8 @@ i18n
     defaultNS: "translation",
     interpolation: { escapeValue: false },
     detection: {
-      order: ["localStorage", "navigator"],
+      // Most of the UI is hardcoded in Spanish, so default to "es" instead of the browser language.
+      order: ["localStorage"],
       caches: ["localStorage"],
       lookupLocalStorage: "giro_lang",
     },
