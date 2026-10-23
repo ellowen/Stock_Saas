@@ -6,6 +6,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "../contexts/ToastContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { IconGiroLogo, IconSun, IconMoon } from "../components/Icons";
+import { SHOW_LANGUAGE_SWITCH } from "../i18n";
 
 export function LoginPage() {
   const { t, i18n } = useTranslation();
@@ -155,8 +156,8 @@ export function LoginPage() {
           <Link to="/" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300">
             Volver al inicio
           </Link>
-          <span className="text-slate-300 dark:text-slate-600">|</span>
-          <div className="flex gap-1">
+          {SHOW_LANGUAGE_SWITCH && <span className="text-slate-300 dark:text-slate-600">|</span>}
+          {SHOW_LANGUAGE_SWITCH && <div className="flex gap-1">
             {(["es", "en"] as const).map((lng) => (
               <button
                 key={lng}
@@ -167,7 +168,7 @@ export function LoginPage() {
                 {lng.toUpperCase()}
               </button>
             ))}
-          </div>
+          </div>}
         </div>
       </div>
     </div>

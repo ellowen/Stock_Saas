@@ -31,6 +31,7 @@ import {
   IconTag,
 } from "../components/Icons";
 import { useTheme } from "../contexts/ThemeContext";
+import { SHOW_LANGUAGE_SWITCH } from "../i18n";
 
 const navItems: {
   path: string;
@@ -532,7 +533,7 @@ export function AppLayout() {
             </button>
 
             {/* Idioma */}
-            {(["es", "en"] as const).map((lng) => (
+            {SHOW_LANGUAGE_SWITCH && (["es", "en"] as const).map((lng) => (
               <button
                 key={lng}
                 type="button"

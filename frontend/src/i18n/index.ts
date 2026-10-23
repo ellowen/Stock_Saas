@@ -22,4 +22,7 @@ i18n
     },
   });
 
+// English is incomplete (accounting, payroll, audit, sign-up are Spanish-only), so the ES/EN switch is hidden.
+export const SHOW_LANGUAGE_SWITCH = false;
+
 export default i18n;
