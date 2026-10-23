@@ -63,6 +63,26 @@ describe("InventoryService", () => {
     service = new InventoryService();
   });
 
+  // ── list ──────────────────────────────────────────────────────────────────────
+
+  describe("list", () => {
+    it("aplana los atributos flexibles de la variante a { id, name, type, value }", async () => {
+      (prisma.inventory.findMany as jest.Mock).mockResolvedValue([
+        {
+          id: 1,
+          quantity: 3,
+          variant: {
+            id: 101,
+            sku: "SKU-1",
+            attributes: [{ value: "XL", attribute: { id: 7, name: "Talle", type: "SIZE" } }],
+          },
+        },
+      ]);
+      const rows = await service.list(10, { branchId: 1 });
+      expect(rows[0]!.variant.attributes).toEqual([{ id: 7, name: "Talle", type: "SIZE", value: "XL" }]);
+    });
+  });
+
   // ── adjust ────────────────────────────────────────────────────────────────────
 
   describe("adjust", () => {

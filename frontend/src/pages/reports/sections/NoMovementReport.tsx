@@ -37,7 +37,7 @@ export function NoMovementReport({
         <div className="flex flex-wrap items-end gap-4">
           <div>
             <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("reports.noMovementDaysLabel")}</label>
-            <input
+            <input aria-label={t("reports.noMovementDaysLabel")}
               type="number" min={1} max={365} value={days}
               onChange={(e) => onDaysChange(Math.max(1, Math.min(365, parseInt(e.target.value, 10) || 30)))}
               className="input-minimal w-24 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
@@ -45,7 +45,7 @@ export function NoMovementReport({
           </div>
           <div>
             <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("reports.noMovementBranchLabel")}</label>
-            <select
+            <select aria-label={t("reports.noMovementBranchLabel")}
               value={branchId === "" ? "" : branchId}
               onChange={(e) => onBranchChange(e.target.value === "" ? "" : Number(e.target.value))}
               className="input-minimal w-48 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"

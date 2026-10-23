@@ -134,7 +134,7 @@ export function ProductsTab({
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
             {t("inventory.filters.nameOrSku")}
           </label>
-          <input
+          <input aria-label={t("inventory.filters.nameOrSku")}
             type="text"
             placeholder={t("inventory.filters.searchPlaceholder")}
             value={search}

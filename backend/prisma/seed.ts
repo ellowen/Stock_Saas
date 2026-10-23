@@ -70,30 +70,13 @@ function pick<T>(arr: T[], n: number): T[] {
   return out;
 }
 
-async function clearCompanyProducts(companyId: number) {
-  const transferIds = await prisma.stockTransfer.findMany({ where: { companyId }, select: { id: true } }).then((r) => r.map((t) => t.id));
-  if (transferIds.length > 0) {
-    await prisma.stockTransferItem.deleteMany({ where: { stockTransferId: { in: transferIds } } });
-  }
-  await prisma.stockTransfer.deleteMany({ where: { companyId } });
-  await prisma.saleItem.deleteMany({ where: { companyId } });
-  await prisma.sale.deleteMany({ where: { companyId } });
-  await prisma.inventory.deleteMany({ where: { companyId } });
-  await prisma.productVariant.deleteMany({ where: { companyId } });
-  await prisma.product.deleteMany({ where: { companyId } });
-}
-
-async function seedDemoRopa(companyId: number, branches: { id: number }[], userId: number, replaceExisting: boolean) {
+async function seedDemoRopa(companyId: number, branches: { id: number }[], userId: number) {
   const productCount = await prisma.product.count({ where: { companyId } });
   if (productCount > 0) {
-    if (!replaceExisting) {
-      // eslint-disable-next-line no-console
-      console.log("Seed: la compañía ya tiene productos. No se agregan más.");
-      return;
-    }
+    // Never wipe existing data here: it has sales, movements, documents, etc. Use `npm run db:reset-demo` for a clean slate.
     // eslint-disable-next-line no-console
-    console.log("Seed: reemplazando productos existentes por catálogo solo ropa.");
-    await clearCompanyProducts(companyId);
+    console.log("Seed: la compañía ya tiene productos, no se tocan. Para empezar de cero: npm run db:reset-demo");
+    return;
   }
 
   const branchIds = branches.map((b) => b.id);
@@ -257,7 +240,7 @@ async function main() {
       }
       branches = await prisma.branch.findMany({ where: { companyId }, select: { id: true } });
     }
-    await seedDemoRopa(companyId, branches, existingUser.id, true);
+    await seedDemoRopa(companyId, branches, existingUser.id);
     await seedStaff(companyId, branches[0]!.id, passwordHash);
     // eslint-disable-next-line no-console
     console.log("Seed: usuario owner actualizado. Demo solo ropa. Credenciales: owner / encargado / vendedor, password 'password123'");
@@ -297,7 +280,7 @@ async function main() {
     },
   });
 
-  await seedDemoRopa(company.id, branches, user.id, false);
+  await seedDemoRopa(company.id, branches, user.id);
   await seedStaff(company.id, branch1.id, passwordHash);
 
   // eslint-disable-next-line no-console

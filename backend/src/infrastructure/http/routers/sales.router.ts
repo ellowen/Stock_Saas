@@ -10,6 +10,7 @@ import {
   returnSaleItemsController,
 } from "../../../presentation/http/controllers/sale-returns.controller";
 import { checkSaleLimit } from "../../../application/billing/plan-limits";
+import { requirePermission } from "../middleware/requirePermission";
 
 const router = Router();
 
@@ -17,8 +18,8 @@ router.use(authMiddleware);
 
 router.get("/", listSalesController);
 router.post("/", checkSaleLimit, createSaleController);
-router.post("/:id/cancel", cancelSaleController);
-router.post("/:id/return", returnSaleItemsController);
+router.post("/:id/cancel", requirePermission("SALES_VOID"), cancelSaleController);
+router.post("/:id/return", requirePermission("SALES_VOID"), returnSaleItemsController);
 router.post("/:id/send-receipt", sendReceiptController);
 
 export const salesRouter = router;

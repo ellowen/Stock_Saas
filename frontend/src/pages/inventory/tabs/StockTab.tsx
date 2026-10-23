@@ -164,7 +164,7 @@ export function StockTab({
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
             {t("inventory.filters.branch")}
           </label>
-          <select
+          <select aria-label={t("inventory.filters.branch")}
             value={branchId}
             onChange={(e) => {
               setBranchId(e.target.value);
@@ -184,7 +184,7 @@ export function StockTab({
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
             {t("inventory.filters.nameOrSku")}
           </label>
-          <input
+          <input aria-label={t("inventory.filters.nameOrSku")}
             type="text"
             placeholder={t("inventory.filters.searchPlaceholder")}
             value={search}

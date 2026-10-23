@@ -633,7 +633,7 @@ export function SettingsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cuota sindical (%)</label>
-                  <input
+                  <input aria-label="Cuota sindical (%)"
                     type="number"
                     min="0"
                     max="10"

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
+import { requireRole } from "../middleware/requireRole";
 import {
   getUsage,
   subscribe,
@@ -19,8 +20,9 @@ router.post("/webhook/mp", mpWebhook);
 // Rutas autenticadas
 router.use(authMiddleware);
 router.get("/usage", getUsage);
-router.post("/subscribe", subscribe);
-router.post("/cancel", cancelSubscription);
-router.get("/portal", stripePortal);
+// Solo el dueño puede contratar, cancelar o gestionar el pago de la suscripción.
+router.post("/subscribe", requireRole(["OWNER"]), subscribe);
+router.post("/cancel", requireRole(["OWNER"]), cancelSubscription);
+router.get("/portal", requireRole(["OWNER"]), stripePortal);
 
 export { router as billingRouter };

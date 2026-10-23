@@ -36,7 +36,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 });
 
 // POST /journal — crear asiento (DRAFT)
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requirePermission("ACCOUNTING_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const userId = req.auth!.userId;
   const { date, description, reference, sourceType, lines } = req.body;
@@ -60,7 +60,7 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 // POST /journal/:id/post — confirmar (DRAFT → POSTED)
-router.post("/:id/post", async (req: Request, res: Response) => {
+router.post("/:id/post", requirePermission("ACCOUNTING_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
@@ -73,7 +73,7 @@ router.post("/:id/post", async (req: Request, res: Response) => {
 });
 
 // POST /journal/:id/void — anular (crea contra-asiento)
-router.post("/:id/void", async (req: Request, res: Response) => {
+router.post("/:id/void", requirePermission("ACCOUNTING_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const userId = req.auth!.userId;
   const id = parseInt(req.params["id"] as string);
@@ -87,7 +87,7 @@ router.post("/:id/void", async (req: Request, res: Response) => {
 });
 
 // DELETE /journal/:id — solo borradores
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requirePermission("ACCOUNTING_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });

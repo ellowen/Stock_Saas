@@ -209,11 +209,11 @@ export function ReportsPage() {
             <div className="flex flex-wrap items-end gap-4">
               <div>
                 <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("reports.fromLabel")}</label>
-                <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="input-minimal w-[140px] dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100" />
+                <input aria-label={t("reports.fromLabel")} type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="input-minimal w-[140px] dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100" />
               </div>
               <div>
                 <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("reports.toLabel")}</label>
-                <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="input-minimal w-[140px] dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100" />
+                <input aria-label={t("reports.toLabel")} type="date" value={to} onChange={(e) => setTo(e.target.value)} className="input-minimal w-[140px] dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100" />
               </div>
               <div className="flex flex-wrap gap-2">
                 {(["7", "30", "month", "lastMonth"] as const).map((preset) => (

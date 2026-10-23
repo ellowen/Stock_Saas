@@ -83,7 +83,7 @@ export function ReturnModal({ sale, onConfirm, onClose }: Props) {
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
             {t("sales.returnReason")}
           </label>
-          <input
+          <input aria-label={t("sales.returnReason")}
             type="text"
             value={reason}
             onChange={(e) => setReason(e.target.value)}

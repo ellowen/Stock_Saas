@@ -432,15 +432,15 @@ export function UsersPage() {
             <form onSubmit={handleUpdate} className="space-y-3">
               <div>
                 <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("users.fullName")} *</label>
-                <input value={editFullName} onChange={(e) => setEditFullName(e.target.value)} className="input-minimal" required />
+                <input aria-label={t("users.fullName")} value={editFullName} onChange={(e) => setEditFullName(e.target.value)} className="input-minimal" required />
               </div>
               <div>
                 <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("users.email")}</label>
-                <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="input-minimal" placeholder="opcional" />
+                <input aria-label={t("users.email")} type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="input-minimal" placeholder="opcional" />
               </div>
               <div>
                 <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("users.role")}</label>
-                <select value={editRole} onChange={(e) => setEditRole(e.target.value)} className="input-minimal">
+                <select aria-label={t("users.role")} value={editRole} onChange={(e) => setEditRole(e.target.value)} className="input-minimal">
                   {assignableRoles.map((r) => (
                     <option key={r.value} value={r.value}>{t(r.labelKey)}</option>
                   ))}
@@ -448,7 +448,7 @@ export function UsersPage() {
               </div>
               <div>
                 <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("users.branchOptional")}</label>
-                <select value={editBranchId} onChange={(e) => setEditBranchId(e.target.value)} className="input-minimal">
+                <select aria-label={t("users.branchOptional")} value={editBranchId} onChange={(e) => setEditBranchId(e.target.value)} className="input-minimal">
                   <option value="">{t("users.allBranches")}</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
@@ -467,7 +467,7 @@ export function UsersPage() {
               </div>
               <div>
                 <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t("users.newPasswordLabel")}</label>
-                <input
+                <input aria-label={t("users.newPasswordLabel")}
                   type="password"
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}

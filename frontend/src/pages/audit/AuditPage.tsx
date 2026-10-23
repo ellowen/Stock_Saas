@@ -109,7 +109,7 @@ export default function AuditPage() {
       >
         <div className="flex flex-col gap-1 min-w-[140px]">
           <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Entidad</label>
-          <select
+          <select aria-label="Entidad"
             value={filterEntity}
             onChange={(e) => setFilterEntity(e.target.value)}
             className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -121,7 +121,7 @@ export default function AuditPage() {
 
         <div className="flex flex-col gap-1 min-w-[140px]">
           <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Acción</label>
-          <select
+          <select aria-label="Acción"
             value={filterAction}
             onChange={(e) => setFilterAction(e.target.value)}
             className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -133,7 +133,7 @@ export default function AuditPage() {
 
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Desde</label>
-          <input
+          <input aria-label="Desde"
             type="date"
             value={filterFrom}
             onChange={(e) => setFilterFrom(e.target.value)}
@@ -143,7 +143,7 @@ export default function AuditPage() {
 
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Hasta</label>
-          <input
+          <input aria-label="Hasta"
             type="date"
             value={filterTo}
             onChange={(e) => setFilterTo(e.target.value)}

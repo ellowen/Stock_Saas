@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middleware/auth";
 import { TaxConfigService } from "../../../application/tax-configs/tax-config.service";
+import { requirePermission } from "../middleware/requirePermission";
 
 const router = Router();
 const service = new TaxConfigService();
@@ -13,7 +14,7 @@ router.get("/", async (req: Request, res: Response) => {
   res.json(configs);
 });
 
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requirePermission("SETTINGS_MANAGE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const { name, rate, isDefault } = req.body;
   if (!name?.trim() || rate == null) {
@@ -27,7 +28,7 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
-router.put("/:id", async (req: Request, res: Response) => {
+router.put("/:id", requirePermission("SETTINGS_MANAGE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
@@ -39,7 +40,7 @@ router.put("/:id", async (req: Request, res: Response) => {
   }
 });
 
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requirePermission("SETTINGS_MANAGE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });

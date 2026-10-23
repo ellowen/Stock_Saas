@@ -457,7 +457,7 @@ export default function CustomersPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {t("customers.fieldPhone")}
                 </label>
-                <input
+                <input aria-label={t("customers.fieldPhone")}
                   type="text"
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -478,7 +478,7 @@ export default function CustomersPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {t("customers.fieldAddress")}
                 </label>
-                <input
+                <input aria-label={t("customers.fieldAddress")}
                   type="text"
                   value={form.address}
                   onChange={(e) => setForm({ ...form, address: e.target.value })}
@@ -489,7 +489,7 @@ export default function CustomersPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {t("customers.fieldCity")}
                 </label>
-                <input
+                <input aria-label={t("customers.fieldCity")}
                   type="text"
                   value={form.city}
                   onChange={(e) => setForm({ ...form, city: e.target.value })}
@@ -500,7 +500,7 @@ export default function CustomersPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {t("customers.fieldNotes")}
                 </label>
-                <textarea
+                <textarea aria-label={t("customers.fieldNotes")}
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   className="input-minimal w-full"

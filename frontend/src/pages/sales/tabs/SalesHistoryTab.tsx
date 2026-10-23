@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../../../contexts/AuthContext";
 import { formatCurrency } from "../../../lib/format";
 import { PAYMENT_LABELS, type Branch, type SaleListItem } from "../types";
 import { ReturnModal } from "../components/ReturnModal";
@@ -27,6 +28,7 @@ export function SalesHistoryTab({
   onReturnItems,
 }: Props) {
   const { t } = useTranslation();
+  const { hasPermission } = useAuth();
   const [historyBranchId, setHistoryBranchId] = useState<string>("");
   const [historyFrom, setHistoryFrom] = useState(() => {
     const d = new Date();
@@ -85,7 +87,7 @@ export function SalesHistoryTab({
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
             {t("sales.historyBranchLabel")}
           </label>
-          <select
+          <select aria-label={t("sales.historyBranchLabel")}
             value={historyBranchId}
             onChange={(e) => setHistoryBranchId(e.target.value)}
             className="input-minimal min-w-[180px] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
@@ -102,7 +104,7 @@ export function SalesHistoryTab({
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
             {t("sales.historyFromLabel")}
           </label>
-          <input
+          <input aria-label={t("sales.historyFromLabel")}
             type="date"
             value={historyFrom}
             onChange={(e) => setHistoryFrom(e.target.value)}
@@ -113,7 +115,7 @@ export function SalesHistoryTab({
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
             {t("sales.historyToLabel")}
           </label>
-          <input
+          <input aria-label={t("sales.historyToLabel")}
             type="date"
             value={historyTo}
             onChange={(e) => setHistoryTo(e.target.value)}
@@ -175,7 +177,7 @@ export function SalesHistoryTab({
                   <td>{s.user.fullName}</td>
                   <td>{statusBadge(s.status)}</td>
                   <td>
-                    {s.status === "COMPLETED" && (
+                    {s.status === "COMPLETED" && hasPermission("SALES_VOID") && (
                       <div className="flex items-center gap-1">
                         <button
                           type="button"

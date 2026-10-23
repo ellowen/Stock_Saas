@@ -91,7 +91,7 @@ export class InventoryService {
       where.quantity = { gt: 0 };
     }
 
-    return prisma.inventory.findMany({
+    const rows = await prisma.inventory.findMany({
       where,
       include: {
         branch: {
@@ -109,6 +109,10 @@ export class InventoryService {
             sku: true,
             barcode: true,
             price: true,
+            attributes: {
+              select: { value: true, attribute: { select: { id: true, name: true, type: true } } },
+              orderBy: { attribute: { sortOrder: "asc" } },
+            },
             product: {
               select: {
                 id: true,
@@ -122,6 +126,14 @@ export class InventoryService {
       },
       orderBy: [{ branchId: "asc" }, { productVariantId: "asc" }],
     });
+    // Flatten flexible attributes to { id, name, type, value } like the products API does.
+    return rows.map((row) => ({
+      ...row,
+      variant: {
+        ...row.variant,
+        attributes: row.variant.attributes.map((a) => ({ ...a.attribute, value: a.value })),
+      },
+    }));
   }
 
   async listPaginated(

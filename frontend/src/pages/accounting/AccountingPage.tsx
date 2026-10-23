@@ -10,6 +10,7 @@ import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { Select } from "../../components/ui/Select";
 import { IconPlus, IconTrash } from "../../components/Icons";
 import { formatDate } from "../../lib/format";
+import { useAuth } from "../../contexts/AuthContext";
 
 // ─── Shared Types ────────────────────────────────────────────────────────────
 
@@ -240,6 +241,7 @@ function AccountRow({
   depth: number;
   onEdit: (a: Account) => void;
 }) {
+  const canWrite = useAuth().hasPermission("ACCOUNTING_WRITE");
   const [expanded, setExpanded] = useState(depth < 1);
   const hasChildren = account.children && account.children.length > 0;
 
@@ -267,7 +269,7 @@ function AccountRow({
           <Badge variant={TYPE_VARIANT[account.type]}>{TYPE_LABELS[account.type]}</Badge>
         </td>
         <td className="py-2 px-4 text-right">
-          {!account.isParent && (
+          {!account.isParent && canWrite && (
             <button onClick={() => onEdit(account)} className="text-xs text-primary hover:underline">Editar</button>
           )}
         </td>
@@ -290,6 +292,7 @@ function PlanDeContasTab({
   loading: boolean;
   onRefresh: () => void;
 }) {
+  const canWrite = useAuth().hasPermission("ACCOUNTING_WRITE");
   const { showToast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
@@ -317,14 +320,14 @@ function PlanDeContasTab({
   if (tree.length === 0) return (
     <div className="text-center py-16 space-y-3">
       <p className="text-muted-foreground">No hay cuentas contables configuradas.</p>
-      <Button variant="secondary" onClick={handleSeed} loading={seeding}>Generar plan de cuentas FACPCE base</Button>
+      {canWrite && <Button variant="secondary" onClick={handleSeed} loading={seeding}>Generar plan de cuentas FACPCE base</Button>}
     </div>
   );
 
   return (
     <>
       <div className="flex justify-end gap-2 mb-4">
-        <Button onClick={openCreate}><IconPlus />Nueva cuenta</Button>
+        {canWrite && <Button onClick={openCreate}><IconPlus />Nueva cuenta</Button>}
       </div>
       <div className="rounded-card border border-border bg-card overflow-hidden">
         <table className="w-full text-sm">
@@ -585,6 +588,7 @@ function JournalDetailModal({
   onVoid: (id: number) => void;
   onDelete: (id: number) => void;
 }) {
+  const canWrite = useAuth().hasPermission("ACCOUNTING_WRITE");
   if (!entry) return null;
   const sumDebit = entry.lines.reduce((s, l) => s + Number(l.debit), 0);
   const sumCredit = entry.lines.reduce((s, l) => s + Number(l.credit), 0);
@@ -636,11 +640,11 @@ function JournalDetailModal({
           <div className="flex gap-2">
             {entry.status === "DRAFT" && (
               <>
-                <Button variant="secondary" onClick={() => onPost(entry.id)}>Confirmar</Button>
-                <Button variant="ghost" onClick={() => onDelete(entry.id)} className="text-destructive">Eliminar</Button>
+                {canWrite && <Button variant="secondary" onClick={() => onPost(entry.id)}>Confirmar</Button>}
+                {canWrite && <Button variant="ghost" onClick={() => onDelete(entry.id)} className="text-destructive">Eliminar</Button>}
               </>
             )}
-            {entry.status === "POSTED" && !entry.isAutomatic && (
+            {entry.status === "POSTED" && !entry.isAutomatic && canWrite && (
               <Button variant="ghost" onClick={() => onVoid(entry.id)} className="text-destructive">Anular (contra-asiento)</Button>
             )}
           </div>
@@ -652,6 +656,7 @@ function JournalDetailModal({
 }
 
 function LibroDiarioTab({ accounts }: { accounts: Account[] }) {
+  const canWrite = useAuth().hasPermission("ACCOUNTING_WRITE");
   const { showToast } = useToast();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -754,7 +759,7 @@ function LibroDiarioTab({ accounts }: { accounts: Account[] }) {
             </select>
           </div>
         </div>
-        <Button onClick={() => setModalOpen(true)}><IconPlus />Nuevo asiento</Button>
+        {canWrite && <Button onClick={() => setModalOpen(true)}><IconPlus />Nuevo asiento</Button>}
       </div>
 
       {loading ? (
@@ -1261,7 +1266,7 @@ function ReportesTab({ accounts }: { accounts: Account[] }) {
       <div className="card p-4 flex flex-wrap gap-4 items-end">
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-muted-foreground">Reporte</label>
-          <select
+          <select aria-label="Reporte"
             className="input text-sm"
             value={report}
             onChange={(e) => setReport(e.target.value as any)}
@@ -1282,7 +1287,7 @@ function ReportesTab({ accounts }: { accounts: Account[] }) {
         {report === "ledger" && (
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-muted-foreground">Cuenta</label>
-            <select
+            <select aria-label="Cuenta"
               className="input text-sm min-w-56"
               value={selectedAccountId}
               onChange={(e) => setSelectedAccountId(e.target.value ? Number(e.target.value) : "")}

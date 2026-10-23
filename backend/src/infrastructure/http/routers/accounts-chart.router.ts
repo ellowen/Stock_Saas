@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middleware/auth";
 import { AccountService } from "../../../application/accounting/account.service";
+import { requirePermission } from "../middleware/requirePermission";
 
 const router = Router();
 const service = new AccountService();
@@ -23,7 +24,7 @@ router.get("/tree", async (req: Request, res: Response) => {
 });
 
 // POST /accounts-chart/seed — sembrar plan base (idempotente)
-router.post("/seed", async (req: Request, res: Response) => {
+router.post("/seed", requirePermission("ACCOUNTING_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   await service.seedForCompany(companyId);
   res.json({ message: "Plan de cuentas base sembrado correctamente" });
@@ -43,7 +44,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 });
 
 // POST /accounts-chart
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requirePermission("ACCOUNTING_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const { code, name, type, subtype, parentId } = req.body;
   if (!code || !name || !type) return res.status(400).json({ message: "code, name y type son requeridos" });
@@ -56,7 +57,7 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 // PUT /accounts-chart/:id
-router.put("/:id", async (req: Request, res: Response) => {
+router.put("/:id", requirePermission("ACCOUNTING_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });

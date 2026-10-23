@@ -510,7 +510,7 @@ export function ReportsPage() {
             <div className="flex flex-wrap items-end gap-4">
               <div>
                 <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Desde</label>
-                <input
+                <input aria-label="Desde"
                   type="date"
                   value={from}
                   onChange={(e) => setFrom(e.target.value)}
@@ -519,7 +519,7 @@ export function ReportsPage() {
               </div>
               <div>
                 <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Hasta</label>
-                <input
+                <input aria-label="Hasta"
                   type="date"
                   value={to}
                   onChange={(e) => setTo(e.target.value)}
@@ -1014,7 +1014,7 @@ export function ReportsPage() {
           <div className="flex flex-wrap items-end gap-4">
             <div>
               <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Últimos días sin movimiento</label>
-              <input
+              <input aria-label="Últimos días sin movimiento"
                 type="number"
                 min={1}
                 max={365}
@@ -1025,7 +1025,7 @@ export function ReportsPage() {
             </div>
             <div>
               <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Sucursal</label>
-              <select
+              <select aria-label="Sucursal"
                 value={noMovementBranchId === "" ? "" : noMovementBranchId}
                 onChange={(e) => setNoMovementBranchId(e.target.value === "" ? "" : Number(e.target.value))}
                 className="input-minimal w-48 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"

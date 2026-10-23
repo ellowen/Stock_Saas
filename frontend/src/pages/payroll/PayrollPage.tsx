@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getAccessToken } from "../../lib/api";
 import { formatCurrency, formatDate } from "../../lib/format";
 import { useToast } from "../../contexts/ToastContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
@@ -90,6 +91,7 @@ function currentPeriod() {
 
 export default function PayrollPage() {
   const { showToast } = useToast();
+  const canWrite = useAuth().hasPermission("EMPLOYEES_WRITE");
 
   const [period, setPeriod] = useState(currentPeriod());
   const [periods, setPeriods] = useState<string[]>([]);
@@ -375,7 +377,7 @@ export default function PayrollPage() {
       <PageHeader
         title="Liquidaciones de sueldos"
         subtitle="Calculá y registrá los sueldos mensuales de tus empleados."
-        actions={
+        actions={canWrite && (
           <div className="flex gap-2 flex-wrap">
             <Button variant="secondary" size="sm" onClick={() => { setAdvanceOpen(true); }}>
               Anticipo
@@ -391,7 +393,7 @@ export default function PayrollPage() {
               Nueva liquidación
             </Button>
           </div>
-        }
+        )}
       />
 
       {/* Tabs */}
@@ -409,7 +411,7 @@ export default function PayrollPage() {
       {tab === "payrolls" && <>
       <div className="flex flex-wrap gap-3 items-center">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Período:</label>
-        <input
+        <input aria-label="Período"
           type="month"
           value={period}
           onChange={(e) => setPeriod(e.target.value)}
@@ -480,13 +482,13 @@ export default function PayrollPage() {
                   <td className="px-4 py-3">
                     <div className="flex gap-2 justify-end flex-wrap">
                       <button onClick={() => openReceipt(p.id)} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Ver recibo</button>
-                      {p.status === "DRAFT" && (
+                      {canWrite && p.status === "DRAFT" && (
                         <>
                           <button onClick={() => handleAction(p.id, "confirm")} className="text-xs text-blue-600 hover:underline">Confirmar</button>
                           <button onClick={() => handleAction(p.id, "delete")} className="text-xs text-red-500 hover:underline">Eliminar</button>
                         </>
                       )}
-                      {p.status === "CONFIRMED" && (
+                      {canWrite && p.status === "CONFIRMED" && (
                         <button onClick={() => handleAction(p.id, "pay")} className="text-xs text-green-600 hover:underline">Marcar pagado</button>
                       )}
                       {p.paidAt && (
@@ -537,7 +539,7 @@ export default function PayrollPage() {
                       </td>
                       <td className="px-4 py-3 text-gray-500">{adv.notes ?? "—"}</td>
                       <td className="px-4 py-3 text-right">
-                        {!adv.deductedIn && (
+                        {canWrite && !adv.deductedIn && (
                           <button onClick={() => handleDeleteAdvance(adv.id)} className="text-xs text-red-500 hover:underline">Eliminar</button>
                         )}
                       </td>

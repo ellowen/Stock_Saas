@@ -207,7 +207,7 @@ export function PaymentPanel({
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                 {t("sales.mixedCashLabel")}
               </label>
-              <input
+              <input aria-label={t("sales.mixedCashLabel")}
                 type="number"
                 min={0}
                 step={0.01}
@@ -227,7 +227,7 @@ export function PaymentPanel({
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                 {t("sales.mixedCardLabel")}
               </label>
-              <input
+              <input aria-label={t("sales.mixedCardLabel")}
                 type="number"
                 min={0}
                 step={0.01}
@@ -260,7 +260,7 @@ export function PaymentPanel({
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400">
                 {t("sales.mixedCashReceivedLabel")}
               </label>
-              <input
+              <input aria-label={t("sales.mixedCashReceivedLabel")}
                 type="number"
                 min={0}
                 step={0.01}

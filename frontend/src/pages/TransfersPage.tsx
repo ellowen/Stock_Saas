@@ -282,7 +282,7 @@ export function TransfersPage() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t("transfers.fromLabel")}</label>
-                  <select
+                  <select aria-label={t("transfers.fromLabel")}
                     value={fromBranchId === "" ? "" : String(fromBranchId)}
                     onChange={(e) => setFromBranchId(e.target.value ? Number(e.target.value) : "")}
                     className="input-minimal"
@@ -295,7 +295,7 @@ export function TransfersPage() {
                 </div>
                 <div>
                   <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t("transfers.toLabel")}</label>
-                  <select
+                  <select aria-label={t("transfers.toLabel")}
                     value={toBranchId === "" ? "" : String(toBranchId)}
                     onChange={(e) => setToBranchId(e.target.value ? Number(e.target.value) : "")}
                     className="input-minimal"

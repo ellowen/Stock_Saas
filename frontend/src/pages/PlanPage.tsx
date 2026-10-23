@@ -180,7 +180,9 @@ function CheckoutModal({
 
 export function PlanPage() {
   const { t } = useTranslation();
-  const { company } = useAuth();
+  const { company, user } = useAuth();
+  // Billing actions are OWNER-only on the server.
+  const isOwner = user?.auth.role === "OWNER";
   const { showToast } = useToast();
 
   const [exporting, setExporting] = useState(false);
@@ -345,7 +347,7 @@ export function PlanPage() {
         )}
 
         {/* Stripe portal */}
-        {hasStripe && (
+        {hasStripe && isOwner && (
           <div className="pt-3 border-t border-gray-100 dark:border-gray-700">
             <button
               type="button"
@@ -402,7 +404,10 @@ export function PlanPage() {
                     </li>
                   ))}
                 </ul>
-                {!isCurrent && key !== "FREE" && (
+                {!isCurrent && key !== "FREE" && !isOwner && (
+                  <p className="text-xs text-gray-400 text-center mt-auto">Solo el dueño puede cambiar el plan</p>
+                )}
+                {!isCurrent && key !== "FREE" && isOwner && (
                   <button
                     type="button"
                     onClick={() => setCheckoutPlan(key)}

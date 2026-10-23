@@ -123,7 +123,7 @@ export function BulkAdjustModal({ branches, onClose, onDone }: Props) {
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
               {t("inventory.filters.branch")}
             </label>
-            <select
+            <select aria-label={t("inventory.filters.branch")}
               value={branchId}
               onChange={(e) => { setBranchId(e.target.value); setSearch(""); }}
               className="input-minimal dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
@@ -137,7 +137,7 @@ export function BulkAdjustModal({ branches, onClose, onDone }: Props) {
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
               {t("inventory.bulkAdjustSearch")}
             </label>
-            <input
+            <input aria-label={t("inventory.bulkAdjustSearch")}
               type="text"
               placeholder={t("inventory.filters.searchPlaceholder")}
               value={search}
@@ -149,7 +149,7 @@ export function BulkAdjustModal({ branches, onClose, onDone }: Props) {
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
               {t("inventory.bulkAdjustReason")} <span className="text-red-500">*</span>
             </label>
-            <input
+            <input aria-label={t("inventory.bulkAdjustReason")}
               type="text"
               placeholder={t("inventory.bulkAdjustReasonPlaceholder")}
               value={reason}

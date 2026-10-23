@@ -266,20 +266,20 @@ export default function PromotionsPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("promotions.fieldName")} *</label>
-              <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-minimal w-full" autoFocus />
+              <input aria-label={t("promotions.fieldName")} type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-minimal w-full" autoFocus />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("promotions.fieldType")}</label>
-                <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as PromotionType })} className="input-minimal w-full">
+                <select aria-label={t("promotions.fieldType")} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as PromotionType })} className="input-minimal w-full">
                   <option value="PERCENT_OFF">{t("promotions.typePercent")}</option>
                   <option value="BUY_X_GET_Y_FREE">{t("promotions.typeBuyXGetY")}</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("promotions.fieldScope")}</label>
-                <select value={form.scope} onChange={(e) => setForm({ ...form, scope: e.target.value as PromotionScope })} className="input-minimal w-full">
+                <select aria-label={t("promotions.fieldScope")} value={form.scope} onChange={(e) => setForm({ ...form, scope: e.target.value as PromotionScope })} className="input-minimal w-full">
                   <option value="ALL">{t("promotions.scopeAll")}</option>
                   <option value="PRODUCT">{t("promotions.scopeProduct")}</option>
                   <option value="CATEGORY">{t("promotions.scopeCategory")}</option>
@@ -290,7 +290,7 @@ export default function PromotionsPage() {
             {form.scope === "PRODUCT" && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("promotions.fieldProduct")} *</label>
-                <select value={form.productId} onChange={(e) => setForm({ ...form, productId: e.target.value ? Number(e.target.value) : "" })} className="input-minimal w-full">
+                <select aria-label={t("promotions.fieldProduct")} value={form.productId} onChange={(e) => setForm({ ...form, productId: e.target.value ? Number(e.target.value) : "" })} className="input-minimal w-full">
                   <option value="">{t("promotions.selectProduct")}</option>
                   {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
@@ -299,7 +299,7 @@ export default function PromotionsPage() {
             {form.scope === "CATEGORY" && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("promotions.fieldCategory")} *</label>
-                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input-minimal w-full">
+                <select aria-label={t("promotions.fieldCategory")} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input-minimal w-full">
                   <option value="">{t("promotions.selectCategory")}</option>
                   {categories.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
@@ -309,25 +309,25 @@ export default function PromotionsPage() {
             {form.type === "PERCENT_OFF" && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("promotions.fieldPercent")} *</label>
-                <input type="number" min={1} max={100} value={form.percentOff} onChange={(e) => setForm({ ...form, percentOff: e.target.value })} className="input-minimal w-full" placeholder="20" />
+                <input aria-label={t("promotions.fieldPercent")} type="number" min={1} max={100} value={form.percentOff} onChange={(e) => setForm({ ...form, percentOff: e.target.value })} className="input-minimal w-full" placeholder="20" />
               </div>
             )}
             {form.type === "BUY_X_GET_Y_FREE" && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("promotions.fieldBuyQty")} *</label>
-                  <input type="number" min={1} value={form.buyQty} onChange={(e) => setForm({ ...form, buyQty: e.target.value })} className="input-minimal w-full" placeholder={t("promotions.buyQtyHint2x1")} />
+                  <input aria-label={t("promotions.fieldBuyQty")} type="number" min={1} value={form.buyQty} onChange={(e) => setForm({ ...form, buyQty: e.target.value })} className="input-minimal w-full" placeholder={t("promotions.buyQtyHint2x1")} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("promotions.fieldFreeQty")} *</label>
-                  <input type="number" min={1} value={form.freeQty} onChange={(e) => setForm({ ...form, freeQty: e.target.value })} className="input-minimal w-full" placeholder="1" />
+                  <input aria-label={t("promotions.fieldFreeQty")} type="number" min={1} value={form.freeQty} onChange={(e) => setForm({ ...form, freeQty: e.target.value })} className="input-minimal w-full" placeholder="1" />
                 </div>
               </div>
             )}
 
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("promotions.fieldCoupon")}</label>
-              <input type="text" value={form.couponCode} onChange={(e) => setForm({ ...form, couponCode: e.target.value.toUpperCase() })} className="input-minimal w-full font-mono" placeholder={t("promotions.couponPlaceholder")} />
+              <input aria-label={t("promotions.fieldCoupon")} type="text" value={form.couponCode} onChange={(e) => setForm({ ...form, couponCode: e.target.value.toUpperCase() })} className="input-minimal w-full font-mono" placeholder={t("promotions.couponPlaceholder")} />
               <p className="text-xs text-slate-400 mt-1">{t("promotions.couponHint")}</p>
             </div>
 

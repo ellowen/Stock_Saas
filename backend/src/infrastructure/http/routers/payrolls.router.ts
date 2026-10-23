@@ -51,7 +51,7 @@ router.post("/preview", async (req: Request, res: Response) => {
 });
 
 // POST /payrolls — crear liquidación (guarda como DRAFT)
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requirePermission("EMPLOYEES_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const { employeeId, period, periodType, extraHours, bonus, otherEarnings, sindicatoRate, artRate, notes } = req.body;
   if (!employeeId || !period) return res.status(400).json({ message: "employeeId y period son requeridos" });
@@ -72,7 +72,7 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 // POST /payrolls/bulk — calcular todos los empleados activos para un período
-router.post("/bulk", async (req: Request, res: Response) => {
+router.post("/bulk", requirePermission("EMPLOYEES_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const { period, artRate, sindicatoRate } = req.body;
   if (!period) return res.status(400).json({ message: "period es requerido" });
@@ -90,7 +90,7 @@ router.post("/bulk", async (req: Request, res: Response) => {
 });
 
 // POST /payrolls/:id/confirm
-router.post("/:id/confirm", async (req: Request, res: Response) => {
+router.post("/:id/confirm", requirePermission("EMPLOYEES_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
@@ -103,7 +103,7 @@ router.post("/:id/confirm", async (req: Request, res: Response) => {
 });
 
 // POST /payrolls/:id/pay
-router.post("/:id/pay", async (req: Request, res: Response) => {
+router.post("/:id/pay", requirePermission("EMPLOYEES_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const userId = req.auth!.userId;
   const id = parseInt(req.params["id"] as string);
@@ -132,7 +132,7 @@ router.post("/:id/pay", async (req: Request, res: Response) => {
 });
 
 // DELETE /payrolls/:id — solo borradores
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requirePermission("EMPLOYEES_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
@@ -176,7 +176,7 @@ router.get("/advances", async (req: Request, res: Response) => {
 });
 
 // POST /payrolls/advances
-router.post("/advances", async (req: Request, res: Response) => {
+router.post("/advances", requirePermission("EMPLOYEES_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const { employeeId, amount, date, notes } = req.body;
   if (!employeeId || !amount) return res.status(400).json({ message: "employeeId y amount son requeridos" });
@@ -194,7 +194,7 @@ router.post("/advances", async (req: Request, res: Response) => {
 });
 
 // PATCH /payrolls/advances/:id/deduct
-router.patch("/advances/:id/deduct", async (req: Request, res: Response) => {
+router.patch("/advances/:id/deduct", requirePermission("EMPLOYEES_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
@@ -209,7 +209,7 @@ router.patch("/advances/:id/deduct", async (req: Request, res: Response) => {
 });
 
 // DELETE /payrolls/advances/:id
-router.delete("/advances/:id", async (req: Request, res: Response) => {
+router.delete("/advances/:id", requirePermission("EMPLOYEES_WRITE"), async (req: Request, res: Response) => {
   const companyId = req.auth!.companyId;
   const id = parseInt(req.params["id"] as string);
   if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });

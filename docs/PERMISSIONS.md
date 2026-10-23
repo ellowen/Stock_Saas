@@ -20,7 +20,7 @@ OWNER siempre tiene todo, ignora overrides (PermissionService.hasPermission earl
 | Rol | Uso típico |
 |---|---|
 | `OWNER` | Dueño de la empresa. Bypassa todo chequeo de permiso. |
-| `MANAGER` | Encargado de sucursal/negocio. Casi todo excepto gestión de usuarios/empresa. |
+| `MANAGER` | Encargado de sucursal/negocio. Casi todo; puede gestionar usuarios que no sean dueños, pero no editar datos de la empresa, la suscripción, sueldos ni asientos. |
 | `SELLER` | Cajero. Permisos mínimos por defecto: vender, ver clientes, generar documentos. |
 
 ## Todos los permisos (`PermissionKey`, 21 claves)
@@ -30,7 +30,7 @@ OWNER siempre tiene todo, ignora overrides (PermissionService.hasPermission earl
 | `PRODUCTS_WRITE` | Crear/editar productos | ✅ | ✅ | ❌ |
 | `PRODUCTS_DELETE` | Eliminar productos | ✅ | ✅ | ❌ |
 | `INVENTORY_WRITE` | Ajustar cantidades de stock | ✅ | ✅ | ❌ |
-| `SALES_VOID` | Anular ventas | ✅ | ✅ | ❌ |
+| `SALES_VOID` | Anular ventas y registrar devoluciones | ✅ | ✅ | ❌ |
 | `SALES_HISTORY` | Ver historial de ventas (todas, no solo propias) | ✅ | ✅ | ✅ |
 | `SALES_DISCOUNT` | Aplicar descuentos manuales en el POS (por línea o global) | ✅ | ✅ | ❌ |
 | `SALES_PRICE_OVERRIDE` | Reemplazar el precio de una línea en el POS | ✅ | ✅ | ❌ |
@@ -40,14 +40,19 @@ OWNER siempre tiene todo, ignora overrides (PermissionService.hasPermission earl
 | `ACCOUNTING_VIEW` | Ver contabilidad | ✅ | ✅ | ❌ |
 | `ACCOUNTING_WRITE` | Crear asientos contables | ✅ | ❌ | ❌ |
 | `REPORTS_VIEW` | Ver reportes | ✅ | ✅ | ❌ |
-| `USERS_MANAGE` | Gestionar usuarios | ✅ | ❌ | ❌ |
-| `SETTINGS_MANAGE` | Configurar la empresa | ✅ | ❌ | ❌ |
+| `USERS_MANAGE` | Gestionar usuarios (solo un OWNER puede crear, editar o eliminar OWNERs) | ✅ | ✅ | ❌ |
+| `SETTINGS_MANAGE` | Sucursales y configuración de impuestos | ✅ | ✅ | ❌ |
 | `AUDIT_VIEW` | Ver el log de auditoría | ✅ | ❌ | ❌ |
 | `CUSTOMERS_WRITE` | Crear/editar clientes | ✅ | ✅ | ✅ |
 | `SUPPLIERS_WRITE` | Crear/editar proveedores | ✅ | ✅ | ❌ |
 | `DOCUMENTS_WRITE` | Crear/editar documentos (facturas/remitos) | ✅ | ✅ | ✅ |
 | `PURCHASES_MANAGE` | Gestionar órdenes de compra | ✅ | ✅ | ❌ |
 | `ACCOUNTS_RECEIVABLE_MANAGE` | Crear cuentas por cobrar y registrar cobros | ✅ | ✅ | ✅ |
+
+Reglas fijas por rol (no configurables con overrides):
+
+- Editar los datos de la empresa (`PUT /protected/company`) y la suscripción (`/billing/subscribe`, `/billing/cancel`, `/billing/portal`): solo OWNER.
+- Escritura contable (`/journal`, `/accounts-chart`) requiere `ACCOUNTING_WRITE`; liquidar/pagar sueldos y adelantos (`/payrolls`) requiere `EMPLOYEES_WRITE`; lotes (`/batches`) requieren `INVENTORY_WRITE`.
 
 `SALES_DISCOUNT` y `SALES_PRICE_OVERRIDE` se agregaron el 2026-07-11 (rediseño del POS) — antes cualquier `SELLER` podía aplicar descuentos y no existía price override como feature.
 

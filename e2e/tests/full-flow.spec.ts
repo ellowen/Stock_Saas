@@ -168,6 +168,26 @@ test("stock decreased and sale is visible to the manager", async ({ page, reques
   await expect(page.getByText(seller.fullName).first()).toBeVisible();
 });
 
+test("seller cannot void sales, change billing or accounting", async ({ request }) => {
+  const managerToken = await apiToken(request, manager.username);
+  const salesBody = await (await request.get(`${API}/sales`, { headers: bearer(managerToken) })).json();
+  const sales: { id: number }[] = Array.isArray(salesBody) ? salesBody : salesBody.data;
+  const saleId = sales[0]!.id;
+
+  const sellerToken = await apiToken(request, seller.username);
+  const cancel = await request.post(`${API}/sales/${saleId}/cancel`, { headers: bearer(sellerToken) });
+  expect(cancel.status()).toBe(403);
+  expect((await cancel.json()).message).toContain("Anular ventas");
+  expect((await request.post(`${API}/billing/cancel`, { headers: bearer(sellerToken) })).status()).toBe(403);
+  expect((await request.post(`${API}/tax-configs`, { headers: bearer(sellerToken), data: {} })).status()).toBe(403);
+  expect((await request.post(`${API}/batches`, { headers: bearer(sellerToken), data: {} })).status()).toBe(403);
+
+  // Manager can view accounting/payroll but not write to it.
+  expect((await request.post(`${API}/journal`, { headers: bearer(managerToken), data: {} })).status()).toBe(403);
+  expect((await request.post(`${API}/payrolls`, { headers: bearer(managerToken), data: {} })).status()).toBe(403);
+  expect((await request.post(`${API}/billing/cancel`, { headers: bearer(managerToken) })).status()).toBe(403);
+});
+
 test("another company cannot see this company's data", async ({ request }) => {
   const other = `intruso_${RUN}`;
   const reg = await request.post(`${API}/auth/register`, {

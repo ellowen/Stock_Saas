@@ -12,6 +12,7 @@ import { EmptyState } from "../../components/ui/EmptyState";
 import { Select } from "../../components/ui/Select";
 import { IconPlus, IconBriefcase } from "../../components/Icons";
 import { useSortable } from "../../hooks/useSortable";
+import { useAuth } from "../../contexts/AuthContext";
 
 function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
   return (
@@ -79,6 +80,7 @@ function authHeaders() {
 }
 
 export default function EmployeesPage() {
+  const canWrite = useAuth().hasPermission("EMPLOYEES_WRITE");
   const { t } = useTranslation();
   const { showToast } = useToast();
 
@@ -210,12 +212,12 @@ export default function EmployeesPage() {
       <PageHeader
         title={t("employees.title")}
         subtitle={t("employees.subtitle")}
-        actions={
+        actions={canWrite && (
           <Button onClick={openNew} size="sm">
             <IconPlus />
             {t("employees.new")}
           </Button>
-        }
+        )}
       />
 
       {/* Filtros */}
@@ -304,7 +306,7 @@ export default function EmployeesPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                    {canWrite && <div className="flex gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => openEdit(emp)}
                         className="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded px-2 py-1"
@@ -319,7 +321,7 @@ export default function EmployeesPage() {
                           {t("employees.deactivate")}
                         </button>
                       )}
-                    </div>
+                    </div>}
                   </td>
                 </tr>
               ))}

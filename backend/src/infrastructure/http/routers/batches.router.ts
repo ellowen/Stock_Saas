@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { authMiddleware } from "../middleware/auth";
 import { prisma } from "../../../config/database/prisma";
+import { requirePermission } from "../middleware/requirePermission";
 
 const router = Router();
 router.use(authMiddleware);
@@ -40,7 +41,7 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 // POST /batches
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requirePermission("INVENTORY_WRITE"), async (req: Request, res: Response) => {
   if (!req.auth) return res.status(401).json({ message: "Unauthorized" });
   const schema = z.object({
     variantId: z.number().int().positive(),
@@ -70,7 +71,7 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 // PATCH /batches/:id
-router.patch("/:id", async (req: Request, res: Response) => {
+router.patch("/:id", requirePermission("INVENTORY_WRITE"), async (req: Request, res: Response) => {
   if (!req.auth) return res.status(401).json({ message: "Unauthorized" });
   const schema = z.object({
     batchNumber: z.string().min(1).max(100).optional(),
@@ -102,7 +103,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
 });
 
 // DELETE /batches/:id
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requirePermission("INVENTORY_WRITE"), async (req: Request, res: Response) => {
   if (!req.auth) return res.status(401).json({ message: "Unauthorized" });
   try {
     const existing = await prisma.batch.findFirst({

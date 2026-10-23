@@ -542,7 +542,7 @@ export function POSTab({
                 <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
                   {t("sales.branchLabel")}
                 </label>
-                <select
+                <select aria-label={t("sales.branchLabel")}
                   value={branchId === "" ? "" : String(branchId)}
                   onChange={(e) => onBranchChange(e.target.value ? Number(e.target.value) : "")}
                   className="input-minimal w-full sm:max-w-xs text-base py-2.5 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"

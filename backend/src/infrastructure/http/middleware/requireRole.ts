@@ -6,7 +6,7 @@ export function requireRole(allowedRoles: string[]) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     if (!allowedRoles.includes(req.auth.role)) {
-      return res.status(403).json({ message: "Forbidden: insufficient role" });
+      return res.status(403).json({ message: "No tenés permiso para esta acción" });
     }
     next();
   };

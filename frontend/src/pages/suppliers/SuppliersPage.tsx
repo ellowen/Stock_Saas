@@ -270,7 +270,7 @@ export default function SuppliersPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {t("suppliers.fieldName")} *
                 </label>
-                <input
+                <input aria-label={t("suppliers.fieldName")}
                   type="text"
                   value={form.name}
                   onChange={(e) => { setForm({ ...form, name: e.target.value }); setFormTouched(true); }}
@@ -286,7 +286,7 @@ export default function SuppliersPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {t("suppliers.fieldTaxId")}
                 </label>
-                <input
+                <input aria-label={t("suppliers.fieldTaxId")}
                   type="text"
                   value={form.taxId}
                   onChange={(e) => setForm({ ...form, taxId: e.target.value })}
@@ -297,7 +297,7 @@ export default function SuppliersPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {t("suppliers.fieldPhone")}
                 </label>
-                <input
+                <input aria-label={t("suppliers.fieldPhone")}
                   type="text"
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -308,7 +308,7 @@ export default function SuppliersPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {t("suppliers.fieldEmail")}
                 </label>
-                <input
+                <input aria-label={t("suppliers.fieldEmail")}
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -319,7 +319,7 @@ export default function SuppliersPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {t("suppliers.fieldAddress")}
                 </label>
-                <input
+                <input aria-label={t("suppliers.fieldAddress")}
                   type="text"
                   value={form.address}
                   onChange={(e) => setForm({ ...form, address: e.target.value })}
@@ -330,7 +330,7 @@ export default function SuppliersPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {t("suppliers.fieldCity")}
                 </label>
-                <input
+                <input aria-label={t("suppliers.fieldCity")}
                   type="text"
                   value={form.city}
                   onChange={(e) => setForm({ ...form, city: e.target.value })}
@@ -341,7 +341,7 @@ export default function SuppliersPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {t("suppliers.fieldNotes")}
                 </label>
-                <textarea
+                <textarea aria-label={t("suppliers.fieldNotes")}
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   className="input-minimal w-full"

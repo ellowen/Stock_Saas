@@ -312,7 +312,7 @@ export function StockCountTab({ branches, onStockChanged }: Props) {
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                 {t("inventory.filters.branch")}
               </label>
-              <select
+              <select aria-label={t("inventory.filters.branch")}
                 value={newBranchId}
                 onChange={(e) => setNewBranchId(e.target.value)}
                 className="input-minimal dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
@@ -326,7 +326,7 @@ export function StockCountTab({ branches, onStockChanged }: Props) {
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                 {t("inventory.countNotes")}
               </label>
-              <input
+              <input aria-label={t("inventory.countNotes")}
                 type="text"
                 placeholder={t("inventory.countNotesPlaceholder")}
                 value={newNotes}

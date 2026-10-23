@@ -216,21 +216,21 @@ export function ReorderTab({ branches }: { branches: Branch[] }) {
       <div className="flex flex-wrap gap-3 items-end">
         <div>
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Sucursal</label>
-          <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)} className="input-minimal text-sm w-44">
+          <select aria-label="Sucursal" value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)} className="input-minimal text-sm w-44">
             <option value="">Todas</option>
             {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         </div>
         <div>
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Categoria</label>
-          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="input-minimal text-sm w-44">
+          <select aria-label="Categoria" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="input-minimal text-sm w-44">
             <option value="">Todas</option>
             {categories.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div>
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Periodo analisis</label>
-          <select value={analysisDays} onChange={(e) => setAnalysisDays(Number(e.target.value))} className="input-minimal text-sm w-36">
+          <select aria-label="Periodo analisis" value={analysisDays} onChange={(e) => setAnalysisDays(Number(e.target.value))} className="input-minimal text-sm w-36">
             <option value={7}>7 dias</option>
             <option value={14}>14 dias</option>
             <option value={30}>30 dias</option>
@@ -253,14 +253,14 @@ export function ReorderTab({ branches }: { branches: Branch[] }) {
             </span>
             <div>
               <label className="text-xs text-indigo-600 dark:text-indigo-400 mr-1">Sucursal destino:</label>
-              <select value={targetBranchId} onChange={(e) => setTargetBranchId(e.target.value)} className="input-minimal text-sm w-40">
+              <select aria-label="Sucursal destino" value={targetBranchId} onChange={(e) => setTargetBranchId(e.target.value)} className="input-minimal text-sm w-40">
                 {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </div>
             {suppliers.length > 0 && (
               <div>
                 <label className="text-xs text-indigo-600 dark:text-indigo-400 mr-1">Proveedor alternativo:</label>
-                <select value={defaultSupplierId} onChange={(e) => setDefaultSupplierId(e.target.value)} className="input-minimal text-sm w-44">
+                <select aria-label="Proveedor alternativo" value={defaultSupplierId} onChange={(e) => setDefaultSupplierId(e.target.value)} className="input-minimal text-sm w-44">
                   <option value="">Usar ultimo proveedor</option>
                   {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>

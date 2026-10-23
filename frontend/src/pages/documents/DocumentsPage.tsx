@@ -473,7 +473,7 @@ export default function DocumentsPage() {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("documents.branchLabel")} *
               </label>
-              <select
+              <select aria-label={t("documents.branchLabel")}
                 value={branchId}
                 onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : "")}
                 className="input-minimal w-full"
@@ -488,7 +488,7 @@ export default function DocumentsPage() {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("documents.customerLabel")}
               </label>
-              <select
+              <select aria-label={t("documents.customerLabel")}
                 value={customerId}
                 onChange={(e) => setCustomerId(e.target.value ? Number(e.target.value) : "")}
                 className="input-minimal w-full"
@@ -503,7 +503,7 @@ export default function DocumentsPage() {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("documents.dueDateLabel")}
               </label>
-              <input
+              <input aria-label={t("documents.dueDateLabel")}
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
@@ -514,7 +514,7 @@ export default function DocumentsPage() {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("documents.notesLabel")}
               </label>
-              <input
+              <input aria-label={t("documents.notesLabel")}
                 type="text"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}

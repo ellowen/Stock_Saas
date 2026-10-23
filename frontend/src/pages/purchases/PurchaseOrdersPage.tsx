@@ -499,7 +499,7 @@ export default function PurchaseOrdersPage() {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("purchases.supplierLabel")} *
               </label>
-              <select value={supplierId} onChange={(e) => setSupplierId(e.target.value ? Number(e.target.value) : "")} className="input-minimal w-full">
+              <select aria-label={t("purchases.supplierLabel")} value={supplierId} onChange={(e) => setSupplierId(e.target.value ? Number(e.target.value) : "")} className="input-minimal w-full">
                 <option value="">{t("purchases.selectSupplier")}</option>
                 {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
@@ -508,18 +508,18 @@ export default function PurchaseOrdersPage() {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("purchases.branchLabel")} *
               </label>
-              <select value={branchId} onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : "")} className="input-minimal w-full">
+              <select aria-label={t("purchases.branchLabel")} value={branchId} onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : "")} className="input-minimal w-full">
                 <option value="">{t("purchases.selectBranch")}</option>
                 {branches.map((b) => <option key={b.id} value={b.id}>{b.name} ({b.code})</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("purchases.expectedLabel")}</label>
-              <input type="date" value={expectedAt} onChange={(e) => setExpectedAt(e.target.value)} className="input-minimal w-full" />
+              <input aria-label={t("purchases.expectedLabel")} type="date" value={expectedAt} onChange={(e) => setExpectedAt(e.target.value)} className="input-minimal w-full" />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t("purchases.notesLabel")}</label>
-              <input type="text" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} className="input-minimal w-full" />
+              <input aria-label={t("purchases.notesLabel")} type="text" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} className="input-minimal w-full" />
             </div>
           </div>
 

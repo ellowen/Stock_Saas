@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { PermissionKey } from "@prisma/client";
-import { PermissionService } from "../../../application/permissions/permission.service";
+import { PermissionService, PERMISSION_LABELS } from "../../../application/permissions/permission.service";
 
 const service = new PermissionService();
 
@@ -16,7 +16,7 @@ export function requirePermission(key: PermissionKey) {
 
     try {
       const allowed = await service.hasPermission(userId, role as any, key);
-      if (!allowed) return res.status(403).json({ message: `Forbidden: se requiere permiso ${key}` });
+      if (!allowed) return res.status(403).json({ message: `No tenés permiso para: ${PERMISSION_LABELS[key]}`, permission: key });
       next();
     } catch {
       res.status(500).json({ message: "Error al verificar permisos" });
