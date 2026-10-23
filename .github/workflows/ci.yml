@@ -8,6 +8,21 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    # api.test.ts and products.permissions.test.ts hit a real database.
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci_pw
+          MYSQL_DATABASE: clothing_stock_saas
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -pci_pw"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      DATABASE_URL: mysql://root:ci_pw@127.0.0.1:3306/clothing_stock_saas
+      JWT_SECRET: ci-jwt-secret
+      JWT_REFRESH_SECRET: ci-jwt-refresh-secret
     defaults:
       run:
         working-directory: backend
@@ -21,6 +36,7 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npx tsc --noEmit
+      - run: npx prisma migrate deploy
       - run: npm test
 
   frontend:
